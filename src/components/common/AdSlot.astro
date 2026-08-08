@@ -1,0 +1,12 @@
+---
+interface Props {
+	class?: string;
+	label?: string;
+}
+
+const { class: className = '', label = 'Advertisement' } = Astro.props;
+---
+
+<aside class:list={['grid place-items-center overflow-hidden rounded-card border border-line bg-panel-muted text-center', className]} aria-label={label}>
+	<span class="text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-soft">{label}</span>
+</aside>

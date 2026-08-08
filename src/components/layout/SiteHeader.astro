@@ -1,0 +1,55 @@
+---
+import { Menu, Search, X } from 'lucide-react';
+import BrandMark from '../common/BrandMark.astro';
+import ThemeToggle from '../common/ThemeToggle.astro';
+---
+
+<header class="sticky top-0 z-30 border-b border-line bg-panel/95 backdrop-blur supports-[backdrop-filter]:bg-panel/80">
+	<div class="site-container flex min-h-16 items-center justify-between gap-3">
+		<BrandMark />
+		<nav class="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">
+			<a class="rounded-md px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-panel-muted hover:text-ink" href="/#popular-calculators">Calculators</a>
+			<a class="rounded-md px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-panel-muted hover:text-ink" href="/#categories">Categories</a>
+			<a class="rounded-md px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-panel-muted hover:text-ink" href="/#guides">Guides</a>
+			<a class="rounded-md px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-panel-muted hover:text-ink" href="/#about">About</a>
+		</nav>
+		<div class="hidden items-center gap-2 sm:flex">
+			<a href="/#calculator-search" class="flex h-10 w-48 items-center gap-2 rounded-control border border-line bg-surface px-3 text-sm text-ink-soft transition-colors hover:border-brand" aria-label="Search calculators">
+				<Search size={15} aria-hidden="true" />
+				<span class="truncate">Search calculators...</span>
+			</a>
+			<ThemeToggle />
+		</div>
+		<div class="flex items-center gap-2 sm:hidden">
+			<ThemeToggle />
+			<button data-mobile-menu-button type="button" class="grid size-10 place-items-center rounded-control border border-line bg-panel text-ink" aria-controls="mobile-menu" aria-expanded="false" aria-label="Open navigation menu">
+				<Menu data-menu-open-icon size={19} aria-hidden="true" />
+				<X data-menu-close-icon className="hidden" size={19} aria-hidden="true" />
+			</button>
+		</div>
+	</div>
+	<div id="mobile-menu" data-mobile-menu class="hidden border-t border-line bg-panel sm:hidden">
+		<nav class="site-container grid py-3" aria-label="Mobile navigation">
+			<a class="rounded-control px-3 py-3 text-sm font-semibold text-ink hover:bg-panel-muted" href="/#popular-calculators">Calculators</a>
+			<a class="rounded-control px-3 py-3 text-sm font-semibold text-ink hover:bg-panel-muted" href="/#categories">Categories</a>
+			<a class="rounded-control px-3 py-3 text-sm font-semibold text-ink hover:bg-panel-muted" href="/#guides">Guides</a>
+			<a class="rounded-control px-3 py-3 text-sm font-semibold text-ink hover:bg-panel-muted" href="/#about">About</a>
+		</nav>
+	</div>
+</header>
+
+<script>
+	const menuButton = document.querySelector<HTMLButtonElement>('[data-mobile-menu-button]');
+	const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
+	const openIcon = document.querySelector<HTMLElement>('[data-menu-open-icon]');
+	const closeIcon = document.querySelector<HTMLElement>('[data-menu-close-icon]');
+
+	menuButton?.addEventListener('click', () => {
+		const isOpen = menuButton.getAttribute('aria-expanded') === 'true';
+		menuButton.setAttribute('aria-expanded', String(!isOpen));
+		menuButton.setAttribute('aria-label', isOpen ? 'Open navigation menu' : 'Close navigation menu');
+		menu?.classList.toggle('hidden', isOpen);
+		openIcon?.classList.toggle('hidden', !isOpen);
+		closeIcon?.classList.toggle('hidden', isOpen);
+	});
+</script>

@@ -1,11 +1,233 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import {
+	ArrowRight,
+	BadgeCheck,
+	BookOpen,
+	Calculator,
+	ClipboardCheck,
+	Gem,
+	Search,
+	ShieldCheck,
+} from 'lucide-react';
+import AdSlot from '../components/common/AdSlot.astro';
+import CalculatorCard from '../components/common/CalculatorCard.astro';
+import CategoryIcon from '../components/common/CategoryIcon.astro';
+import ProjectIllustration from '../components/common/ProjectIllustration.astro';
+import { calculatorListings } from '../data/calculators';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { organizationSchema } from '../lib/seo/schema';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const categories = [
+	{ name: 'Home Improvement', icon: 'home' },
+	{ name: 'Finance', icon: 'finance' },
+	{ name: 'Automotive', icon: 'automotive' },
+	{ name: 'Garden', icon: 'garden' },
+	{ name: 'Construction', icon: 'construction' },
+	{ name: 'Health', icon: 'health' },
+	{ name: 'Utilities', icon: 'utilities' },
+] as const;
+
+const popularSearches = ['Gravel', 'Concrete', 'Paint', 'Mortgage', 'Tile', 'Retirement'];
+const trustPoints = [
+	{ title: 'Accurate calculations', detail: 'Industry-standard formulas you can rely on.', icon: ClipboardCheck },
+	{ title: 'Practical recommendations', detail: 'Clear next steps for every calculation.', icon: Gem },
+	{ title: 'No signup required', detail: 'Free tools. No account. No hassle.', icon: ShieldCheck },
+	{ title: 'Works everywhere', detail: 'Designed for desktop, tablet, and mobile.', icon: BadgeCheck },
+];
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<BaseLayout
+	title="DailyUseCalc — Smart Calculators for Everyday Projects"
+	description="Fast, trustworthy calculators for everyday projects. Plan gravel, concrete, paint, tile, and more with clear recommendations."
+	structuredData={organizationSchema()}
+>
+	<section class="overflow-hidden border-b border-line bg-[radial-gradient(circle_at_85%_40%,color-mix(in_srgb,var(--duc-brand)_10%,transparent),transparent_27rem)]">
+		<div class="site-container grid gap-8 py-14 lg:grid-cols-[1.15fr_0.85fr] lg:py-20">
+			<div class="max-w-2xl">
+				<p class="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">
+					<Calculator size={14} aria-hidden="true" /> Everyday project tools
+				</p>
+				<h1 class="mt-5 max-w-xl text-4xl font-extrabold tracking-[-0.055em] text-ink sm:text-5xl sm:leading-[1.04]">
+					Smart calculators for everyday projects
+				</h1>
+				<p class="mt-5 text-lg leading-7 text-ink-soft">Calculate. Plan. Decide.</p>
+				<form
+					id="calculator-search"
+					data-calculator-search
+					class="mt-8 flex rounded-xl border border-line bg-panel p-1.5 shadow-card"
+					role="search"
+				>
+					<label class="sr-only" for="calculator-search-input">Search calculators</label>
+					<input
+						id="calculator-search-input"
+						data-search-input
+						class="min-w-0 flex-1 rounded-lg bg-transparent px-3 text-base text-ink outline-none placeholder:text-ink-soft"
+						type="search"
+						placeholder="Search for calculators..."
+						autocomplete="off"
+					/>
+					<button
+						class="grid size-11 place-items-center rounded-lg bg-brand text-white transition-colors hover:bg-brand-strong"
+						type="submit"
+						aria-label="Search calculators"
+					>
+						<Search size={19} aria-hidden="true" />
+					</button>
+				</form>
+				<div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-soft">
+					<span class="font-semibold">Popular searches:</span>
+					{
+						popularSearches.map((item) => (
+							<button
+								data-popular-search
+								data-query={item}
+								class="min-h-8 text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
+								type="button"
+							>
+								{item}
+							</button>
+						))
+					}
+				</div>
+			</div>
+			<ProjectIllustration />
+		</div>
+	</section>
+
+	<section id="categories" class="site-container py-12 sm:py-16">
+		<p class="text-sm font-bold text-brand">Explore tools</p>
+		<h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">Browse by category</h2>
+		<div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+			{
+				categories.map((category) => (
+					<a
+						href="#popular-calculators"
+						class="group flex min-h-32 flex-col items-center justify-center gap-3 rounded-card border border-line bg-panel px-3 text-center shadow-card transition-[border-color,transform] hover:-translate-y-0.5 hover:border-brand/45"
+					>
+						<span class="text-brand transition-transform group-hover:scale-110">
+							<CategoryIcon name={category.icon} />
+						</span>
+						<span class="text-xs font-bold text-ink">{category.name}</span>
+					</a>
+				))
+			}
+		</div>
+	</section>
+
+	<section id="popular-calculators" class="border-y border-line bg-panel-muted/60 py-12 sm:py-16">
+		<div class="site-container">
+			<div class="flex flex-wrap items-end justify-between gap-4">
+				<div>
+					<p class="text-sm font-bold text-brand">Start calculating</p>
+					<h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">Popular calculators</h2>
+				</div>
+				<a class="inline-flex min-h-10 items-center gap-1 text-sm font-bold text-brand hover:text-brand-strong" href="#all-calculators">
+					View all calculators <ArrowRight size={16} aria-hidden="true" />
+				</a>
+			</div>
+			<p data-search-status class="mt-5 text-sm text-ink-soft" aria-live="polite"></p>
+			<div id="all-calculators" data-calculator-grid class="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				{calculatorListings.map((calculator) => <CalculatorCard calculator={calculator} />)}
+			</div>
+		</div>
+	</section>
+
+	<section class="site-container py-12 sm:py-16">
+		<div class="rounded-2xl border border-line bg-panel p-6 shadow-card sm:p-8">
+			<div class="text-center">
+				<p class="text-sm font-bold text-brand">Built for real projects</p>
+				<h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">Why thousands trust DailyUseCalc</h2>
+			</div>
+			<div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+				{
+					trustPoints.map((point) => {
+						const Icon = point.icon;
+						return (
+							<div class="flex gap-3">
+								<span class="grid size-10 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+									<Icon size={19} aria-hidden="true" />
+								</span>
+								<div>
+									<h3 class="text-sm font-bold text-ink">{point.title}</h3>
+									<p class="mt-1 text-sm leading-5 text-ink-soft">{point.detail}</p>
+								</div>
+							</div>
+						);
+					})
+				}
+			</div>
+		</div>
+	</section>
+
+	<section class="site-container grid gap-5 pb-4 lg:grid-cols-[0.85fr_1.15fr_0.75fr]">
+		<section id="recently-added" class="rounded-card border border-line bg-panel p-6 shadow-card">
+			<div class="flex items-center justify-between gap-3">
+				<h2 class="text-lg font-extrabold tracking-[-0.035em] text-ink">Recently added</h2>
+				<a class="text-xs font-bold text-brand" href="#popular-calculators">View all</a>
+			</div>
+			<a href="/gravel-calculator/" class="mt-5 flex items-center gap-3 rounded-control p-2 transition-colors hover:bg-panel-muted">
+				<span class="grid size-9 place-items-center rounded-lg bg-brand-soft text-brand"><Calculator size={18} /></span>
+				<span><strong class="block text-sm text-ink">Gravel Calculator</strong><span class="text-xs text-ink-soft">Ready for your project</span></span>
+			</a>
+			<div class="mt-4 flex items-center gap-3 rounded-control p-2 text-ink-soft">
+				<span class="grid size-9 place-items-center rounded-lg bg-panel-muted"><Calculator size={18} /></span>
+				<span><strong class="block text-sm text-ink">Paint Calculator</strong><span class="text-xs">Coming next</span></span>
+			</div>
+		</section>
+		<section id="guides" class="rounded-card border border-line bg-panel p-6 shadow-card">
+			<div class="flex items-center justify-between gap-3">
+				<h2 class="text-lg font-extrabold tracking-[-0.035em] text-ink">Popular guides</h2>
+				<a class="text-xs font-bold text-brand" href="/gravel-calculator/#guide">View all</a>
+			</div>
+			<a href="/gravel-calculator/#guide" class="mt-5 flex gap-3 rounded-control p-2 transition-colors hover:bg-panel-muted">
+				<span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand"><BookOpen size={18} /></span>
+				<span><strong class="block text-sm text-ink">Best gravel for driveways</strong><span class="mt-1 block text-xs leading-4 text-ink-soft">Choose a material that fits your surface, depth, and budget.</span></span>
+			</a>
+			<a href="/gravel-calculator/#how-it-works" class="mt-3 flex gap-3 rounded-control p-2 transition-colors hover:bg-panel-muted">
+				<span class="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand"><BookOpen size={18} /></span>
+				<span><strong class="block text-sm text-ink">How gravel volume is calculated</strong><span class="mt-1 block text-xs leading-4 text-ink-soft">Understand area, depth, allowance, and practical ordering.</span></span>
+			</a>
+		</section>
+		<AdSlot class="min-h-56" />
+	</section>
+</BaseLayout>
+
+<script>
+	const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+	const form = document.querySelector<HTMLFormElement>('[data-calculator-search]');
+	const cards = [...document.querySelectorAll<HTMLElement>('[data-calculator-card]')];
+	const status = document.querySelector<HTMLElement>('[data-search-status]');
+
+	function filterCalculators(query: string) {
+		const normalized = query.trim().toLowerCase();
+		let visible = 0;
+		cards.forEach((card) => {
+			const match = !normalized || card.dataset.searchable?.includes(normalized);
+			card.hidden = !match;
+			if (match) visible += 1;
+		});
+		if (status) {
+			status.textContent = normalized
+				? `${visible} calculator${visible === 1 ? '' : 's'} found for “${query.trim()}”.`
+				: '';
+		}
+		if (normalized) {
+			document.querySelector('#popular-calculators')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
+
+	form?.addEventListener('submit', (event) => {
+		event.preventDefault();
+		filterCalculators(input?.value || '');
+	});
+	input?.addEventListener('input', () => filterCalculators(input.value));
+	document.querySelectorAll<HTMLButtonElement>('[data-popular-search]').forEach((button) => {
+		button.addEventListener('click', () => {
+			if (input) {
+				input.value = button.dataset.query || '';
+				input.focus();
+				filterCalculators(input.value);
+			}
+		});
+	});
+</script>

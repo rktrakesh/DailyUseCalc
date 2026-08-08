@@ -1,0 +1,21 @@
+---
+import { Car, CircleDollarSign, Flower2, HardHat, HeartPulse, House, Zap } from 'lucide-react';
+
+interface Props {
+	name: 'home' | 'finance' | 'automotive' | 'garden' | 'construction' | 'health' | 'utilities';
+}
+
+const { name } = Astro.props;
+const icons = {
+	home: House,
+	finance: CircleDollarSign,
+	automotive: Car,
+	garden: Flower2,
+	construction: HardHat,
+	health: HeartPulse,
+	utilities: Zap,
+};
+const Icon = icons[name];
+---
+
+<Icon size={24} strokeWidth={1.8} aria-hidden="true" />

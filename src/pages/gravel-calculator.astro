@@ -1,0 +1,90 @@
+---
+import { ArrowRight, Check, ChevronRight, CircleHelp, Lightbulb, Ruler, Scale, Truck } from 'lucide-react';
+import AdSlot from '../components/common/AdSlot.astro';
+import GravelCalculator from '../features/calculators/gravel/GravelCalculator';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { breadcrumbSchema, organizationSchema } from '../lib/seo/schema';
+
+const faqs = [
+	{ question: 'How much gravel do I need for a driveway?', answer: 'Measure the driveway length, width, and intended gravel depth. This calculator converts those measurements into volume, then adds your selected allowance and rounds up to a practical order quantity.' },
+	{ question: 'How many tons are in a cubic yard of gravel?', answer: 'It depends on the material and moisture. This calculator uses a typical density for the selected gravel type and shows the assumption with the estimate. Confirm the density with your supplier for a final order.' },
+	{ question: 'Should I add extra gravel for waste?', answer: 'A modest allowance can help account for uneven ground, compaction, spreading loss, and supplier ordering increments. The right amount depends on your surface and project conditions.' },
+	{ question: 'Can I use this calculator with metric measurements?', answer: 'Yes. Choose Metric and the calculator converts your current measurements instead of merely changing their labels. Supporting results show cubic meters and kilograms as well as the US ordering estimate.' },
+];
+
+const breadcrumbItems = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Home Improvement', path: '/#categories' },
+	{ name: 'Gravel Calculator', path: '/gravel-calculator/' },
+];
+
+const structuredData = [
+	organizationSchema(),
+	breadcrumbSchema(breadcrumbItems),
+	{
+		'@context': 'https://schema.org',
+		'@type': 'WebApplication',
+		name: 'Gravel Calculator',
+		applicationCategory: 'UtilityApplication',
+		operatingSystem: 'Any',
+		description: 'Calculate gravel volume, estimated weight, bags, truckloads, and a practical recommended order.',
+		url: 'https://dailyusecalc.com/gravel-calculator/',
+	},
+	{
+		'@context': 'https://schema.org',
+		'@type': 'FAQPage',
+		mainEntity: faqs.map((faq) => ({
+			'@type': 'Question',
+			name: faq.question,
+			acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+		})),
+	},
+];
+---
+
+<BaseLayout
+	title="Gravel Calculator — Estimate Yards, Tons, Bags & Cost | DailyUseCalc"
+	description="Calculate gravel volume in cubic yards, tons, bags, and truckloads. Get an explainable recommended order for driveways, paths, patio bases, and landscaping."
+	canonicalPath="/gravel-calculator/"
+	structuredData={structuredData}
+>
+	<div class="site-container py-7 sm:py-10">
+		<nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+			{breadcrumbItems.map((item, index) => <><a class="rounded text-ink-soft hover:text-brand" href={item.path}>{item.name}</a>{index < breadcrumbItems.length - 1 && <ChevronRight size={13} aria-hidden="true" />}</>)}
+		</nav>
+		<div class="mt-7 max-w-3xl">
+			<p class="text-sm font-bold text-brand">Home improvement calculator</p>
+			<h1 class="mt-1 text-4xl font-extrabold tracking-[-0.055em] text-ink sm:text-5xl">Gravel calculator</h1>
+			<p class="mt-4 text-base leading-7 text-ink-soft">Calculate how much gravel you need in cubic yards, tons, bags, and estimated cost for driveways, paths, patio bases, drainage, and landscaping.</p>
+			<ul class="mt-5 flex flex-wrap gap-2 text-xs font-bold text-brand"><li class="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5"><Check size={13} aria-hidden="true" /> Free to use</li><li class="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5"><Check size={13} aria-hidden="true" /> Instant calculation</li><li class="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5"><Check size={13} aria-hidden="true" /> No signup</li></ul>
+		</div>
+
+		<div class="mt-10 grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_18rem]">
+			<div>
+				<GravelCalculator client:load />
+				<AdSlot class="mt-8 min-h-28 sm:min-h-32" />
+			</div>
+			<aside class="hidden space-y-5 xl:block" aria-label="Gravel calculator resources">
+				<AdSlot class="min-h-72" />
+				<section class="rounded-card border border-line bg-panel p-5 shadow-card"><h2 class="text-base font-extrabold tracking-[-0.025em] text-ink">Quick tips</h2><ul class="mt-4 space-y-4 text-sm leading-5 text-ink-soft"><li class="flex gap-2.5"><Ruler className="mt-0.5 shrink-0 text-brand" size={17} aria-hidden="true" />Measure length and width at the widest points.</li><li class="flex gap-2.5"><Scale className="mt-0.5 shrink-0 text-brand" size={17} aria-hidden="true" />Confirm material density with your local supplier.</li><li class="flex gap-2.5"><Truck className="mt-0.5 shrink-0 text-brand" size={17} aria-hidden="true" />Check delivery minimums and truck access.</li></ul></section>
+				<section class="rounded-card border border-line bg-panel p-5 shadow-card"><h2 class="text-base font-extrabold tracking-[-0.025em] text-ink">Related calculators</h2><ul class="mt-4 space-y-3"><li><a class="text-sm font-semibold text-brand hover:text-brand-strong" href="/#popular-calculators">Concrete Calculator <span aria-hidden="true">→</span></a></li><li><a class="text-sm font-semibold text-brand hover:text-brand-strong" href="/#popular-calculators">Mulch Calculator <span aria-hidden="true">→</span></a></li><li><a class="text-sm font-semibold text-brand hover:text-brand-strong" href="/#popular-calculators">Topsoil Calculator <span aria-hidden="true">→</span></a></li><li><a class="text-sm font-semibold text-brand hover:text-brand-strong" href="/#popular-calculators">Sand Calculator <span aria-hidden="true">→</span></a></li></ul></section>
+			</aside>
+		</div>
+
+		<section id="how-it-works" class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+			<div class="max-w-2xl"><p class="text-sm font-bold text-brand">Transparent methodology</p><h2 class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink">How the gravel calculator works</h2><p class="mt-4 leading-7 text-ink-soft">The calculator normalizes your measurements before doing any volume calculation. It then applies the selected material density and makes an explainable ordering recommendation.</p></div>
+			<ol class="mt-8 grid gap-4 md:grid-cols-5">
+				{[['1', 'Calculate area', 'Length × width'], ['2', 'Apply depth', 'Area × depth'], ['3', 'Convert volume', 'Cubic feet to yards'], ['4', 'Estimate weight', 'Volume × density'], ['5', 'Add allowance', 'Extra material + rounding']].map(([number, title, description]) => <li class="rounded-card border border-line bg-panel p-5 shadow-card"><span class="grid size-8 place-items-center rounded-full border border-brand/35 text-sm font-extrabold text-brand">{number}</span><h3 class="mt-4 text-sm font-extrabold text-ink">{title}</h3><p class="mt-1 text-xs leading-5 text-ink-soft">{description}</p></li>)}
+			</ol>
+		</section>
+
+		<section id="guide" class="mt-16 grid gap-8 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_20rem] sm:mt-20 sm:pt-16">
+			<article class="max-w-3xl"><p class="text-sm font-bold text-brand">Gravel planning guide</p><h2 class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink">Plan the order, not just the volume</h2><div class="mt-6 space-y-5 text-[0.98rem] leading-7 text-ink-soft"><p>Volume is only the starting point. Gravel settles and compacts, ground is rarely perfectly level, and suppliers commonly sell in practical increments. That is why the calculator separates the measured need, the allowance-adjusted amount, and the recommended order.</p><p>For a driveway, angular materials such as crushed stone or limestone are often chosen because they compact and interlock. Decorative stone and pea gravel can suit paths or planting beds, but the right material depends on traffic, drainage, soil, and local supplier guidance.</p><p>Before ordering, confirm the material type, its quoted density, delivery minimums, truck access, and whether the supplier sells by volume or weight. This estimator makes those assumptions visible; it does not replace a site-specific design.</p></div></article>
+			<aside class="rounded-card border border-line bg-panel-muted p-6"><Lightbulb className="text-brand" size={22} aria-hidden="true" /><h3 class="mt-4 text-base font-extrabold tracking-[-0.025em] text-ink">Common mistake</h3><p class="mt-2 text-sm leading-6 text-ink-soft">Changing the unit label without converting the number can over- or under-order material. Switching systems here converts the entered values.</p></aside>
+		</section>
+
+		<section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16"><div class="max-w-2xl"><p class="text-sm font-bold text-brand">Answers before you order</p><h2 class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink">Frequently asked questions</h2></div><div class="mt-7 grid gap-3 lg:grid-cols-2">{faqs.map((faq) => <details class="rounded-card border border-line bg-panel p-5 shadow-card"><summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold text-ink marker:content-none"><CircleHelp className="mt-0.5 shrink-0 text-brand" size={18} aria-hidden="true" />{faq.question}</summary><p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{faq.answer}</p></details>)}</div></section>
+
+		<section class="mt-16 rounded-2xl border border-brand/25 bg-brand-soft p-6 sm:mt-20 sm:p-8"><div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div><p class="text-sm font-bold text-brand">Need another project tool?</p><h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">Find the next calculator for your project.</h2></div><a href="/#popular-calculators" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-strong">Browse calculators <ArrowRight size={17} aria-hidden="true" /></a></div></section>
+	</div>
+</BaseLayout>
