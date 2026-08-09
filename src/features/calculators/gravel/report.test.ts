@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateGravel } from './calculator';
 import { recommendGravel } from './recommendations';
-import { createGravelEstimateReportHtml } from './report';
+import { createGravelEstimateReport } from './gravelReport';
 import type { GravelInput } from './types';
 
 const input: GravelInput = {
@@ -20,7 +20,7 @@ const input: GravelInput = {
 describe('gravel estimate report', () => {
   it('uses calculator output and falls back to a sensible project name', () => {
     const calculation = calculateGravel(input);
-    const html = createGravelEstimateReportHtml({
+    const report = createGravelEstimateReport({
       calculation,
       input,
       recommendation: recommendGravel(input, calculation),
@@ -28,16 +28,16 @@ describe('gravel estimate report', () => {
       generatedAt: new Date('2026-08-09T10:24:00'),
     });
 
-    expect(html).toContain('Gravel Project Estimate');
-    expect(html).toContain('25 yd³');
-    expect(html).toContain('0%');
-    expect(html).toContain('$1,180');
-    expect(html).toContain('dailyusecalc.com/gravel');
+    expect(report.projectName).toBe('Gravel Project Estimate');
+    expect(report.primaryResult.value).toBe('25 yd³');
+    expect(report.summary).toContainEqual({ label: 'Allowance', value: '0%' });
+    expect(report.additionalDetails).toContainEqual({ label: 'Estimated cost', value: '$1,180' });
+    expect(report.footerUrl).toBe('dailyusecalc.com/gravel');
   });
 
   it('supports metric presentation and optional user-provided content', () => {
     const calculation = calculateGravel(input);
-    const html = createGravelEstimateReportHtml({
+    const report = createGravelEstimateReport({
       calculation,
       input,
       recommendation: recommendGravel(input, calculation),
@@ -46,9 +46,14 @@ describe('gravel estimate report', () => {
       notes: 'Base layer for the driveway',
     });
 
-    expect(html).toContain('Backyard Driveway Project');
-    expect(html).toContain('Metric');
-    expect(html).toContain('m³');
-    expect(html).toContain('Base layer for the driveway');
+    expect(report.projectName).toBe('Backyard Driveway Project');
+    expect(report.summary).toContainEqual({ label: 'Measurement system', value: 'Metric' });
+    expect(report.sections[0].rows).toContainEqual(
+      expect.objectContaining({ label: 'Volume', value: expect.stringContaining('m³') }),
+    );
+    expect(report.additionalDetails).toContainEqual({
+      label: 'Notes',
+      value: 'Base layer for the driveway',
+    });
   });
 });

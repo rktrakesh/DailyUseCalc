@@ -10,9 +10,9 @@ import {
   Share2,
 } from 'lucide-react';
 import { convertLength } from '../../../lib/units/measurements';
-import { openReportWindow, printReport } from '../../../lib/reports/reportService';
+import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
-import { createGravelEstimateReportHtml } from './report';
+import { createGravelEstimateReport } from './gravelReport';
 import type { GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
 
 const projectOptions: Array<{ value: ProjectType; label: string }> = [
@@ -199,38 +199,35 @@ export default function GravelCalculator() {
 
   function printEstimate() {
     if (!calculation || !recommendation || !calculationInput) return;
-    const printWindow = openReportWindow({
-      documentTitle: 'dailyusecalc-gravel-estimate',
-      html: createGravelEstimateReportHtml({
-        calculation,
-        input: calculationInput,
-        recommendation,
-        measurementSystem,
-      }),
-    });
-    if (!printWindow) {
+    if (
+      !printReport(
+        createGravelEstimateReport({
+          calculation,
+          input: calculationInput,
+          recommendation,
+          measurementSystem,
+        }),
+      )
+    ) {
       setCopyStatus('Allow pop-ups to print your estimate.');
-      return;
     }
-    printReport(printWindow);
   }
 
   function downloadEstimate() {
     if (!calculation || !recommendation || !calculationInput) return;
-    const printWindow = openReportWindow({
-      documentTitle: 'dailyusecalc-gravel-estimate',
-      html: createGravelEstimateReportHtml({
-        calculation,
-        input: calculationInput,
-        recommendation,
-        measurementSystem,
-      }),
-    });
-    if (!printWindow) {
+    if (
+      !downloadReportAsPdf(
+        createGravelEstimateReport({
+          calculation,
+          input: calculationInput,
+          recommendation,
+          measurementSystem,
+        }),
+      )
+    ) {
       setCopyStatus('Allow pop-ups to save your estimate as a PDF.');
       return;
     }
-    printReport(printWindow);
     setCopyStatus('Choose “Save as PDF” in the print dialog to download your estimate.');
   }
 
