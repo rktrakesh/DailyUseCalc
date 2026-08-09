@@ -23,7 +23,7 @@ export const calculatorListings: CalculatorListing[] = [
     name: 'Gravel Calculator',
     description: 'Calculate gravel in yards, tons, bags, and estimated material cost.',
     category: 'Home Improvement',
-    href: '/gravel-calculator/',
+    href: '/gravel/',
     keywords: ['gravel', 'stone', 'driveway', 'yard', 'tons'],
     status: 'available',
   },

@@ -9,10 +9,10 @@ import {
   Scale,
   Truck,
 } from 'lucide-react';
-import AdSlot from '../components/common/AdSlot.astro';
-import GravelCalculator from '../features/calculators/gravel/GravelCalculator';
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { breadcrumbSchema, organizationSchema } from '../lib/seo/schema';
+import AdSlot from '../../components/common/AdSlot.astro';
+import GravelCalculator from '../../features/calculators/gravel/GravelCalculator';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { breadcrumbSchema, organizationSchema } from '../../lib/seo/schema';
 
 const faqs = [
   {
@@ -40,7 +40,7 @@ const faqs = [
 const breadcrumbItems = [
   { name: 'Home', path: '/' },
   { name: 'Home Improvement', path: '/#categories' },
-  { name: 'Gravel Calculator', path: '/gravel-calculator/' },
+  { name: 'Gravel Calculator', path: '/gravel/' },
 ];
 
 const structuredData = [
@@ -54,7 +54,7 @@ const structuredData = [
     operatingSystem: 'Any',
     description:
       'Calculate gravel volume, estimated weight, bags, truckloads, and a practical recommended order.',
-    url: 'https://dailyusecalc.com/gravel-calculator/',
+    url: 'https://dailyusecalc.com/gravel/',
   },
   {
     '@context': 'https://schema.org',
@@ -71,7 +71,7 @@ const structuredData = [
 <BaseLayout
   title="Gravel Calculator — Estimate Yards, Tons, Bags & Cost | DailyUseCalc"
   description="Calculate gravel volume in cubic yards, tons, bags, and truckloads. Get an explainable recommended order for driveways, paths, patio bases, and landscaping."
-  canonicalPath="/gravel-calculator/"
+  canonicalPath="/gravel/"
   structuredData={structuredData}
 >
   <div class="site-container py-7 sm:py-10">
