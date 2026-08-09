@@ -5,58 +5,60 @@ import SiteFooter from '../components/layout/SiteFooter.astro';
 import SiteHeader from '../components/layout/SiteHeader.astro';
 
 interface Props {
-	title: string;
-	description: string;
-	canonicalPath?: string;
-	structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+  title: string;
+  description: string;
+  canonicalPath?: string;
+  structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
-const {
-	title,
-	description,
-	canonicalPath = Astro.url.pathname,
-	structuredData,
-} = Astro.props;
-const schemas = structuredData ? (Array.isArray(structuredData) ? structuredData : [structuredData]) : [];
+const { title, description, canonicalPath = Astro.url.pathname, structuredData } = Astro.props;
+const schemas = structuredData
+  ? Array.isArray(structuredData)
+    ? structuredData
+    : [structuredData]
+  : [];
 ---
 
 <!doctype html>
 <html lang="en" data-theme="light" data-theme-preference="system">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="description" content={description} />
-		<meta name="robots" content="index, follow" />
-		<link rel="canonical" href={absoluteUrl(canonicalPath)} />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta property="og:type" content="website" />
-		<meta property="og:site_name" content={SITE_NAME} />
-		<meta property="og:title" content={title} />
-		<meta property="og:description" content={description} />
-		<meta property="og:url" content={absoluteUrl(canonicalPath)} />
-		<meta name="twitter:card" content="summary" />
-		<title>{title}</title>
-		<script is:inline>
-			try {
-				const preference = localStorage.getItem('duc-theme') || 'system';
-				const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-				const theme = preference === 'system' ? (systemIsDark ? 'dark' : 'light') : preference;
-				document.documentElement.dataset.theme = theme;
-				document.documentElement.dataset.themePreference = preference;
-				document.documentElement.style.colorScheme = theme;
-			} catch {}
-		</script>
-		{
-			schemas.map((schema) => (
-				<script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
-			))
-		}
-	</head>
-	<body class="bg-surface text-ink antialiased">
-		<SiteHeader />
-		<main id="main-content">
-			<slot />
-		</main>
-		<SiteFooter />
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#fbfcfd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d171a" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href={absoluteUrl(canonicalPath)} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={absoluteUrl(canonicalPath)} />
+    <meta name="twitter:card" content="summary" />
+    <title>{title}</title>
+    <script is:inline>
+      try {
+        const preference = localStorage.getItem('duc-theme') || 'system';
+        const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = preference === 'system' ? (systemIsDark ? 'dark' : 'light') : preference;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.themePreference = preference;
+        document.documentElement.style.colorScheme = theme;
+      } catch {}
+    </script>
+    {
+      schemas.map((schema) => (
+        <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
+      ))
+    }
+  </head>
+  <body class="bg-surface text-ink antialiased">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <SiteHeader />
+    <main id="main-content">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
 </html>

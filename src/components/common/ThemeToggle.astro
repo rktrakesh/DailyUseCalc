@@ -3,42 +3,42 @@ import { LaptopMinimal, Moon, SunMedium } from 'lucide-react';
 ---
 
 <button
-	type="button"
-	data-theme-toggle
-	class="grid size-10 place-items-center rounded-full border border-line bg-panel text-ink transition-colors hover:bg-panel-muted"
-	aria-label="Theme: system. Activate to change theme."
+  type="button"
+  data-theme-toggle
+  class="grid size-10 place-items-center rounded-full border border-line bg-panel text-ink transition-colors hover:bg-panel-muted"
+  aria-label="Theme: system. Activate to change theme."
 >
-	<SunMedium className="theme-icon theme-icon-light" size={17} aria-hidden="true" />
-	<Moon className="theme-icon theme-icon-dark" size={17} aria-hidden="true" />
-	<LaptopMinimal className="theme-icon theme-icon-system" size={17} aria-hidden="true" />
+  <SunMedium className="theme-icon theme-icon-light" size={17} aria-hidden="true" />
+  <Moon className="theme-icon theme-icon-dark" size={17} aria-hidden="true" />
+  <LaptopMinimal className="theme-icon theme-icon-system" size={17} aria-hidden="true" />
 </button>
 
 <script>
-	const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
-	const options = ['system', 'light', 'dark'] as const;
-	type ThemePreference = (typeof options)[number];
+  const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const options = ['system', 'light', 'dark'] as const;
+  type ThemePreference = (typeof options)[number];
 
-	function applyTheme(preference: ThemePreference) {
-		const theme =
-			preference === 'system'
-				? window.matchMedia('(prefers-color-scheme: dark)').matches
-					? 'dark'
-					: 'light'
-				: preference;
-		document.documentElement.dataset.theme = theme;
-		document.documentElement.dataset.themePreference = preference;
-		document.documentElement.style.colorScheme = theme;
-		button?.setAttribute('aria-label', `Theme: ${preference}. Activate to change theme.`);
-	}
+  function applyTheme(preference: ThemePreference) {
+    const theme =
+      preference === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : preference;
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.themePreference = preference;
+    document.documentElement.style.colorScheme = theme;
+    button?.setAttribute('aria-label', `Theme: ${preference}. Activate to change theme.`);
+  }
 
-	button?.addEventListener('click', () => {
-		const current = (localStorage.getItem('duc-theme') || 'system') as ThemePreference;
-		const next = options[(options.indexOf(current) + 1) % options.length];
-		localStorage.setItem('duc-theme', next);
-		applyTheme(next);
-	});
+  button?.addEventListener('click', () => {
+    const current = (localStorage.getItem('duc-theme') || 'system') as ThemePreference;
+    const next = options[(options.indexOf(current) + 1) % options.length];
+    localStorage.setItem('duc-theme', next);
+    applyTheme(next);
+  });
 
-	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-		if ((localStorage.getItem('duc-theme') || 'system') === 'system') applyTheme('system');
-	});
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem('duc-theme') || 'system') === 'system') applyTheme('system');
+  });
 </script>

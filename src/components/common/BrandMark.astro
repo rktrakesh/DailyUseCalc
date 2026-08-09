@@ -2,15 +2,25 @@
 import { Calculator } from 'lucide-react';
 
 interface Props {
-	compact?: boolean;
+  compact?: boolean;
 }
 
 const { compact = false } = Astro.props;
 ---
 
-<a href="/" class="inline-flex items-center gap-2 rounded-md text-current no-underline" aria-label="DailyUseCalc home">
-	<span class="grid size-7 place-items-center rounded-lg bg-brand text-white shadow-sm">
-		<Calculator size={16} strokeWidth={2.5} aria-hidden="true" />
-	</span>
-	{!compact && <span class="text-[0.95rem] font-bold tracking-[-0.04em]">DailyUse<span class="text-brand">Calc</span></span>}
+<a
+  href="/"
+  class="inline-flex items-center gap-2 rounded-md text-current no-underline"
+  aria-label="DailyUseCalc home"
+>
+  <span class="grid size-7 place-items-center rounded-lg bg-brand text-white shadow-sm">
+    <Calculator size={16} strokeWidth={2.5} aria-hidden="true" />
+  </span>
+  {
+    !compact && (
+      <span class="text-[0.95rem] font-bold tracking-[-0.04em]" translate="no">
+        DailyUse<span class="text-brand">Calc</span>
+      </span>
+    )
+  }
 </a>

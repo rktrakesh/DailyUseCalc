@@ -2,31 +2,73 @@
 import BrandMark from '../common/BrandMark.astro';
 
 const columns = [
-	{ title: 'Calculators', links: [['All Calculators', '/#popular-calculators'], ['Popular Calculators', '/#popular-calculators'], ['New Calculators', '/#recently-added']] },
-	{ title: 'Categories', links: [['Home Improvement', '/#categories'], ['Finance', '/#categories'], ['Automotive', '/#categories'], ['Garden', '/#categories']] },
-	{ title: 'Guides', links: [['All Guides', '/#guides'], ['Project Guides', '/#guides'], ['Buying Guides', '/#guides']] },
-	{ title: 'Company', links: [['About Us', '/#about'], ['Contact', 'mailto:hello@dailyusecalc.com'], ['Privacy Policy', '/privacy/'], ['Terms of Use', '/terms/']] },
+  {
+    title: 'Calculators',
+    links: [
+      ['All Calculators', '/#popular-calculators'],
+      ['Popular Calculators', '/#popular-calculators'],
+      ['New Calculators', '/#recently-added'],
+    ],
+  },
+  {
+    title: 'Categories',
+    links: [
+      ['Home Improvement', '/#categories'],
+      ['Finance', '/#categories'],
+      ['Automotive', '/#categories'],
+      ['Garden', '/#categories'],
+    ],
+  },
+  {
+    title: 'Guides',
+    links: [
+      ['All Guides', '/#guides'],
+      ['Project Guides', '/#guides'],
+      ['Buying Guides', '/#guides'],
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      ['About Us', '/#about'],
+      ['Contact', 'mailto:hello@dailyusecalc.com'],
+      ['Privacy Policy', '/privacy/'],
+      ['Terms of Use', '/terms/'],
+    ],
+  },
 ];
 ---
 
 <footer id="about" class="mt-16 border-t border-white/10 bg-[#102f35] text-white">
-	<div class="site-container grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)]">
-		<div>
-			<BrandMark />
-			<p class="mt-4 max-w-52 text-sm leading-6 text-white/75">Smart calculators for everyday projects. Calculate. Plan. Decide.</p>
-		</div>
-		{
-			columns.map((column) => (
-				<div>
-					<h2 class="text-xs font-bold uppercase tracking-[0.12em] text-white/70">{column.title}</h2>
-					<ul class="mt-4 space-y-2.5">
-						{column.links.map(([label, href]) => <li><a class="text-sm text-white/80 transition-colors hover:text-white" href={href}>{label}</a></li>)}
-					</ul>
-				</div>
-			))
-		}
-	</div>
-	<div class="border-t border-white/10">
-		<div class="site-container py-4 text-xs text-white/55">© {new Date().getFullYear()} DailyUseCalc. All rights reserved.</div>
-	</div>
+  <div class="site-container grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_repeat(4,1fr)]">
+    <div>
+      <BrandMark />
+      <p class="mt-4 max-w-52 text-sm leading-6 text-white/75">
+        Smart calculators for everyday projects. Calculate. Plan. Decide.
+      </p>
+    </div>
+    {
+      columns.map((column) => (
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-[0.12em] text-white/70">
+            {column.title}
+          </h2>
+          <ul class="mt-4 space-y-2.5">
+            {column.links.map(([label, href]) => (
+              <li>
+                <a class="text-sm text-white/80 transition-colors hover:text-white" href={href}>
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+  <div class="border-t border-white/10">
+    <div class="site-container py-4 text-xs text-white/55">
+      © {new Date().getFullYear()} DailyUseCalc. All rights reserved.
+    </div>
+  </div>
 </footer>
