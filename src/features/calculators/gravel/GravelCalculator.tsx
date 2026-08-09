@@ -10,7 +10,9 @@ import {
   Share2,
 } from 'lucide-react';
 import { convertLength } from '../../../lib/units/measurements';
+import { openReportWindow, printReport } from '../../../lib/reports/reportService';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
+import { createGravelEstimateReportHtml } from './report';
 import type { GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
 
 const projectOptions: Array<{ value: ProjectType; label: string }> = [
@@ -82,80 +84,6 @@ function formatCurrency(value?: number) {
 
 function inputClass(invalid = false) {
   return `h-11 w-full rounded-control border bg-panel px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 ${invalid ? 'border-danger' : 'border-line'}`;
-}
-
-function escapeHtml(value: string) {
-  return value.replace(
-    /[&<>]/g,
-    (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]!,
-  );
-}
-
-function pdfSafeText(value: string) {
-  return value
-    .normalize('NFKD')
-    .replace(/[^\x20-\x7E]/g, '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
-}
-
-function wrapPdfLines(lines: string[], maximumLength = 78) {
-  return lines.flatMap((line) => {
-    const words = line.split(/\s+/);
-    const wrapped: string[] = [];
-    let current = '';
-    words.forEach((word) => {
-      const candidate = current ? `${current} ${word}` : word;
-      if (candidate.length > maximumLength && current) {
-        wrapped.push(current);
-        current = word;
-      } else {
-        current = candidate;
-      }
-    });
-    if (current) wrapped.push(current);
-    return wrapped;
-  });
-}
-
-function createEstimatePdf(lines: string[]) {
-  const encoder = new TextEncoder();
-  const wrappedLines = wrapPdfLines(lines);
-  const content = [
-    'BT',
-    '/F1 20 Tf',
-    '72 744 Td',
-    '(DailyUseCalc) Tj',
-    '/F1 14 Tf',
-    '0 -28 Td',
-    '(Gravel Estimate) Tj',
-    '/F1 10 Tf',
-    '0 -28 Td',
-    ...wrappedLines.flatMap((line) => [`(${pdfSafeText(line)}) Tj`, '0 -17 Td']),
-    'ET',
-  ].join('\n');
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
-    `<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`,
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-  ];
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(encoder.encode(pdf).length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xrefOffset = encoder.encode(pdf).length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  pdf += offsets
-    .slice(1)
-    .map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`)
-    .join('');
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  return new Blob([pdf], { type: 'application/pdf' });
 }
 
 export default function GravelCalculator() {
@@ -270,32 +198,40 @@ export default function GravelCalculator() {
   }
 
   function printEstimate() {
-    const printWindow = window.open('', '_blank', 'popup,width=820,height=680');
+    if (!calculation || !recommendation || !calculationInput) return;
+    const printWindow = openReportWindow({
+      documentTitle: 'dailyusecalc-gravel-estimate',
+      html: createGravelEstimateReportHtml({
+        calculation,
+        input: calculationInput,
+        recommendation,
+        measurementSystem,
+      }),
+    });
     if (!printWindow) {
       setCopyStatus('Allow pop-ups to print your estimate.');
       return;
     }
-    const documentBody = estimateLines()
-      .map((line) => `<p>${escapeHtml(line)}</p>`)
-      .join('');
-    printWindow.document.title = 'DailyUseCalc Gravel Estimate';
-    printWindow.document.head.innerHTML =
-      '<style>body{font-family:Arial,sans-serif;color:#102027;margin:48px;line-height:1.5}h1{color:#087b80;font-size:28px;margin:0}h2{font-size:20px;margin:8px 0 28px}p{margin:0 0 12px}</style>';
-    printWindow.document.body.innerHTML = `<h1>DailyUseCalc</h1><h2>Gravel Estimate</h2>${documentBody}`;
-    printWindow.focus();
-    printWindow.print();
+    printReport(printWindow);
   }
 
   function downloadEstimate() {
-    const pdfUrl = URL.createObjectURL(createEstimatePdf(estimateLines()));
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = 'dailyusecalc-gravel-estimate.pdf';
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 1_000);
-    setCopyStatus('PDF downloaded.');
+    if (!calculation || !recommendation || !calculationInput) return;
+    const printWindow = openReportWindow({
+      documentTitle: 'dailyusecalc-gravel-estimate',
+      html: createGravelEstimateReportHtml({
+        calculation,
+        input: calculationInput,
+        recommendation,
+        measurementSystem,
+      }),
+    });
+    if (!printWindow) {
+      setCopyStatus('Allow pop-ups to save your estimate as a PDF.');
+      return;
+    }
+    printReport(printWindow);
+    setCopyStatus('Choose “Save as PDF” in the print dialog to download your estimate.');
   }
 
   return (
