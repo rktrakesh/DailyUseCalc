@@ -1,5 +1,14 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
-import { AlertTriangle, Check, ChevronDown, Copy, Printer, Share2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  Copy,
+  Download,
+  Printer,
+  RotateCcw,
+  Share2,
+} from 'lucide-react';
 import { convertLength } from '../../../lib/units/measurements';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
 import type { GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
@@ -23,16 +32,31 @@ const gravelOptions: Array<{ value: GravelType; label: string }> = [
   { value: 'custom', label: 'Custom Material' },
 ];
 
-const initialInput: GravelInput = {
-  projectType: 'driveway',
-  gravelType: 'crushed-stone',
-  length: { value: 20, unit: 'ft' },
-  width: { value: 12, unit: 'ft' },
-  depth: { value: 4, unit: 'in' },
-  allowancePercent: 10,
-  bagSizeCubicFeet: 0.5,
-  truckCapacityCubicYards: 12,
+type GravelFormInput = Omit<GravelInput, 'allowancePercent' | 'gravelType' | 'projectType'> & {
+  allowancePercent?: number;
+  gravelType: GravelType | '';
+  projectType: ProjectType | '';
 };
+
+function createEmptyInput(): GravelFormInput {
+  return {
+    projectType: '',
+    gravelType: '',
+    length: { value: Number.NaN, unit: 'ft' },
+    width: { value: Number.NaN, unit: 'ft' },
+    depth: { value: Number.NaN, unit: 'in' },
+  };
+}
+
+function toCalculationInput(input: GravelFormInput): GravelInput | undefined {
+  if (!input.projectType || !input.gravelType) return undefined;
+  return {
+    ...input,
+    projectType: input.projectType,
+    gravelType: input.gravelType,
+    allowancePercent: input.allowancePercent ?? 0,
+  };
+}
 
 function numberFromEvent(event: ChangeEvent<HTMLInputElement>) {
   return Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0;
@@ -60,22 +84,106 @@ function inputClass(invalid = false) {
   return `h-11 w-full rounded-control border bg-panel px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 ${invalid ? 'border-danger' : 'border-line'}`;
 }
 
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>]/g,
+    (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[character]!,
+  );
+}
+
+function pdfSafeText(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[^\x20-\x7E]/g, '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function wrapPdfLines(lines: string[], maximumLength = 78) {
+  return lines.flatMap((line) => {
+    const words = line.split(/\s+/);
+    const wrapped: string[] = [];
+    let current = '';
+    words.forEach((word) => {
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length > maximumLength && current) {
+        wrapped.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    });
+    if (current) wrapped.push(current);
+    return wrapped;
+  });
+}
+
+function createEstimatePdf(lines: string[]) {
+  const encoder = new TextEncoder();
+  const wrappedLines = wrapPdfLines(lines);
+  const content = [
+    'BT',
+    '/F1 20 Tf',
+    '72 744 Td',
+    '(DailyUseCalc) Tj',
+    '/F1 14 Tf',
+    '0 -28 Td',
+    '(Gravel Estimate) Tj',
+    '/F1 10 Tf',
+    '0 -28 Td',
+    ...wrappedLines.flatMap((line) => [`(${pdfSafeText(line)}) Tj`, '0 -17 Td']),
+    'ET',
+  ].join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(encoder.encode(pdf).length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = encoder.encode(pdf).length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets
+    .slice(1)
+    .map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`)
+    .join('');
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: 'application/pdf' });
+}
+
 export default function GravelCalculator() {
-  const [input, setInput] = useState<GravelInput>(initialInput);
+  const [input, setInput] = useState<GravelFormInput>(createEmptyInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
   const [copyStatus, setCopyStatus] = useState('');
-  const validationIssues = useMemo(() => validateGravelInput(input), [input]);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const calculationInput = useMemo(() => toCalculationInput(input), [input]);
+  const validationIssues = useMemo(
+    () => (calculationInput ? validateGravelInput(calculationInput) : []),
+    [calculationInput],
+  );
   const calculation = useMemo(
-    () => (validationIssues.length === 0 ? calculateGravel(input) : undefined),
-    [input, validationIssues.length],
+    () =>
+      calculationInput && validationIssues.length === 0
+        ? calculateGravel(calculationInput)
+        : undefined,
+    [calculationInput, validationIssues.length],
   );
   const recommendation = useMemo(
-    () => (calculation ? recommendGravel(input, calculation) : undefined),
-    [calculation, input],
+    () =>
+      calculation && calculationInput ? recommendGravel(calculationInput, calculation) : undefined,
+    [calculation, calculationInput],
   );
+  const displayedValidationIssues = hasInteracted ? validationIssues : [];
 
   const errorFor = (field: string) =>
-    validationIssues.find((issue) => issue.field === field)?.message;
+    displayedValidationIssues.find((issue) => issue.field === field)?.message;
 
   function updateSystem(nextSystem: MeasurementSystem) {
     if (nextSystem === measurementSystem) return;
@@ -115,17 +223,28 @@ export default function GravelCalculator() {
     setMeasurementSystem(nextSystem);
   }
 
-  function estimateText() {
+  function estimateLines() {
     if (!calculation || !recommendation)
-      return 'Complete the length, width, and depth fields to calculate your estimate.';
+      return ['Complete the length, width, and depth fields to calculate your estimate.'];
     return [
-      'Gravel estimate from DailyUseCalc',
-      `Project: ${projectOptions.find((option) => option.value === input.projectType)?.label}`,
-      `Recommended order: ${calculation.recommendedOrderCubicYards} yd³`,
-      `Calculated need: ${calculation.volumeCubicYards.toFixed(2)} yd³`,
-      `Allowance: ${input.allowancePercent}%`,
+      `Project: ${projectOptions.find((option) => option.value === calculationInput?.projectType)?.label}`,
+      `Recommended order: ${calculation.recommendedOrderCubicYards} cubic yards`,
+      `Calculated need: ${calculation.volumeCubicYards.toFixed(2)} cubic yards`,
+      `Allowance: ${calculationInput?.allowancePercent}%`,
+      `Estimated weight: ${calculation.estimatedWeightTons.toFixed(2)} tons`,
       recommendation.explanation,
-    ].join('\n');
+    ];
+  }
+
+  function estimateText() {
+    return estimateLines().join('\n');
+  }
+
+  function clearInputs() {
+    setInput(createEmptyInput());
+    setMeasurementSystem('imperial');
+    setHasInteracted(false);
+    setCopyStatus('All calculator fields were cleared.');
   }
 
   async function copyEstimate() {
@@ -150,11 +269,41 @@ export default function GravelCalculator() {
     await copyEstimate();
   }
 
+  function printEstimate() {
+    const printWindow = window.open('', '_blank', 'popup,width=820,height=680');
+    if (!printWindow) {
+      setCopyStatus('Allow pop-ups to print your estimate.');
+      return;
+    }
+    const documentBody = estimateLines()
+      .map((line) => `<p>${escapeHtml(line)}</p>`)
+      .join('');
+    printWindow.document.title = 'DailyUseCalc Gravel Estimate';
+    printWindow.document.head.innerHTML =
+      '<style>body{font-family:Arial,sans-serif;color:#102027;margin:48px;line-height:1.5}h1{color:#087b80;font-size:28px;margin:0}h2{font-size:20px;margin:8px 0 28px}p{margin:0 0 12px}</style>';
+    printWindow.document.body.innerHTML = `<h1>DailyUseCalc</h1><h2>Gravel Estimate</h2>${documentBody}`;
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  function downloadEstimate() {
+    const pdfUrl = URL.createObjectURL(createEstimatePdf(estimateLines()));
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = 'dailyusecalc-gravel-estimate.pdf';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 1_000);
+    setCopyStatus('PDF downloaded.');
+  }
+
   return (
     <div className="grid gap-6">
       <section
         className="rounded-card border border-line bg-panel p-5 shadow-card sm:p-6"
         aria-labelledby="project-details-heading"
+        onChangeCapture={() => setHasInteracted(true)}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -166,9 +315,18 @@ export default function GravelCalculator() {
               Project details
             </h2>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">
-            <Check size={14} aria-hidden="true" /> Updates instantly
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">
+              <Check size={14} aria-hidden="true" /> Updates instantly
+            </span>
+            <button
+              type="button"
+              onClick={clearInputs}
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-panel-muted"
+            >
+              <RotateCcw size={13} aria-hidden="true" /> Clear
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -186,6 +344,9 @@ export default function GravelCalculator() {
                   }))
                 }
               >
+                <option value="" disabled>
+                  Select a project type
+                </option>
                 {projectOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -293,6 +454,9 @@ export default function GravelCalculator() {
                 }))
               }
             >
+              <option value="" disabled>
+                Select a gravel type
+              </option>
               {gravelOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -323,7 +487,7 @@ export default function GravelCalculator() {
             <NumberField
               id="allowance"
               label="Allowance / waste"
-              value={input.allowancePercent}
+              value={input.allowancePercent ?? Number.NaN}
               unit="%"
               error={errorFor('allowancePercent')}
               min={0}
@@ -335,7 +499,7 @@ export default function GravelCalculator() {
             <NumberField
               id="truck-capacity"
               label="Truck capacity"
-              value={input.truckCapacityCubicYards ?? 0}
+              value={input.truckCapacityCubicYards ?? Number.NaN}
               unit="yd³"
               error={errorFor('truckCapacityCubicYards')}
               onChange={(event) =>
@@ -349,7 +513,7 @@ export default function GravelCalculator() {
               <NumberField
                 id="custom-density"
                 label="Custom density"
-                value={input.customDensityTonsPerYard ?? 0}
+                value={input.customDensityTonsPerYard ?? Number.NaN}
                 unit="tons / yd³"
                 error={errorFor('customDensityTonsPerYard')}
                 onChange={(event) =>
@@ -422,28 +586,30 @@ export default function GravelCalculator() {
             </h2>
           </div>
           <span className="text-xs text-ink-soft" aria-live="polite">
-            {validationIssues.length
+            {hasInteracted && validationIssues.length
               ? 'Fix the highlighted field to update.'
-              : 'Calculated locally in your browser.'}
+              : calculation
+                ? 'Calculated locally in your browser.'
+                : 'Enter your measurements to calculate.'}
           </span>
         </div>
-        {calculation && recommendation ? (
+        {calculation && recommendation && calculationInput ? (
           <Results
             calculation={calculation}
             recommendation={recommendation}
             measurementSystem={measurementSystem}
-            input={input}
+            input={calculationInput}
           />
         ) : (
           <div className="rounded-card border border-dashed border-line bg-panel p-8 text-center text-sm text-ink-soft">
-            Enter a valid length, width, depth, and allowance to see your estimate.
+            Enter a project type, gravel type, length, width, and depth to see your estimate.
           </div>
         )}
       </section>
 
       {calculation && recommendation && (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <button
               type="button"
               onClick={copyEstimate}
@@ -453,10 +619,17 @@ export default function GravelCalculator() {
             </button>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={printEstimate}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
             >
               <Printer size={16} aria-hidden="true" /> Print
+            </button>
+            <button
+              type="button"
+              onClick={downloadEstimate}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+            >
+              <Download size={16} aria-hidden="true" /> Download PDF
             </button>
             <button
               type="button"
