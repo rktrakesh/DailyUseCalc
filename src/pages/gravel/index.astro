@@ -43,34 +43,12 @@ const breadcrumbItems = [
   { name: 'Gravel Calculator', path: '/gravel/' },
 ];
 
-const structuredData = [
-  organizationSchema(),
-  breadcrumbSchema(breadcrumbItems),
-  {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'Gravel Calculator',
-    applicationCategory: 'UtilityApplication',
-    operatingSystem: 'Any',
-    description:
-      'Calculate gravel volume, estimated weight, bags, truckloads, and a practical recommended order.',
-    url: 'https://dailyusecalc.com/gravel/',
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-    })),
-  },
-];
+const structuredData = [organizationSchema(), breadcrumbSchema(breadcrumbItems)];
 ---
 
 <BaseLayout
-  title="Gravel Calculator — Estimate Yards, Tons, Bags & Cost | DailyUseCalc"
-  description="Calculate gravel volume in cubic yards, tons, bags, and truckloads. Get an explainable recommended order for driveways, paths, patio bases, and landscaping."
+  title="Gravel Calculator – Cubic Yards, Tons & Bags | DailyUseCalc"
+  description="Calculate gravel in cubic yards, tons, bags, and cost. Enter dimensions, depth, and allowance for driveways, paths, and landscaping."
   canonicalPath="/gravel/"
   structuredData={structuredData}
 >
@@ -195,6 +173,30 @@ const structuredData = [
           ))
         }
       </ol>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Estimate assumptions</p>
+        <h2 class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink">
+          How the gravel estimate is calculated
+        </h2>
+        <div class="mt-6 space-y-4 text-[0.98rem] leading-7 text-ink-soft">
+          <p>
+            Length and width establish the project area, and area multiplied by depth produces the
+            material volume. The calculator converts that volume to cubic yards for ordering.
+          </p>
+          <p>
+            Your selected gravel type supplies the density used to estimate weight. Density varies
+            by material, moisture, and supplier, so confirm it when an exact order matters.
+          </p>
+          <p>
+            The selected allowance is applied before the bulk recommendation is rounded upward to
+            the next 0.1 yd³. Supplier order increments may differ. Optional cost estimates use the
+            pricing and delivery fee you enter.
+          </p>
+        </div>
+      </div>
     </section>
 
     <section

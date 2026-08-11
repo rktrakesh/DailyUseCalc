@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Page Not Found | DailyUseCalc"
+  description="The page you requested could not be found."
+  canonicalPath={false}
+  robots="noindex, nofollow"
+>
+  <section class="site-container max-w-3xl py-20 text-center sm:py-28">
+    <p class="text-sm font-bold text-brand">404</p>
+    <h1 class="mt-2 text-balance text-4xl font-extrabold tracking-[-0.055em] text-ink sm:text-5xl">
+      Page not found
+    </h1>
+    <p class="mx-auto mt-5 max-w-xl text-lg leading-8 text-ink-soft">
+      We couldn’t find the page you’re looking for. It may have moved, or the address may be
+      incorrect.
+    </p>
+    <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+      <a
+        class="inline-flex min-h-11 items-center justify-center rounded-control bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-strong"
+        href="/">Go to DailyUseCalc</a
+      >
+      <a
+        class="inline-flex min-h-11 items-center justify-center rounded-control border border-line bg-panel px-5 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+        href="/gravel/">Open Gravel Calculator</a
+      >
+    </div>
+  </section>
+</BaseLayout>
