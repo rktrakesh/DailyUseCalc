@@ -59,6 +59,6 @@ export function recommendGravel(
     depthGuidance: DEPTH_GUIDANCE[input.projectType],
     materialGuidance: MATERIAL_GUIDANCE[input.gravelType],
     warnings,
-    explanation: `Your measured volume is ${calculation.volumeCubicYards.toFixed(2)} yd³. Adding ${input.allowancePercent}% brings it to ${calculation.adjustedVolumeCubicYards.toFixed(2)} yd³, so we round up to ${calculation.recommendedOrderCubicYards} yd³ for a practical order.`,
+    explanation: `Your measured volume is ${calculation.volumeCubicYards.toFixed(2)} yd³. Adding ${input.allowancePercent}% brings it to ${calculation.adjustedVolumeCubicYards.toFixed(2)} yd³, so we round up to ${calculation.recommendedOrderCubicYards.toFixed(1)} yd³ using minimal upward rounding.`,
   };
 }

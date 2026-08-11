@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { calculateGravel, recommendGravel, validateGravelInput } from '.';
+import {
+  calculateGravel,
+  recommendGravel,
+  recommendedOrderCubicYards,
+  validateGravelInput,
+} from '.';
 import { convertLength } from '../../../lib/units/measurements';
 import type { GravelInput } from './types';
 
@@ -36,7 +41,7 @@ describe('gravel calculation', () => {
     expect(result.volumeCubicFeet).toBeCloseTo(80);
     expect(result.volumeCubicYards).toBeCloseTo(2.96296, 4);
     expect(result.adjustedVolumeCubicYards).toBeCloseTo(3.25926, 4);
-    expect(result.recommendedOrderCubicYards).toBe(4);
+    expect(result.recommendedOrderCubicYards).toBe(3.3);
     expect(result.estimatedWeightTons).toBeCloseTo(4.56296, 4);
     expect(result.bagCount).toBe(176);
     expect(result.truckLoads).toBe(1);
@@ -44,7 +49,7 @@ describe('gravel calculation', () => {
 
   it('uses provided material pricing without inventing a price', () => {
     const result = calculateGravel({ ...baseInput, pricePerCubicYard: 45, deliveryFee: 55 });
-    expect(result.estimatedCost).toBe(235);
+    expect(result.estimatedCost).toBe(203.5);
   });
 
   it('keeps equivalent metric dimensions consistent', () => {
@@ -61,7 +66,7 @@ describe('gravel calculation', () => {
     const bagOnly = calculateGravel({ ...baseInput, bagPrice: 6 });
     const bothPrices = calculateGravel({ ...baseInput, bagPrice: 6, pricePerCubicYard: 45 });
     expect(bagOnly.estimatedCost).toBe(1_056);
-    expect(bothPrices.estimatedCost).toBe(180);
+    expect(bothPrices.estimatedCost).toBe(148.5);
   });
 
   it('rounds truck loads above an exact capacity', () => {
@@ -69,7 +74,7 @@ describe('gravel calculation', () => {
   });
 
   it('uses one truck load when the recommended order exactly matches capacity', () => {
-    expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 4 }).truckLoads).toBe(1);
+    expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 3.3 }).truckLoads).toBe(1);
   });
 
   it('supports fractional and very small valid dimensions', () => {
@@ -89,7 +94,48 @@ describe('gravel calculation', () => {
         allowancePercent: 0,
       }),
     ).toEqual([]);
-    expect(result.recommendedOrderCubicYards).toBe(1);
+    expect(result.recommendedOrderCubicYards).toBe(0.1);
+  });
+});
+
+describe('recommended order rounding', () => {
+  it.each([
+    [4, 4],
+    [4.01, 4.1],
+    [4.07, 4.1],
+    [4.09, 4.1],
+    [4.1, 4.1],
+    [4.11, 4.2],
+    [4.25, 4.3],
+    [4.56, 4.6],
+    [4.88, 4.9],
+    [4.99, 5],
+    [5, 5],
+    [5.01, 5.1],
+    [5.09, 5.1],
+    [5.1, 5.1],
+    [5.11, 5.2],
+  ])('rounds %s yd³ upward to %s yd³', (afterAllowance, expected) => {
+    expect(recommendedOrderCubicYards(afterAllowance)).toBe(expected);
+  });
+
+  it('does not over-round a floating-point representation of an exact tenth', () => {
+    expect(recommendedOrderCubicYards(4.1000000000000005)).toBe(4.1);
+  });
+
+  it('keeps allowance, bag, and truck-load semantics distinct', () => {
+    const zeroAllowance = calculateGravel({ ...baseInput, allowancePercent: 0 });
+    const maximumAllowance = calculateGravel({ ...baseInput, allowancePercent: 50 });
+    const bagAndTruckInput = calculateGravel({
+      ...baseInput,
+      allowancePercent: 10,
+      truckCapacityCubicYards: 3,
+    });
+
+    expect(zeroAllowance.recommendedOrderCubicYards).toBe(3);
+    expect(maximumAllowance.recommendedOrderCubicYards).toBe(4.5);
+    expect(bagAndTruckInput.bagCount).toBe(176);
+    expect(bagAndTruckInput.truckLoads).toBe(2);
   });
 });
 
@@ -141,7 +187,7 @@ describe('validation and recommendations', () => {
     const shallowInput = { ...baseInput, depth: { value: 3, unit: 'in' as const } };
     const calculation = calculateGravel(shallowInput);
     const recommendation = recommendGravel(shallowInput, calculation);
-    expect(recommendation.explanation).toContain('round up to 3 yd³');
+    expect(recommendation.explanation).toContain('round up to 2.5 yd³');
     expect(recommendation.warnings).toEqual(
       expect.arrayContaining([expect.stringContaining('shallow for a driveway')]),
     );

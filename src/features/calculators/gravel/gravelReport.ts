@@ -62,6 +62,7 @@ export function createGravelEstimateReport({
     ? `${number(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`
     : `${number(calculation.surfaceAreaSquareFeet)} ft²`;
   const factor = (1 + input.allowancePercent / 100).toFixed(2);
+  const recommendedOrder = calculation.recommendedOrderCubicYards.toFixed(1);
   return {
     documentTitle: 'dailyusecalc-gravel-estimate',
     reportTitle: 'GRAVEL ESTIMATE',
@@ -70,9 +71,9 @@ export function createGravelEstimateReport({
     projectTypeLabel: projectLabels[input.projectType],
     primaryResult: {
       label: 'RECOMMENDED ORDER',
-      value: `${calculation.recommendedOrderCubicYards} yd³`,
+      value: `${recommendedOrder} yd³`,
       supportingText: 'Practical quantity to order',
-      confirmation: 'Round up for a complete project',
+      confirmation: 'Minimal upward rounding to 0.1 yd³; supplier order increments may vary.',
     },
     summary: [
       { label: 'Gravel type', value: gravelLabels[input.gravelType] },
@@ -99,7 +100,7 @@ export function createGravelEstimateReport({
           { label: 'Total with allowance', value: adjusted },
           {
             label: 'Recommended order',
-            value: `${calculation.recommendedOrderCubicYards} yd³`,
+            value: `${recommendedOrder} yd³`,
             emphasis: true,
           },
           { label: 'Estimated weight', value: weight },
@@ -108,8 +109,8 @@ export function createGravelEstimateReport({
     ],
     customSections: [
       {
-        title: `WHY ${calculation.recommendedOrderCubicYards} YD³?`,
-        contentHtml: `<p>${recommendation.explanation}</p><div class="equation"><div class="equation-box"><strong>${volume}</strong>Calculated need</div><span class="equation-symbol">×</span><div class="equation-box"><strong>${factor}</strong>Allowance factor</div><span class="equation-symbol">=</span><div class="equation-box"><strong>${adjusted}</strong>Total</div></div><div class="equation-result"><strong>${calculation.recommendedOrderCubicYards} yd³</strong>Recommended Order (Rounded Up)</div>`,
+        title: `WHY ${recommendedOrder} YD³?`,
+        contentHtml: `<p>${recommendation.explanation}</p><div class="equation"><div class="equation-box"><strong>${volume}</strong>Calculated need</div><span class="equation-symbol">×</span><div class="equation-box"><strong>${factor}</strong>Allowance factor</div><span class="equation-symbol">=</span><div class="equation-box"><strong>${adjusted}</strong>Total</div></div><div class="equation-result"><strong>${recommendedOrder} yd³</strong>Recommended Order (Rounded to 0.1 yd³)</div>`,
       },
     ],
     additionalDetails: [

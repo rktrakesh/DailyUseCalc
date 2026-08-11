@@ -72,6 +72,13 @@ function formatNumber(value: number, maximumFractionDigits = 2) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(value);
 }
 
+function formatRecommendedOrder(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
 function formatCurrency(value?: number) {
   return value === undefined
     ? 'Add pricing'
@@ -156,7 +163,7 @@ export default function GravelCalculator() {
       return ['Complete the length, width, and depth fields to calculate your estimate.'];
     return [
       `Project: ${projectOptions.find((option) => option.value === calculationInput?.projectType)?.label}`,
-      `Recommended order: ${calculation.recommendedOrderCubicYards} cubic yards`,
+      `Recommended order: ${formatRecommendedOrder(calculation.recommendedOrderCubicYards)} cubic yards`,
       `Calculated need: ${calculation.volumeCubicYards.toFixed(2)} cubic yards`,
       `Allowance: ${calculationInput?.allowancePercent}%`,
       `Estimated weight: ${calculation.estimatedWeightTons.toFixed(2)} tons`,
@@ -702,6 +709,11 @@ function Results({
           : 'Before allowance',
     },
     {
+      label: 'After allowance',
+      value: `${formatNumber(calculation.adjustedVolumeCubicYards)} yd³`,
+      detail: `Includes ${input.allowancePercent}% allowance`,
+    },
+    {
       label: 'Estimated weight',
       value: `${formatNumber(calculation.estimatedWeightTons)} tons`,
       detail: `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
@@ -741,14 +753,16 @@ function Results({
         <article className="rounded-card bg-brand p-5 text-white shadow-card lg:row-span-2">
           <p className="text-sm font-bold text-white/85">Recommended order</p>
           <p className="mt-3 text-4xl font-extrabold tracking-[-0.055em]">
-            {calculation.recommendedOrderCubicYards} <span className="text-2xl">yd³</span>
+            {formatRecommendedOrder(calculation.recommendedOrderCubicYards)}{' '}
+            <span className="text-2xl">yd³</span>
           </p>
           <p className="mt-3 text-sm leading-5 text-white/85">
-            Includes your selected {input.allowancePercent}% allowance and practical rounding.
+            Includes your selected {input.allowancePercent}% allowance and minimal upward rounding.
           </p>
           <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold">
             <Check size={14} aria-hidden="true" /> Ready to order
           </span>
+          <p className="mt-3 text-xs text-white/75">Supplier order increments may vary.</p>
         </article>
         {cards.slice(0, 2).map((card) => (
           <ResultCard key={card.label} {...card} />
@@ -759,7 +773,7 @@ function Results({
       </div>
       <article className="rounded-card border border-brand/30 bg-brand-soft p-5">
         <h3 className="text-base font-extrabold tracking-[-0.025em] text-ink">
-          Why order {calculation.recommendedOrderCubicYards} yd³?
+          Why order {formatRecommendedOrder(calculation.recommendedOrderCubicYards)} yd³?
         </h3>
         <p className="mt-2 text-sm leading-6 text-ink-soft">{recommendation.explanation}</p>
         <p className="mt-3 text-sm font-semibold text-ink">

@@ -14,6 +14,7 @@ const DENSITY_TONS_PER_YARD: Record<Exclude<GravelType, 'custom'>, number> = {
 };
 
 const KILOGRAMS_PER_US_TON = 907.18474;
+const TENTHS_PER_CUBIC_YARD = 10;
 
 export function densityForGravel(input: GravelInput): number {
   if (input.gravelType === 'custom') return input.customDensityTonsPerYard ?? 0;
@@ -21,7 +22,9 @@ export function densityForGravel(input: GravelInput): number {
 }
 
 export function recommendedOrderCubicYards(adjustedVolumeCubicYards: number): number {
-  return Math.ceil(adjustedVolumeCubicYards);
+  const scaledVolume = adjustedVolumeCubicYards * TENTHS_PER_CUBIC_YARD;
+  const floatingPointTolerance = Number.EPSILON * Math.max(1, Math.abs(scaledVolume)) * 10;
+  return Math.ceil(scaledVolume - floatingPointTolerance) / TENTHS_PER_CUBIC_YARD;
 }
 
 export function calculateGravel(input: GravelInput): GravelCalculation {

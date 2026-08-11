@@ -30,9 +30,10 @@ describe('gravel estimate report', () => {
     });
 
     expect(report.projectName).toBe('Gravel Project Estimate');
-    expect(report.primaryResult.value).toBe('25 yd³');
+    expect(report.primaryResult.value).toBe('24.7 yd³');
     expect(report.summary).toContainEqual({ label: 'Allowance', value: '0%' });
-    expect(report.additionalDetails).toContainEqual({ label: 'Estimated cost', value: '$1,180' });
+    expect(report.additionalDetails).toContainEqual({ label: 'Estimated cost', value: '$1,167' });
+    expect(report.customSections?.[0]?.title).toBe('WHY 24.7 YD³?');
     expect(report.footerUrl).toBe('dailyusecalc.com/gravel');
   });
 
