@@ -7,11 +7,19 @@ import SiteHeader from '../components/layout/SiteHeader.astro';
 interface Props {
   title: string;
   description: string;
-  canonicalPath?: string;
+  canonicalPath?: string | false;
+  robots?: string;
   structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
-const { title, description, canonicalPath = Astro.url.pathname, structuredData } = Astro.props;
+const {
+  title,
+  description,
+  canonicalPath = Astro.url.pathname,
+  robots = 'index, follow',
+  structuredData,
+} = Astro.props;
+const metadataPath = typeof canonicalPath === 'string' ? canonicalPath : Astro.url.pathname;
 const schemas = structuredData
   ? Array.isArray(structuredData)
     ? structuredData
@@ -25,16 +33,16 @@ const schemas = structuredData
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content={robots} />
     <meta name="theme-color" content="#fbfcfd" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d171a" media="(prefers-color-scheme: dark)" />
-    <link rel="canonical" href={absoluteUrl(canonicalPath)} />
+    {canonicalPath && <link rel="canonical" href={absoluteUrl(canonicalPath)} />}
     <link rel="icon" type="image/png" href="/dailyusecalc-favicon-64.png" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={absoluteUrl(canonicalPath)} />
+    <meta property="og:url" content={absoluteUrl(metadataPath)} />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />

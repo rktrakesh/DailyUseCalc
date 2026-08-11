@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About DailyUseCalc | Practical Everyday Calculators"
+  description="Learn about DailyUseCalc and our approach to building clear, practical calculators with transparent assumptions for everyday projects."
+  canonicalPath="/about/"
+>
+  <article class="site-container max-w-3xl py-14 sm:py-20">
+    <p class="text-sm font-bold text-brand">DailyUseCalc</p>
+    <h1 class="mt-2 text-balance text-4xl font-extrabold tracking-[-0.055em] text-ink">
+      About DailyUseCalc
+    </h1>
+    <p class="mt-5 text-lg leading-8 text-ink-soft">
+      DailyUseCalc provides practical calculators designed to make everyday estimates easier to
+      understand.
+    </p>
+
+    <div class="mt-10 space-y-8 text-[0.98rem] leading-7 text-ink-soft">
+      <section>
+        <h2 class="text-xl font-extrabold tracking-[-0.03em] text-ink">What DailyUseCalc does</h2>
+        <p class="mt-3">
+          The site currently provides a Gravel Calculator and is designed to grow with additional
+          practical calculators over time. Each tool is intended to help you plan a project before
+          making a purchase or starting work.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-extrabold tracking-[-0.03em] text-ink">
+          How we approach calculations
+        </h2>
+        <p class="mt-3">
+          Instead of showing only a final number, our calculators aim to make the assumptions behind
+          an estimate clear. That includes the measurements, material properties, allowance, and
+          practical ordering guidance that affect a result.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-extrabold tracking-[-0.03em] text-ink">Our goal</h2>
+        <p class="mt-3">
+          We want useful tools to be clear, mobile-friendly, and available without an account for
+          basic calculator use. Results are estimates and should be confirmed with suppliers,
+          contractors, manufacturers, or other appropriate professionals when necessary.
+        </p>
+      </section>
+    </div>
+
+    <a
+      class="mt-10 inline-flex min-h-11 items-center justify-center rounded-control bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-strong"
+      href="/gravel/">Open the Gravel Calculator</a
+    >
+  </article>
+</BaseLayout>
