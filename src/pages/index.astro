@@ -274,7 +274,7 @@ const trustPoints = [
   const cards = [...document.querySelectorAll<HTMLElement>('[data-calculator-card]')];
   const status = document.querySelector<HTMLElement>('[data-search-status]');
 
-  function filterCalculators(query: string) {
+  function filterCalculators(query: string, scrollToResults = false) {
     const normalized = query.trim().toLowerCase();
     let visible = 0;
     cards.forEach((card) => {
@@ -287,7 +287,7 @@ const trustPoints = [
         ? `${visible} calculator${visible === 1 ? '' : 's'} found for “${query.trim()}”.`
         : '';
     }
-    if (normalized) {
+    if (scrollToResults && normalized) {
       document.querySelector('#popular-calculators')?.scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
         block: 'start',
@@ -297,7 +297,7 @@ const trustPoints = [
 
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
-    filterCalculators(input?.value || '');
+    filterCalculators(input?.value || '', true);
   });
   input?.addEventListener('input', () => filterCalculators(input.value));
   document.querySelectorAll<HTMLButtonElement>('[data-popular-search]').forEach((button) => {
