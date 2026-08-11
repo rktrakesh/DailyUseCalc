@@ -61,7 +61,7 @@ function toCalculationInput(input: GravelFormInput): GravelInput | undefined {
 }
 
 function numberFromEvent(event: ChangeEvent<HTMLInputElement>) {
-  return Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0;
+  return Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : Number.NaN;
 }
 
 function optionalNumberFromEvent(event: ChangeEvent<HTMLInputElement>) {
@@ -83,7 +83,7 @@ function formatCurrency(value?: number) {
 }
 
 function inputClass(invalid = false) {
-  return `h-11 w-full rounded-control border bg-panel px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 ${invalid ? 'border-danger' : 'border-line'}`;
+  return `h-11 w-full rounded-control border bg-panel px-3 text-base text-ink outline-none transition-colors placeholder:text-ink focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 sm:text-sm ${invalid ? 'border-danger' : 'border-line'}`;
 }
 
 export default function GravelCalculator() {
@@ -255,7 +255,7 @@ export default function GravelCalculator() {
             <button
               type="button"
               onClick={clearInputs}
-              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-panel-muted"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-panel-muted"
             >
               <RotateCcw size={13} aria-hidden="true" /> Clear
             </button>
@@ -369,7 +369,7 @@ export default function GravelCalculator() {
           <p className="mt-3 text-xs text-ink-soft">
             {measurementSystem === 'imperial'
               ? 'Measure at the widest points. Driveways often need a compacted gravel depth of 4–6 inches.'
-              : 'Your existing values were converted, not relabeled, when you switched units.'}
+              : 'Metric measurements · US ordering units (cubic yards and tons).'}
           </p>
         </fieldset>
 
@@ -562,7 +562,7 @@ export default function GravelCalculator() {
               onClick={downloadEstimate}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
             >
-              <Download size={16} aria-hidden="true" /> Download PDF
+              <Download size={16} aria-hidden="true" /> Save as PDF
             </button>
             <button
               type="button"
@@ -610,11 +610,13 @@ function NumberField({
           className={`${inputClass(Boolean(error))} pr-16`}
           type="number"
           inputMode="decimal"
+          autoComplete="off"
           min={min ?? 0}
           max={max}
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
+          onWheel={(event) => event.currentTarget.blur()}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -656,11 +658,13 @@ function OptionalNumberField({
           className={`${inputClass(Boolean(error))} pr-16`}
           type="number"
           inputMode="decimal"
+          autoComplete="off"
           min="0"
           step="any"
           value={value ?? ''}
           placeholder="Optional"
           onChange={onChange}
+          onWheel={(event) => event.currentTarget.blur()}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -703,10 +707,22 @@ function Results({
       detail: `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
     },
     {
+      label: 'Density used',
+      value: `${formatNumber(calculation.densityTonsPerYard)} tons / yd³`,
+      detail:
+        input.gravelType === 'custom'
+          ? 'Custom density'
+          : 'Typical estimate — confirm with your supplier',
+    },
+    {
       label: 'Estimated cost',
       value: formatCurrency(calculation.estimatedCost),
       detail:
-        calculation.estimatedCost === undefined ? 'Add optional pricing' : 'Includes delivery fee',
+        calculation.estimatedCost === undefined
+          ? 'Add optional pricing'
+          : input.pricePerCubicYard !== undefined
+            ? 'Bulk pricing used; includes delivery fee'
+            : 'Bag pricing used; includes delivery fee',
     },
     {
       label: 'Truck loads',

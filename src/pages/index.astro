@@ -18,13 +18,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { organizationSchema } from '../lib/seo/schema';
 
 const categories = [
-  { name: 'Home Improvement', icon: 'home' },
-  { name: 'Finance', icon: 'finance' },
-  { name: 'Automotive', icon: 'automotive' },
-  { name: 'Garden', icon: 'garden' },
-  { name: 'Construction', icon: 'construction' },
-  { name: 'Health', icon: 'health' },
-  { name: 'Utilities', icon: 'utilities' },
+  { name: 'Home Improvement', icon: 'home', available: true },
+  { name: 'Finance', icon: 'finance', available: false },
+  { name: 'Automotive', icon: 'automotive', available: false },
+  { name: 'Garden', icon: 'garden', available: false },
+  { name: 'Construction', icon: 'construction', available: false },
+  { name: 'Health', icon: 'health', available: false },
+  { name: 'Utilities', icon: 'utilities', available: false },
 ] as const;
 
 const popularSearches = ['Gravel', 'Concrete', 'Paint', 'Mortgage', 'Tile', 'Retirement'];
@@ -118,17 +118,28 @@ const trustPoints = [
     <h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">Browse by category</h2>
     <div class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
       {
-        categories.map((category) => (
-          <a
-            href="#popular-calculators"
-            class="group flex min-h-32 flex-col items-center justify-center gap-3 rounded-card border border-line bg-panel px-3 text-center shadow-card transition-[border-color,transform] hover:-translate-y-0.5 hover:border-brand/45"
-          >
-            <span class="text-brand transition-transform group-hover:scale-110">
-              <CategoryIcon name={category.icon} />
-            </span>
-            <span class="text-xs font-bold text-ink">{category.name}</span>
-          </a>
-        ))
+        categories.map((category) =>
+          category.available ? (
+            <a
+              href="#popular-calculators"
+              class="group flex min-h-32 flex-col items-center justify-center gap-3 rounded-card border border-line bg-panel px-3 text-center shadow-card transition-[border-color,transform] hover:-translate-y-0.5 hover:border-brand/45"
+            >
+              <span class="text-brand transition-transform group-hover:scale-110">
+                <CategoryIcon name={category.icon} />
+              </span>
+              <span class="text-xs font-bold text-ink">{category.name}</span>
+              <span class="text-[0.65rem] font-semibold text-brand">Available now</span>
+            </a>
+          ) : (
+            <div class="flex min-h-32 flex-col items-center justify-center gap-3 rounded-card border border-line bg-panel px-3 text-center shadow-card">
+              <span class="text-ink-soft">
+                <CategoryIcon name={category.icon} />
+              </span>
+              <span class="text-xs font-bold text-ink">{category.name}</span>
+              <span class="text-[0.65rem] font-semibold text-ink-soft">Coming soon</span>
+            </div>
+          ),
+        )
       }
     </div>
   </section>
@@ -165,7 +176,7 @@ const trustPoints = [
       <div class="text-center">
         <p class="text-sm font-bold text-brand">Built for real projects</p>
         <h2 class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink">
-          Why thousands trust DailyUseCalc
+          Why use DailyUseCalc
         </h2>
       </div>
       <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

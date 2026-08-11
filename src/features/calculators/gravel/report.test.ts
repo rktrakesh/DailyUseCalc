@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculateGravel } from './calculator';
 import { recommendGravel } from './recommendations';
 import { createGravelEstimateReport } from './gravelReport';
+import { createEstimateReportHtml } from '../../../components/reports/EstimateReport';
 import type { GravelInput } from './types';
 
 const input: GravelInput = {
@@ -55,5 +56,20 @@ describe('gravel estimate report', () => {
       label: 'Notes',
       value: 'Base layer for the driveway',
     });
+  });
+
+  it('escapes user-provided notes in the rendered report', () => {
+    const calculation = calculateGravel(input);
+    const report = createGravelEstimateReport({
+      calculation,
+      input,
+      recommendation: recommendGravel(input, calculation),
+      measurementSystem: 'imperial',
+      notes: '<img src=x onerror=alert(1)>',
+    });
+
+    const html = createEstimateReportHtml(report);
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
   });
 });
