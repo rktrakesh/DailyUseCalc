@@ -3,7 +3,16 @@ import { ArrowRight, ChevronRight, CircleHelp, Lightbulb } from 'lucide-react';
 import AdSlot from '../../components/common/AdSlot.astro';
 import ConcreteCalculator from '../../features/calculators/concrete/ConcreteCalculator';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { breadcrumbSchema, organizationSchema } from '../../lib/seo/schema';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+
+const title = 'Concrete Calculator – Yards, Bags & Cost | DailyUseCalc';
+const description =
+  'Calculate concrete for slabs, circular pads, columns, and post holes in cubic yards and bags, including allowance, weight, and optional cost.';
 
 const breadcrumbItems = [
   { name: 'Home', path: '/' },
@@ -42,12 +51,17 @@ const faqs = [
       'Yes. Switching to Metric converts the current dimensions, while the results retain common purchasing conversions for easy supplier comparison.',
   },
 ];
-const structuredData = [organizationSchema(), breadcrumbSchema(breadcrumbItems)];
+const structuredData = [
+  organizationSchema(),
+  breadcrumbSchema(breadcrumbItems),
+  webApplicationSchema({ name: 'Concrete Calculator', description, path: '/concrete/' }),
+  faqPageSchema(faqs),
+];
 ---
 
 <BaseLayout
-  title="Concrete Calculator — How Much Concrete Do I Need? | DailyUseCalc"
-  description="Calculate concrete in cubic yards, cubic feet, cubic meters, liters, bags, weight, and optional ready-mix or bag cost."
+  title={title}
+  description={description}
   canonicalPath="/concrete/"
   structuredData={structuredData}
 >
@@ -66,7 +80,7 @@ const structuredData = [organizationSchema(), breadcrumbSchema(breadcrumbItems)]
     </nav>
     <div class="mt-3 max-w-2xl">
       <h1 class="text-balance text-3xl font-extrabold tracking-[-0.05em] text-ink sm:text-4xl">
-        Concrete calculator
+        Concrete Calculator
       </h1><p class="mt-1.5 text-sm leading-5 text-ink-soft">
         Calculate how much concrete you need for slabs, circular pads, columns, piers, and post
         holes, including bags, weight, allowance, and optional cost.
