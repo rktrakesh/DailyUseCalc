@@ -9,6 +9,7 @@ export const MAX_READY_MIX_PRICE = 1_000_000;
 export const MAX_DELIVERY_FEE = 1_000_000;
 export const MAX_BAG_PRICE = 100_000;
 export const MAX_BAG_YIELD_CUBIC_FEET = 100;
+export const MAX_CUSTOM_BAG_WEIGHT_POUNDS = 10_000;
 
 function dimension(
   value: DimensionInput,
@@ -92,6 +93,20 @@ export function validateConcreteInput(input: ConcreteInput): ConcreteValidationI
   );
   optional(input.bagPrice, 'bagPrice', 'Bag price', MAX_BAG_PRICE, issues);
   if (input.bagPreset === 'custom') {
+    const weightInPounds =
+      input.customBagWeight === undefined
+        ? undefined
+        : input.customBagWeight * (input.customBagWeightUnit === 'kg' ? 2.2046226218 : 1);
+    if (
+      weightInPounds !== undefined &&
+      (!Number.isFinite(weightInPounds) ||
+        weightInPounds <= 0 ||
+        weightInPounds > MAX_CUSTOM_BAG_WEIGHT_POUNDS)
+    )
+      issues.push({
+        field: 'customBagWeight',
+        message: 'Bag weight must be greater than zero and no more than 10,000 lb.',
+      });
     const value = input.customBagYieldCubicFeet;
     if (
       value === undefined ||

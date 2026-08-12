@@ -15,6 +15,8 @@ export function createDefaultConcreteInput(currency: CurrencyCode = 'USD'): Conc
     allowancePercent: 10,
     currency,
     bagPreset: '80-lb',
+    customBagWeightUnit: 'lb',
+    customBagYieldUnit: 'ft³',
   };
 }
 

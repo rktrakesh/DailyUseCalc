@@ -3,6 +3,7 @@ import { createReportFilename } from '../../../lib/reports/reportFilename';
 import { formatMoney } from '../gravel/currencies';
 import { adjustedConcreteVolumeConversions } from './calculator';
 import { concreteBagPreset } from './bagPresets';
+import { concreteBagSizeLabel } from './bagUnits';
 import type {
   ConcreteCalculation,
   ConcreteInput,
@@ -35,6 +36,11 @@ export function createConcreteEstimateReport({
   const reportGeneratedAt = generatedAt ?? new Date();
   const adjusted = adjustedConcreteVolumeConversions(calculation.adjustedVolumeCubicYards);
   const preset = concreteBagPreset(input.bagPreset);
+  const bagSize = concreteBagSizeLabel({
+    presetLabel: preset.label,
+    customWeight: input.customBagWeight,
+    customWeightUnit: input.customBagWeightUnit,
+  });
   const measurements: ReportMetric[] =
     input.concreteMode === 'slab'
       ? [
@@ -86,7 +92,7 @@ export function createConcreteEstimateReport({
             value: formatMoney(input.readyMixDeliveryFee, input.currency, undefined, 2),
           },
         ]),
-    { label: 'Bag size', value: preset.label },
+    { label: 'Bag size', value: bagSize ?? 'Custom' },
     { label: 'Bag yield', value: `${number(calculation.bagYieldCubicFeet, 3)} ft³ / bag` },
     { label: 'Bags', value: `${number(calculation.bagCount, 0)} bags` },
     ...(input.bagPrice === undefined

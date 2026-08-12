@@ -94,6 +94,33 @@ describe('concrete report', () => {
       ]),
     );
   });
+  it.each([
+    ['30-kg', undefined, undefined, '30 kg'],
+    ['custom', 25, 'kg', '25 kg'],
+    ['custom', undefined, undefined, 'Custom'],
+  ] as const)('reports purchasing details for %s bags', (bagPreset, weight, unit, expected) => {
+    const input = {
+      ...createDefaultConcreteInput(),
+      bagPreset,
+      customBagYieldCubicFeet: bagPreset === 'custom' ? 0.5 : undefined,
+      customBagWeight: weight,
+      customBagWeightUnit: unit ?? ('lb' as const),
+    };
+    const calculation = calculateConcrete(input);
+    const report = createConcreteEstimateReport({
+      input,
+      calculation,
+      recommendation: recommendConcrete(input, calculation),
+      measurementSystem: 'imperial',
+    });
+    expect(report.additionalDetails).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Bag size', value: expected }),
+        expect.objectContaining({ label: 'Bag yield', value: '0.5 ft³ / bag' }),
+        expect.objectContaining({ label: 'Bags', value: '147 bags' }),
+      ]),
+    );
+  });
   it('omits empty warnings and retains HTML escaping', () => {
     const input = { ...createDefaultConcreteInput(), allowancePercent: 10 };
     const calculation = calculateConcrete(input);

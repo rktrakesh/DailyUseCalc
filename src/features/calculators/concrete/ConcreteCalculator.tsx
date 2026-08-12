@@ -15,11 +15,15 @@ import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportSer
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from '../gravel/currencies';
 import {
   adjustedConcreteVolumeConversions,
+  bagYieldFromCubicFeet,
+  bagYieldToCubicFeet,
   calculateConcrete,
   CONCRETE_BAG_PRESETS,
   CONCRETE_LENGTH_UNITS,
   convertConcreteDimension,
   convertConcreteMeasurementSystem,
+  convertBagWeight,
+  concreteBagSizeLabel,
   createClearedConcreteInput,
   createDefaultConcreteInput,
   recommendConcrete,
@@ -27,7 +31,14 @@ import {
 } from './index';
 import { concreteBagPreset } from './bagPresets';
 import { createConcreteEstimateReport } from './concreteReport';
-import type { ConcreteBagPresetId, ConcreteInput, ConcreteMode, MeasurementSystem } from './types';
+import type {
+  ConcreteBagPresetId,
+  ConcreteBagWeightUnit,
+  ConcreteBagYieldUnit,
+  ConcreteInput,
+  ConcreteMode,
+  MeasurementSystem,
+} from './types';
 
 const modes: Array<{ value: ConcreteMode; label: string }> = [
   { value: 'slab', label: 'Slab / Rectangle' },
@@ -71,11 +82,6 @@ export default function ConcreteCalculator() {
     [calculation, submitted],
   );
   const errorFor = (field: string) => issues.find((issue) => issue.field === field)?.message;
-  const selectedBagPreset = concreteBagPreset(input.bagPreset);
-  const bagAssumptionReminder =
-    input.bagPreset === 'custom'
-      ? 'Bag estimate uses your custom bag yield. You can edit it in “Bagged concrete.”'
-      : `Bag estimate uses the ${selectedBagPreset.label} preset${input.bagPreset === '80-lb' ? ' by default' : ''}. You can change it in “Bagged concrete.”`;
 
   function updateSystem(next: MeasurementSystem) {
     if (next === system) return;
@@ -278,7 +284,7 @@ export default function ConcreteCalculator() {
             />
           </div>
         </fieldset>
-        <div className="mt-3 grid max-w-[20.5rem] grid-cols-2 gap-2.5">
+        <div className="mt-3 grid grid-cols-2 gap-2.5 @2xl/calculator:max-w-[31.5rem] @2xl/calculator:grid-cols-3">
           <SelectField
             label="Extra allowance"
             name="allowance"
@@ -310,7 +316,68 @@ export default function ConcreteCalculator() {
               </option>
             ))}
           </SelectField>
+          <SelectField
+            label="Bag size"
+            name="bag-preset"
+            value={input.bagPreset}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, bagPreset: value as ConcreteBagPresetId }))
+            }
+          >
+            {CONCRETE_BAG_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.label}
+              </option>
+            ))}
+          </SelectField>
         </div>
+        {input.bagPreset === 'custom' && (
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 @2xl/calculator:max-w-[31.5rem]">
+            <OptionalNumberWithUnitField
+              id="custom-bag-weight"
+              label="Bag weight (optional)"
+              value={input.customBagWeight}
+              unit={input.customBagWeightUnit}
+              units={['lb', 'kg']}
+              error={errorFor('customBagWeight')}
+              onValueChange={(value) =>
+                setInput((current) => ({ ...current, customBagWeight: value }))
+              }
+              onUnitChange={(unit) =>
+                setInput((current) => ({
+                  ...current,
+                  customBagWeight: convertBagWeight(
+                    current.customBagWeight,
+                    current.customBagWeightUnit,
+                    unit as ConcreteBagWeightUnit,
+                  ),
+                  customBagWeightUnit: unit as ConcreteBagWeightUnit,
+                }))
+              }
+            />
+            <OptionalNumberWithUnitField
+              id="custom-bag-yield"
+              label="Yield per bag"
+              value={bagYieldFromCubicFeet(input.customBagYieldCubicFeet, input.customBagYieldUnit)}
+              unit={input.customBagYieldUnit}
+              units={['ft³', 'L']}
+              error={errorFor('customBagYieldCubicFeet')}
+              onValueChange={(value) =>
+                setInput((current) => ({
+                  ...current,
+                  customBagYieldCubicFeet: bagYieldToCubicFeet(value, current.customBagYieldUnit),
+                }))
+              }
+              onUnitChange={(unit) =>
+                setInput((current) => ({
+                  ...current,
+                  customBagYieldUnit: unit as ConcreteBagYieldUnit,
+                }))
+              }
+              required
+            />
+          </div>
+        )}
         <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-2">
           <OptionalGroup title="Ready-mix price (optional)">
             <OptionalNumberField
@@ -340,36 +407,7 @@ export default function ConcreteCalculator() {
               }
             />
           </OptionalGroup>
-          <OptionalGroup title="Bagged concrete">
-            <SelectField
-              label="Bag size"
-              name="bag-preset"
-              value={input.bagPreset}
-              onChange={(value) =>
-                setInput((current) => ({ ...current, bagPreset: value as ConcreteBagPresetId }))
-              }
-            >
-              {CONCRETE_BAG_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.label}
-                </option>
-              ))}
-            </SelectField>
-            {input.bagPreset === 'custom' && (
-              <OptionalNumberField
-                id="custom-bag-yield"
-                label="Yield per bag"
-                value={input.customBagYieldCubicFeet}
-                unit="ft³ / bag"
-                error={errorFor('customBagYieldCubicFeet')}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    customBagYieldCubicFeet: optionalNumberFromEvent(event),
-                  }))
-                }
-              />
-            )}
+          <OptionalGroup title="Bag pricing (optional)">
             <OptionalNumberField
               id="bag-price"
               label="Price per bag"
@@ -380,12 +418,8 @@ export default function ConcreteCalculator() {
                 setInput((current) => ({ ...current, bagPrice: optionalNumberFromEvent(event) }))
               }
             />
-            <p className="text-[0.68rem] leading-4 text-ink-soft">
-              Typical yield — check your product bag for exact yield.
-            </p>
           </OptionalGroup>
         </div>
-        <p className="mt-1.5 text-[0.68rem] leading-4 text-ink-soft">{bagAssumptionReminder}</p>
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.42fr)] gap-2">
           <button
             type="button"
@@ -625,6 +659,70 @@ function OptionalNumberField({
   );
 }
 
+function OptionalNumberWithUnitField({
+  id,
+  label,
+  value,
+  unit,
+  units,
+  error,
+  onValueChange,
+  onUnitChange,
+  required = false,
+}: {
+  id: string;
+  label: string;
+  value?: number;
+  unit: string;
+  units: readonly string[];
+  error?: string;
+  onValueChange: (value: number | undefined) => void;
+  onUnitChange: (unit: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
+      {label}
+      <span className="grid grid-cols-[minmax(0,1fr)_3.75rem]">
+        <input
+          id={id}
+          name={id}
+          className={`${controlClass(Boolean(error))} rounded-r-none tabular-nums`}
+          type="number"
+          inputMode="decimal"
+          autoComplete="off"
+          min="0"
+          step="any"
+          value={value === undefined ? '' : Number(value.toPrecision(10))}
+          placeholder={required ? 'Required' : 'Optional'}
+          onChange={(event) => onValueChange(optionalNumberFromEvent(event))}
+          onWheel={(event) => event.currentTarget.blur()}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          required={required}
+        />
+        <select
+          aria-label={`${label} unit`}
+          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-1.5 text-xs font-semibold text-ink outline-none focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-1 sm:h-9"
+          value={unit}
+          onChange={(event) => onUnitChange(event.target.value)}
+        >
+          {units.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </span>
+      {error && (
+        <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
+          {error}
+        </span>
+      )}
+    </label>
+  );
+}
+
 function ResultPanel({
   calculation,
   recommendation,
@@ -648,6 +746,11 @@ function ResultPanel({
 }) {
   const adjusted = adjustedConcreteVolumeConversions(calculation.adjustedVolumeCubicYards);
   const preset = concreteBagPreset(input.bagPreset);
+  const bagSize = concreteBagSizeLabel({
+    presetLabel: preset.label,
+    customWeight: input.customBagWeight,
+    customWeightUnit: input.customBagWeightUnit,
+  });
   const area = calculation.surfaceAreaSquareFeet;
   const details = [
     calculation.estimatedReadyMixCost === undefined
@@ -658,10 +761,9 @@ function ResultPanel({
         },
     {
       label: 'Bags',
-      value:
-        input.bagPreset === 'custom'
-          ? `${formatNumber(calculation.bagCount, 0)} bags`
-          : `${formatNumber(calculation.bagCount, 0)} × ${preset.label} bags`,
+      value: bagSize
+        ? `${formatNumber(calculation.bagCount, 0)} × ${bagSize} bags`
+        : `${formatNumber(calculation.bagCount, 0)} bags`,
     },
     calculation.estimatedBagCost === undefined
       ? undefined

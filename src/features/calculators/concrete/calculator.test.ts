@@ -141,7 +141,7 @@ describe('bags and pricing', () => {
     ['50-lb', 0.375, 196],
     ['60-lb', 0.45, 163],
     ['80-lb', 0.6, 123],
-    ['90-lb', 0.675, 109],
+    ['30-kg', 0.5, 147],
   ] as const)('uses the %s preset yield', (bagPreset, yieldFt3, expectedBags) => {
     const result = calculateConcrete({ ...base, bagPreset });
     expect(result.bagYieldCubicFeet).toBe(yieldFt3);
@@ -152,6 +152,23 @@ describe('bags and pricing', () => {
       calculateConcrete({ ...base, bagPreset: 'custom', customBagYieldCubicFeet: 0.5 })
         .bagYieldCubicFeet,
     ).toBe(0.5));
+  it('uses custom yield rather than informational custom bag weight', () => {
+    const first = calculateConcrete({
+      ...base,
+      bagPreset: 'custom',
+      customBagYieldCubicFeet: 0.5,
+      customBagWeight: 25,
+      customBagWeightUnit: 'kg',
+    });
+    const second = calculateConcrete({
+      ...base,
+      bagPreset: 'custom',
+      customBagYieldCubicFeet: 0.5,
+      customBagWeight: 80,
+      customBagWeightUnit: 'lb',
+    });
+    expect(first.bagCount).toBe(second.bagCount);
+  });
   it.each([
     [27, 0.6, 45],
     [20, 0.6, 34],
@@ -238,6 +255,18 @@ describe('concrete validation and defaults', () => {
         validateConcreteInput({ ...base, bagPreset: 'custom', customBagYieldCubicFeet }).some(
           (issue) => issue.field === 'customBagYieldCubicFeet',
         ),
+      ).toBe(true),
+  );
+  it.each([0, -1, 10_001, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid optional custom bag weight %s',
+    (customBagWeight) =>
+      expect(
+        validateConcreteInput({
+          ...base,
+          bagPreset: 'custom',
+          customBagYieldCubicFeet: 0.5,
+          customBagWeight,
+        }).some((issue) => issue.field === 'customBagWeight'),
       ).toBe(true),
   );
   it('clears measurements and preserves deterministic selectors', () => {

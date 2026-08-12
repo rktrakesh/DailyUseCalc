@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { toFeet } from '../../../lib/units/measurements';
 import {
   calculateConcrete,
+  bagYieldFromCubicFeet,
+  bagYieldToCubicFeet,
+  convertBagWeight,
   convertConcreteDimension,
   convertConcreteMeasurementSystem,
   createDefaultConcreteInput,
@@ -9,6 +12,18 @@ import {
 } from '.';
 
 describe('concrete form unit conversion', () => {
+  it('converts custom bag weight between pounds and kilograms without changing mass', () => {
+    const kilograms = convertBagWeight(80, 'lb', 'kg');
+    expect(kilograms).toBeCloseTo(36.2874, 4);
+    expect(convertBagWeight(kilograms, 'kg', 'lb')).toBeCloseTo(80, 8);
+  });
+
+  it('converts custom bag yield display units while preserving cubic feet internally', () => {
+    const liters = bagYieldFromCubicFeet(0.5, 'L');
+    expect(liters).toBeCloseTo(14.1584, 4);
+    expect(bagYieldToCubicFeet(liters, 'L')).toBeCloseTo(0.5, 10);
+  });
+
   it.each([
     [{ value: 20, unit: 'ft' as const }, 'in' as const, 240],
     [{ value: 4, unit: 'in' as const }, 'ft' as const, 0.33333333],

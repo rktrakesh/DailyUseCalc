@@ -3,7 +3,9 @@ import type { CurrencyCode } from '../gravel/currencies';
 
 export type ConcreteMode = 'slab' | 'circular-pad' | 'column' | 'post-hole';
 export type MeasurementSystem = 'imperial' | 'metric';
-export type ConcreteBagPresetId = '40-lb' | '50-lb' | '60-lb' | '80-lb' | '90-lb' | 'custom';
+export type ConcreteBagPresetId = '40-lb' | '50-lb' | '60-lb' | '80-lb' | '30-kg' | 'custom';
+export type ConcreteBagWeightUnit = 'lb' | 'kg';
+export type ConcreteBagYieldUnit = 'ft³' | 'L';
 
 export interface DimensionInput {
   value: number;
@@ -25,7 +27,10 @@ export interface ConcreteInput {
   readyMixPricePerCubicYard?: number;
   readyMixDeliveryFee?: number;
   bagPreset: ConcreteBagPresetId;
+  customBagWeight?: number;
+  customBagWeightUnit: ConcreteBagWeightUnit;
   customBagYieldCubicFeet?: number;
+  customBagYieldUnit: ConcreteBagYieldUnit;
   bagPrice?: number;
 }
 
