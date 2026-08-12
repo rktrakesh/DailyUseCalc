@@ -23,35 +23,8 @@ export const currencies = [
 
 export type CurrencyCode = (typeof currencies)[number][0];
 
-const regionCurrencies: Record<string, CurrencyCode> = {
-  US: 'USD',
-  GB: 'GBP',
-  IN: 'INR',
-  CA: 'CAD',
-  AU: 'AUD',
-  NZ: 'NZD',
-  JP: 'JPY',
-  CN: 'CNY',
-  HK: 'HKD',
-  DE: 'EUR',
-  FR: 'EUR',
-  IT: 'EUR',
-  ES: 'EUR',
-  CH: 'CHF',
-  AE: 'AED',
-  SA: 'SAR',
-  BR: 'BRL',
-  MX: 'MXN',
-  KR: 'KRW',
-  SE: 'SEK',
-  NO: 'NOK',
-  SG: 'SGD',
-  ZA: 'ZAR',
-};
-
-export function currencyForLocale(locale: string): CurrencyCode {
-  const region = locale.replace('_', '-').split('-')[1]?.toUpperCase();
-  return (region && regionCurrencies[region]) || 'USD';
+export function isCurrencyCode(value: string | null): value is CurrencyCode {
+  return currencies.some(([code]) => code === value);
 }
 
 export function formatMoney(

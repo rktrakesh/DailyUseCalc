@@ -5,7 +5,7 @@ import { createGravelEstimateReport } from './gravelReport';
 import { createEstimateReportHtml } from '../../../components/reports/EstimateReport';
 import { createPdfFilename, createReportFilename } from '../../../lib/reports/reportFilename';
 import type { GravelInput } from './types';
-import { currencyForLocale, formatMoney } from './currencies';
+import { formatMoney, isCurrencyCode } from './currencies';
 
 const input: GravelInput = {
   inputMode: 'dimensions',
@@ -61,11 +61,11 @@ describe('gravel estimate report', () => {
     );
   });
 
-  it('maps locale defaults and formats currencies without conversion', () => {
-    expect(currencyForLocale('en-US')).toBe('USD');
-    expect(currencyForLocale('en-IN')).toBe('INR');
-    expect(currencyForLocale('en-GB')).toBe('GBP');
-    expect(currencyForLocale('xx-ZZ')).toBe('USD');
+  it('validates saved preferences and formats currencies without conversion', () => {
+    expect(isCurrencyCode('USD')).toBe(true);
+    expect(isCurrencyCode('INR')).toBe(true);
+    expect(isCurrencyCode('XYZ')).toBe(false);
+    expect(isCurrencyCode(null)).toBe(false);
     expect(formatMoney(1234.5, 'USD', 'en-US')).toContain('$');
     expect(formatMoney(1234.5, 'EUR', 'de-DE')).toContain('€');
     expect(formatMoney(1234.5, 'INR', 'en-IN')).toContain('₹');

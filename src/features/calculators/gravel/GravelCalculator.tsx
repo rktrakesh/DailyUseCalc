@@ -14,7 +14,7 @@ import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
 import { createGravelEstimateReport } from './gravelReport';
-import { currencies, currencyForLocale, formatMoney, type CurrencyCode } from './currencies';
+import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
 import type {
   AreaShape,
   GravelInput,
@@ -42,6 +42,8 @@ const gravelOptions: Array<{ value: GravelType; label: string }> = [
   { value: 'granite', label: 'Granite Gravel' },
   { value: 'custom', label: 'Custom Material' },
 ];
+
+const CURRENCY_STORAGE_KEY = 'duc-gravel-currency';
 
 type GravelFormInput = Omit<GravelInput, 'allowancePercent' | 'gravelType' | 'projectType'> & {
   allowancePercent?: number;
@@ -109,7 +111,10 @@ export default function GravelCalculator() {
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   useEffect(() => {
-    setInput((current) => ({ ...current, currency: currencyForLocale(navigator.language) }));
+    const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
+    if (isCurrencyCode(savedCurrency)) {
+      setInput((current) => ({ ...current, currency: savedCurrency }));
+    }
   }, []);
   const calculationInput = useMemo(() => toCalculationInput(input), [input]);
   const validationIssues = useMemo(
@@ -183,6 +188,11 @@ export default function GravelCalculator() {
     setMeasurementSystem(nextSystem);
   }
 
+  function updateCurrency(currency: CurrencyCode) {
+    setInput((current) => ({ ...current, currency }));
+    localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+  }
+
   function estimateLines() {
     if (!calculation || !recommendation)
       return [
@@ -210,7 +220,7 @@ export default function GravelCalculator() {
 
   function clearInputs() {
     const clearedInput = createEmptyInput();
-    clearedInput.currency = currencyForLocale(navigator.language);
+    clearedInput.currency = input.currency;
     setInput(clearedInput);
     setMeasurementSystem('imperial');
     setHasInteracted(false);
@@ -309,8 +319,8 @@ export default function GravelCalculator() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1.5 text-sm font-bold text-ink">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.72fr)] md:gap-4">
+          <label className="col-span-2 grid gap-1.5 text-sm font-bold text-ink md:col-span-1">
             What are you building?
             <span className="relative">
               <select
@@ -343,7 +353,7 @@ export default function GravelCalculator() {
               This shapes practical depth guidance.
             </span>
           </label>
-          <fieldset>
+          <fieldset className="min-w-0">
             <legend className="text-sm font-bold text-ink">Measurement system</legend>
             <div
               className="mt-1.5 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
@@ -363,15 +373,24 @@ export default function GravelCalculator() {
                     checked={measurementSystem === system}
                     onChange={() => updateSystem(system)}
                   />
-                  {system === 'imperial' ? 'Imperial (US)' : 'Metric'}
+                  {system === 'imperial' ? (
+                    <>
+                      <span className="md:hidden">Imperial</span>
+                      <span className="hidden md:inline">Imperial (US)</span>
+                    </>
+                  ) : (
+                    'Metric'
+                  )}
                 </label>
               ))}
             </div>
           </fieldset>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)] md:items-start">
-          <fieldset className="md:max-w-[28rem]">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(9rem,12rem)] md:items-start md:gap-4">
+          <fieldset
+            className={`min-w-0 ${input.inputMode === 'dimensions' ? '' : 'col-span-2 md:col-span-1'} md:max-w-[28rem]`}
+          >
             <legend className="text-sm font-bold text-ink">Project size</legend>
             <div
               className="mt-1.5 grid grid-cols-3 rounded-control border border-line bg-surface p-1"
@@ -391,7 +410,10 @@ export default function GravelCalculator() {
                     checked={input.inputMode === mode}
                     onChange={() => setInput((current) => ({ ...current, inputMode: mode }))}
                   />
-                  {mode[0].toUpperCase() + mode.slice(1)}
+                  <span className="hidden md:inline">{mode[0].toUpperCase() + mode.slice(1)}</span>
+                  <span className="md:hidden">
+                    {mode === 'dimensions' ? 'Dim.' : mode === 'volume' ? 'Vol.' : 'Area'}
+                  </span>
                 </label>
               ))}
             </div>
@@ -424,6 +446,23 @@ export default function GravelCalculator() {
               </div>
             </fieldset>
           )}
+
+          <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink">
+            Currency
+            <select
+              name="currency"
+              aria-label="Currency"
+              className={`${inputClass()} bg-panel px-2 sm:px-3`}
+              value={input.currency}
+              onChange={(event) => updateCurrency(event.target.value as CurrencyCode)}
+            >
+              {currencies.map(([code, symbol, name]) => (
+                <option key={code} value={code}>
+                  {code} — {symbol} — {name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <fieldset className="mt-4">
@@ -642,25 +681,6 @@ export default function GravelCalculator() {
                 />
               </summary>
               <div className="hidden gap-3 border-t border-line p-3 group-open:grid">
-                <label className="grid gap-1.5 text-sm font-bold text-ink">
-                  Currency
-                  <select
-                    className={`${inputClass()} bg-panel`}
-                    value={input.currency}
-                    onChange={(event) =>
-                      setInput((current) => ({
-                        ...current,
-                        currency: event.target.value as CurrencyCode,
-                      }))
-                    }
-                  >
-                    {currencies.map(([code, symbol, name]) => (
-                      <option key={code} value={code}>
-                        {code} — {symbol} — {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
                 <OptionalNumberField
                   id="price"
                   label="Price per cubic yard"
