@@ -40,6 +40,15 @@ export function adjustedVolumeConversions(adjustedVolumeCubicYards: number) {
   };
 }
 
+export function requiredWholeBags(
+  requiredVolumeCubicFeet: number,
+  bagVolumeCubicFeet: number,
+): number {
+  const exactBagCount = requiredVolumeCubicFeet / bagVolumeCubicFeet;
+  const floatingPointTolerance = Number.EPSILON * Math.max(1, Math.abs(exactBagCount)) * 10;
+  return Math.ceil(exactBagCount - floatingPointTolerance);
+}
+
 export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {
   if (input.inputMode === 'volume') return 0;
   if (input.inputMode === 'area')
@@ -67,7 +76,10 @@ export function calculateGravel(input: GravelInput): GravelCalculation {
   const recommendedOrder = recommendedOrderCubicYards(adjustedVolumeCubicYards);
   const estimatedWeightTons = adjustedVolumeCubicYards * densityTonsPerYard;
   const bagCount = input.bagSizeCubicFeet
-    ? Math.ceil((volumeCubicFeet * (1 + input.allowancePercent / 100)) / input.bagSizeCubicFeet)
+    ? requiredWholeBags(
+        volumeCubicFeet * (1 + input.allowancePercent / 100),
+        input.bagSizeCubicFeet,
+      )
     : undefined;
   const estimatedCost =
     input.pricePerCubicYard !== undefined

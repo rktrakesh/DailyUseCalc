@@ -239,25 +239,35 @@ export async function downloadEstimatePdf(report: EstimateReportData) {
   heading(summary, 'PROJECT SUMMARY', bold);
   rows(summary, report.summary, regular, bold);
   const left: Cursor = { page, x: MARGIN, width: COLUMN, y: y - 108 };
-  for (const section of report.sections) {
+  for (const section of report.leftSections ?? report.sections.slice(0, 2)) {
     heading(left, section.title, bold);
     rows(left, section.rows, regular, bold);
   }
-  paragraph(left, report.notice.title, report.notice.content, regular, bold);
   const right: Cursor = { page, x: MARGIN + COLUMN + GAP, width: COLUMN, y: summary.y - 2 };
+  for (const section of report.rightSections ?? report.sections.slice(2)) {
+    heading(right, section.title, bold);
+    rows(right, section.rows, regular, bold);
+  }
   for (const section of report.customSections ?? [])
     paragraph(
       right,
       section.title,
-      new DOMParser().parseFromString(section.contentHtml, 'text/html').body.textContent ?? '',
+      section.content ??
+        new DOMParser().parseFromString(section.contentHtml ?? '', 'text/html').body.textContent ??
+        '',
       regular,
       bold,
     );
   if (report.additionalDetails?.length) {
-    heading(right, 'ADDITIONAL DETAILS', bold);
+    heading(right, 'PURCHASING DETAILS', bold);
     rows(right, report.additionalDetails, regular, bold);
   }
-  const footerY = Math.max(42, Math.min(left.y, right.y) - 8);
+  for (const item of report.guidance ?? [])
+    paragraph(left, `GUIDANCE - ${item.label.toUpperCase()}`, item.value, regular, bold);
+  if (report.warnings?.length)
+    paragraph(left, 'WARNINGS', report.warnings.join(' '), regular, bold);
+  paragraph(left, report.notice.title, report.notice.content, regular, bold);
+  const footerY = Math.max(34, Math.min(left.y, right.y) - 3);
   page.drawLine({
     start: { x: MARGIN, y: footerY },
     end: { x: WIDTH - MARGIN, y: footerY },

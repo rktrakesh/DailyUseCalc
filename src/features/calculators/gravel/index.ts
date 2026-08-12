@@ -4,6 +4,7 @@ export {
   calculateSurfaceAreaSquareFeet,
   densityForGravel,
   recommendedOrderCubicYards,
+  requiredWholeBags,
 } from './calculator';
 export { recommendGravel } from './recommendations';
 export type * from './types';

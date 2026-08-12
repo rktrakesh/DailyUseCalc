@@ -4,6 +4,7 @@ import {
   calculateGravel,
   recommendGravel,
   recommendedOrderCubicYards,
+  requiredWholeBags,
   validateGravelInput,
 } from '.';
 import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
@@ -43,6 +44,33 @@ describe('measurement conversion', () => {
 });
 
 describe('gravel calculation', () => {
+  it.each([
+    [110, 0.5, 220],
+    [110, 0.4, 275],
+    [100, 0.4, 250],
+    [110, 0.6, 184],
+    [0.3, 0.1, 3],
+  ])('rounds %s ft³ into %s ft³ bags as %s whole bags', (required, bagSize, expected) => {
+    expect(requiredWholeBags(required, bagSize)).toBe(expected);
+  });
+
+  it('uses the corrected whole-bag count for bag-priced cost', () => {
+    const result = calculateGravel({
+      ...baseInput,
+      length: { value: 20, unit: 'ft' },
+      width: { value: 15, unit: 'ft' },
+      depth: { value: 4, unit: 'in' },
+      allowancePercent: 10,
+      bagSizeCubicFeet: 0.5,
+      bagPrice: 20,
+      deliveryFee: 20,
+      pricePerCubicYard: undefined,
+    });
+
+    expect(result.bagCount).toBe(220);
+    expect(result.estimatedCost).toBe(4_420);
+  });
+
   it('keeps measured volume unchanged while adjusted display volume matches estimated weight', () => {
     const result = calculateGravel(baseInput);
     const adjusted = adjustedVolumeConversions(result.adjustedVolumeCubicYards);
