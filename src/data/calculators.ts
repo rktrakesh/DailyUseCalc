@@ -32,9 +32,9 @@ export const calculatorListings: CalculatorListing[] = [
     name: 'Concrete Calculator',
     description: 'Plan concrete volume, materials, and estimated cost for your project.',
     category: 'Construction',
-    href: '/#popular-calculators',
+    href: '/concrete/',
     keywords: ['concrete', 'cement', 'slab', 'volume'],
-    status: 'coming-soon',
+    status: 'available',
   },
   {
     id: 'mulch',
