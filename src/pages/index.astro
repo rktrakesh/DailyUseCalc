@@ -15,7 +15,7 @@ import CategoryIcon from '../components/common/CategoryIcon.astro';
 import ProjectIllustration from '../components/common/ProjectIllustration.astro';
 import { calculatorListings } from '../data/calculators';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { organizationSchema } from '../lib/seo/schema';
+import { organizationSchema, websiteSchema } from '../lib/seo/schema';
 
 const categories = [
   { name: 'Home Improvement', icon: 'home', available: true },
@@ -51,7 +51,7 @@ const trustPoints = [
 <BaseLayout
   title="DailyUseCalc — Smart Calculators for Everyday Projects"
   description="Fast, trustworthy calculators for everyday projects. Plan gravel, concrete, paint, tile, and more with clear recommendations."
-  structuredData={organizationSchema()}
+  structuredData={[organizationSchema(), websiteSchema()]}
 >
   <section
     class="overflow-hidden border-b border-line bg-[radial-gradient(circle_at_85%_40%,color-mix(in_srgb,var(--duc-brand)_10%,transparent),transparent_27rem)]"
