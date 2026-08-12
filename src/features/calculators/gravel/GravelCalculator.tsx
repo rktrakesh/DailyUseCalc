@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
-  Check,
+  Calculator,
+  CheckCircle2,
   ChevronDown,
   Copy,
   Download,
@@ -45,35 +46,46 @@ const gravelOptions: Array<{ value: GravelType; label: string }> = [
 
 const CURRENCY_STORAGE_KEY = 'duc-gravel-currency';
 
-type GravelFormInput = Omit<GravelInput, 'allowancePercent' | 'gravelType' | 'projectType'> & {
-  allowancePercent?: number;
-  gravelType: GravelType | '';
-  projectType: ProjectType | '';
-};
+type GravelFormInput = GravelInput;
 
-function createEmptyInput(): GravelFormInput {
+function createDefaultInput(): GravelFormInput {
   return {
     inputMode: 'dimensions',
     areaShape: 'rectangle',
-    projectType: '',
-    gravelType: '',
+    projectType: 'driveway',
+    gravelType: 'crushed-stone',
+    length: { value: 20, unit: 'ft' },
+    width: { value: 15, unit: 'ft' },
+    diameter: { value: 20, unit: 'ft' },
+    depth: { value: 3, unit: 'in' },
+    knownArea: { value: 300, unit: 'ft²' },
+    knownVolume: { value: 3, unit: 'yd³' },
+    currency: 'USD',
+    allowancePercent: 0,
+    pricePerCubicYard: undefined,
+    deliveryFee: undefined,
+    bagSizeCubicFeet: undefined,
+    bagPrice: undefined,
+    truckCapacityCubicYards: undefined,
+  };
+}
+
+function createEmptyInput(currency: CurrencyCode): GravelFormInput {
+  return {
+    ...createDefaultInput(),
+    projectType: 'driveway',
+    gravelType: 'pea-gravel',
     length: { value: Number.NaN, unit: 'ft' },
     width: { value: Number.NaN, unit: 'ft' },
     diameter: { value: Number.NaN, unit: 'ft' },
     depth: { value: Number.NaN, unit: 'in' },
     knownArea: { value: Number.NaN, unit: 'ft²' },
     knownVolume: { value: Number.NaN, unit: 'yd³' },
-    currency: 'USD',
-  };
-}
-
-function toCalculationInput(input: GravelFormInput): GravelInput | undefined {
-  if (!input.projectType || !input.gravelType) return undefined;
-  return {
-    ...input,
-    projectType: input.projectType,
-    gravelType: input.gravelType,
-    allowancePercent: input.allowancePercent ?? 0,
+    currency,
+    allowancePercent: 10,
+    pricePerCubicYard: undefined,
+    bagSizeCubicFeet: undefined,
+    truckCapacityCubicYards: undefined,
   };
 }
 
@@ -89,150 +101,122 @@ function formatNumber(value: number, maximumFractionDigits = 2) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(value);
 }
 
-function formatRecommendedOrder(value: number) {
+function formatOrder(value: number) {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(value);
 }
 
-function formatCurrency(value: number | undefined, currency: CurrencyCode) {
-  return value === undefined ? 'Add pricing' : formatMoney(value, currency);
+function controlClass(invalid = false) {
+  return `h-11 w-full rounded-control border bg-panel px-2.5 text-sm text-ink outline-none transition-colors placeholder:text-ink-soft focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-1 sm:h-9 ${invalid ? 'border-danger' : 'border-line'}`;
 }
 
-function inputClass(invalid = false) {
-  return `h-11 w-full rounded-control border bg-panel px-3 text-base text-ink outline-none transition-colors placeholder:text-ink focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 sm:h-10 sm:text-sm ${invalid ? 'border-danger' : 'border-line'}`;
+function selectLabel<T extends string>(options: Array<{ value: T; label: string }>, value: T) {
+  return options.find((option) => option.value === value)?.label ?? value;
 }
 
 export default function GravelCalculator() {
-  const [input, setInput] = useState<GravelFormInput>(createEmptyInput);
+  const [input, setInput] = useState<GravelFormInput>(createDefaultInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
-  const [copyStatus, setCopyStatus] = useState('');
+  const [submitted, setSubmitted] = useState<{
+    input: GravelInput;
+    system: MeasurementSystem;
+  }>();
+  const [validationIssues, setValidationIssues] = useState<ReturnType<typeof validateGravelInput>>(
+    [],
+  );
+  const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+
   useEffect(() => {
     const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
     if (isCurrencyCode(savedCurrency)) {
       setInput((current) => ({ ...current, currency: savedCurrency }));
     }
   }, []);
-  const calculationInput = useMemo(() => toCalculationInput(input), [input]);
-  const validationIssues = useMemo(
-    () => (calculationInput ? validateGravelInput(calculationInput) : []),
-    [calculationInput],
-  );
+
   const calculation = useMemo(
-    () =>
-      calculationInput && validationIssues.length === 0
-        ? calculateGravel(calculationInput)
-        : undefined,
-    [calculationInput, validationIssues.length],
+    () => (submitted ? calculateGravel(submitted.input) : undefined),
+    [submitted],
   );
   const recommendation = useMemo(
-    () =>
-      calculation && calculationInput ? recommendGravel(calculationInput, calculation) : undefined,
-    [calculation, calculationInput],
+    () => (calculation && submitted ? recommendGravel(submitted.input, calculation) : undefined),
+    [calculation, submitted],
   );
-  const displayedValidationIssues = hasInteracted ? validationIssues : [];
-
   const errorFor = (field: string) =>
-    displayedValidationIssues.find((issue) => issue.field === field)?.message;
+    validationIssues.find((issue) => issue.field === field)?.message;
 
   function updateSystem(nextSystem: MeasurementSystem) {
     if (nextSystem === measurementSystem) return;
-    if (nextSystem === 'metric') {
-      setInput((current) => ({
+    setInput((current) => {
+      const metric = nextSystem === 'metric';
+      return {
         ...current,
-        length: {
-          value: Number(convertLength(current.length.value, current.length.unit, 'm').toFixed(3)),
-          unit: 'm',
-        },
-        width: {
-          value: Number(convertLength(current.width.value, current.width.unit, 'm').toFixed(3)),
-          unit: 'm',
-        },
-        diameter: {
-          value: Number(
-            convertLength(current.diameter.value, current.diameter.unit, 'm').toFixed(3),
-          ),
-          unit: 'm',
-        },
-        depth: {
-          value: Number(convertLength(current.depth.value, current.depth.unit, 'cm').toFixed(2)),
-          unit: 'cm',
-        },
-      }));
-    } else {
-      setInput((current) => ({
-        ...current,
-        length: {
-          value: Number(convertLength(current.length.value, current.length.unit, 'ft').toFixed(2)),
-          unit: 'ft',
-        },
-        width: {
-          value: Number(convertLength(current.width.value, current.width.unit, 'ft').toFixed(2)),
-          unit: 'ft',
-        },
-        diameter: {
-          value: Number(
-            convertLength(current.diameter.value, current.diameter.unit, 'ft').toFixed(2),
-          ),
-          unit: 'ft',
-        },
-        depth: {
-          value: Number(convertLength(current.depth.value, current.depth.unit, 'in').toFixed(2)),
-          unit: 'in',
-        },
-      }));
-    }
+        length: converted(current.length.value, current.length.unit, metric ? 'm' : 'ft', 3),
+        width: converted(current.width.value, current.width.unit, metric ? 'm' : 'ft', 3),
+        diameter: converted(current.diameter.value, current.diameter.unit, metric ? 'm' : 'ft', 3),
+        depth: converted(current.depth.value, current.depth.unit, metric ? 'cm' : 'in', 2),
+      };
+    });
     setMeasurementSystem(nextSystem);
+    setValidationIssues([]);
   }
 
-  function updateCurrency(currency: CurrencyCode) {
-    setInput((current) => ({ ...current, currency }));
-    localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+  function converted(
+    value: number,
+    from: GravelInput['length']['unit'],
+    to: 'm' | 'ft' | 'cm' | 'in',
+    digits: number,
+  ) {
+    return {
+      value: Number.isFinite(value)
+        ? Number(convertLength(value, from, to).toFixed(digits))
+        : value,
+      unit: to,
+    };
   }
 
-  function estimateLines() {
-    if (!calculation || !recommendation)
-      return [
-        input.inputMode === 'volume'
-          ? 'Complete the volume field to calculate your estimate.'
-          : input.inputMode === 'area'
-            ? 'Complete the area and depth fields to calculate your estimate.'
-            : input.areaShape === 'circle'
-              ? 'Complete the diameter and depth fields to calculate your estimate.'
-              : 'Complete the length, width, and depth fields to calculate your estimate.',
-      ];
-    return [
-      `Project: ${projectOptions.find((option) => option.value === calculationInput?.projectType)?.label}`,
-      `Recommended order: ${formatRecommendedOrder(calculation.recommendedOrderCubicYards)} cubic yards`,
-      `Calculated need: ${calculation.volumeCubicYards.toFixed(2)} cubic yards`,
-      `Allowance: ${calculationInput?.allowancePercent}%`,
-      `Estimated weight: ${calculation.estimatedWeightTons.toFixed(2)} tons`,
-      recommendation.explanation,
-    ];
-  }
-
-  function estimateText() {
-    return estimateLines().join('\n');
+  function calculateEstimate() {
+    const issues = validateGravelInput(input);
+    setValidationIssues(issues);
+    if (issues.length) {
+      setStatus('Fix the highlighted fields, then calculate again.');
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+      );
+      return;
+    }
+    setSubmitted({ input: structuredClone(input), system: measurementSystem });
+    setStatus('Estimate updated.');
   }
 
   function clearInputs() {
-    const clearedInput = createEmptyInput();
-    clearedInput.currency = input.currency;
-    setInput(clearedInput);
+    setInput(createEmptyInput(input.currency));
+    setSubmitted(undefined);
+    setValidationIssues([]);
     setMeasurementSystem('imperial');
-    setHasInteracted(false);
-    setCopyStatus('All calculator fields were cleared.');
+    setStatus('Calculator cleared.');
+  }
+
+  function estimateText() {
+    if (!calculation || !recommendation || !submitted) return '';
+    return [
+      `Project: ${selectLabel(projectOptions, submitted.input.projectType)}`,
+      `Recommended order: ${formatOrder(calculation.recommendedOrderCubicYards)} cubic yards`,
+      `Calculated need: ${calculation.volumeCubicYards.toFixed(2)} cubic yards`,
+      `Allowance: ${submitted.input.allowancePercent}%`,
+      `Estimated weight: ${calculation.estimatedWeightTons.toFixed(2)} short tons`,
+      recommendation.explanation,
+    ].join('\n');
   }
 
   async function copyEstimate() {
     try {
       await navigator.clipboard.writeText(estimateText());
-      setCopyStatus('Estimate copied.');
+      setStatus('Estimate copied.');
     } catch {
-      setCopyStatus('Copy is unavailable in this browser.');
+      setStatus('Copy is unavailable in this browser.');
     }
   }
 
@@ -240,279 +224,154 @@ export default function GravelCalculator() {
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Gravel estimate', text: estimateText() });
-        setCopyStatus('Estimate shared.');
+        setStatus('Estimate shared.');
         return;
-      } catch {
-        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
     await copyEstimate();
   }
 
+  function reportData() {
+    if (!calculation || !recommendation || !submitted) return;
+    return createGravelEstimateReport({
+      calculation,
+      input: submitted.input,
+      recommendation,
+      measurementSystem: submitted.system,
+    });
+  }
+
   function printEstimate() {
-    if (!calculation || !recommendation || !calculationInput) return;
-    if (
-      !printReport(
-        createGravelEstimateReport({
-          calculation,
-          input: calculationInput,
-          recommendation,
-          measurementSystem,
-        }),
-      )
-    ) {
-      setCopyStatus('Allow pop-ups to print your estimate.');
-      return;
-    }
-    setCopyStatus('Choose a printer or another destination in the print dialog.');
+    const report = reportData();
+    if (!report) return;
+    setStatus(
+      printReport(report)
+        ? 'Choose a printer or another destination in the print dialog.'
+        : 'Allow pop-ups to print your estimate.',
+    );
   }
 
   async function downloadEstimate() {
-    if (!calculation || !recommendation || !calculationInput) return;
+    const report = reportData();
+    if (!report) return;
     setIsPreparingPdf(true);
     try {
-      await downloadReportAsPdf(
-        createGravelEstimateReport({
-          calculation,
-          input: calculationInput,
-          recommendation,
-          measurementSystem,
-        }),
-      );
-      setCopyStatus('PDF download started.');
+      await downloadReportAsPdf(report);
+      setStatus('PDF download started.');
     } catch (error) {
       console.error('PDF download failed:', error);
-      setCopyStatus('Could not prepare the PDF. Please try again.');
+      setStatus('Could not prepare the PDF. Please try again.');
     } finally {
       setIsPreparingPdf(false);
     }
   }
 
   return (
-    <div className="@container/calculator grid gap-4">
+    <div className="@container/calculator grid gap-3">
       <section
-        className="rounded-card border border-line bg-panel p-4 shadow-card md:p-5"
-        aria-labelledby="project-details-heading"
-        onChangeCapture={() => setHasInteracted(true)}
+        className="rounded-card border border-line bg-panel p-3 shadow-card sm:p-4"
+        aria-label="Gravel calculator inputs"
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-bold text-brand">Start with the essentials</p>
-            <h2
-              id="project-details-heading"
-              className="mt-1 text-xl font-extrabold tracking-[-0.035em] text-ink"
-            >
-              Project details
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">
-              <Check size={14} aria-hidden="true" /> Updates instantly
-            </span>
-            <button
-              type="button"
-              onClick={clearInputs}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-panel-muted"
-            >
-              <RotateCcw size={13} aria-hidden="true" /> Clear
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.72fr)] md:gap-4">
-          <label className="col-span-2 grid gap-1.5 text-sm font-bold text-ink md:col-span-1">
-            What are you building?
-            <span className="relative">
-              <select
-                name="project-type"
-                className={`${inputClass()} appearance-none pr-10`}
-                value={input.projectType}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    projectType: event.target.value as ProjectType,
-                  }))
-                }
-              >
-                <option value="" disabled>
-                  Select a project type
-                </option>
-                {projectOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                size={16}
-                aria-hidden="true"
-              />
-            </span>
-            <span className="text-xs font-normal text-ink-soft">
-              This shapes practical depth guidance.
-            </span>
-          </label>
-          <fieldset className="min-w-0">
-            <legend className="text-sm font-bold text-ink">Measurement system</legend>
-            <div
-              className="mt-1.5 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
-              role="radiogroup"
-              aria-label="Measurement system"
-            >
-              {(['imperial', 'metric'] as const).map((system) => (
-                <label
-                  key={system}
-                  className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${measurementSystem === system ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
-                >
-                  <input
-                    className="sr-only"
-                    type="radio"
-                    name="measurement-system"
-                    value={system}
-                    checked={measurementSystem === system}
-                    onChange={() => updateSystem(system)}
-                  />
-                  {system === 'imperial' ? (
-                    <>
-                      <span className="md:hidden">Imperial</span>
-                      <span className="hidden md:inline">Imperial (US)</span>
-                    </>
-                  ) : (
-                    'Metric'
-                  )}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(9rem,12rem)] md:items-start md:gap-4">
-          <fieldset
-            className={`min-w-0 ${input.inputMode === 'dimensions' ? '' : 'col-span-2 md:col-span-1'} md:max-w-[28rem]`}
+        <div className="grid grid-cols-2 gap-2.5 @2xl/calculator:grid-cols-4">
+          <SelectField
+            label="Project"
+            name="project-type"
+            value={input.projectType}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, projectType: value as ProjectType }))
+            }
           >
-            <legend className="text-sm font-bold text-ink">Project size</legend>
-            <div
-              className="mt-1.5 grid grid-cols-3 rounded-control border border-line bg-surface p-1"
-              role="radiogroup"
-              aria-label="Project size input mode"
-            >
-              {(['dimensions', 'area', 'volume'] as ProjectSizeMode[]).map((mode) => (
-                <label
-                  key={mode}
-                  className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${input.inputMode === mode ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
-                >
-                  <input
-                    className="sr-only"
-                    type="radio"
-                    name="input-mode"
-                    value={mode}
-                    checked={input.inputMode === mode}
-                    onChange={() => setInput((current) => ({ ...current, inputMode: mode }))}
-                  />
-                  <span className="hidden md:inline">{mode[0].toUpperCase() + mode.slice(1)}</span>
-                  <span className="md:hidden">
-                    {mode === 'dimensions' ? 'Dim.' : mode === 'volume' ? 'Vol.' : 'Area'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {input.inputMode === 'dimensions' && (
-            <fieldset className="md:max-w-[20rem]">
-              <legend className="text-sm font-bold text-ink">Area shape</legend>
-              <div
-                className="mt-1.5 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
-                role="radiogroup"
-                aria-label="Area shape"
-              >
-                {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
-                  <label
-                    key={shape}
-                    className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
-                  >
-                    <input
-                      className="sr-only"
-                      type="radio"
-                      name="area-shape"
-                      value={shape}
-                      checked={input.areaShape === shape}
-                      onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
-                    />
-                    {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
-
-          <label className="col-span-full grid min-w-0 gap-1.5 text-sm font-bold text-ink md:col-span-1 md:w-full">
-            Currency
-            <select
-              name="currency"
-              aria-label="Currency"
-              className={`${inputClass()} w-full bg-panel px-3`}
-              value={input.currency}
-              onChange={(event) => updateCurrency(event.target.value as CurrencyCode)}
-            >
-              {currencies.map(([code, symbol, name]) => (
-                <option key={code} value={code}>
-                  {code} — {symbol} — {name}
-                </option>
-              ))}
-            </select>
-          </label>
+            {projectOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Measure by"
+            name="input-mode"
+            value={input.inputMode}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, inputMode: value as ProjectSizeMode }))
+            }
+          >
+            <option value="dimensions">Dimensions</option>
+            <option value="area">Area</option>
+            <option value="volume">Volume</option>
+          </SelectField>
+          <SelectField
+            label="Shape"
+            name="area-shape"
+            value={input.areaShape}
+            disabled={input.inputMode !== 'dimensions'}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, areaShape: value as AreaShape }))
+            }
+          >
+            <option value="rectangle">Rectangle</option>
+            <option value="circle">Circle</option>
+          </SelectField>
+          <SelectField
+            label="Units"
+            name="measurement-system"
+            value={measurementSystem}
+            onChange={(value) => updateSystem(value as MeasurementSystem)}
+          >
+            <option value="imperial">Imperial (US)</option>
+            <option value="metric">Metric</option>
+          </SelectField>
         </div>
 
-        <fieldset className="mt-4">
-          <legend className="text-sm font-bold text-ink">Measurements</legend>
-          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {input.inputMode === 'dimensions' &&
-              (input.areaShape === 'rectangle' ? (
-                <>
-                  <NumberField
-                    id="length"
-                    label="Length"
-                    value={input.length.value}
-                    unit={input.length.unit}
-                    error={errorFor('length')}
-                    onChange={(event) =>
-                      setInput((current) => ({
-                        ...current,
-                        length: { ...current.length, value: numberFromEvent(event) },
-                      }))
-                    }
-                  />
-                  <NumberField
-                    id="width"
-                    label="Width"
-                    value={input.width.value}
-                    unit={input.width.unit}
-                    error={errorFor('width')}
-                    onChange={(event) =>
-                      setInput((current) => ({
-                        ...current,
-                        width: { ...current.width, value: numberFromEvent(event) },
-                      }))
-                    }
-                  />
-                </>
-              ) : (
+        <fieldset className="mt-3">
+          <legend className="sr-only">Measurements</legend>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {input.inputMode === 'dimensions' && input.areaShape === 'rectangle' && (
+              <>
                 <NumberField
-                  id="diameter"
-                  label="Diameter"
-                  value={input.diameter.value}
-                  unit={input.diameter.unit}
-                  error={errorFor('diameter')}
+                  id="length"
+                  label="Length"
+                  value={input.length.value}
+                  unit={input.length.unit}
+                  error={errorFor('length')}
                   onChange={(event) =>
                     setInput((current) => ({
                       ...current,
-                      diameter: { ...current.diameter, value: numberFromEvent(event) },
+                      length: { ...current.length, value: numberFromEvent(event) },
                     }))
                   }
                 />
-              ))}
+                <NumberField
+                  id="width"
+                  label="Width"
+                  value={input.width.value}
+                  unit={input.width.unit}
+                  error={errorFor('width')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      width: { ...current.width, value: numberFromEvent(event) },
+                    }))
+                  }
+                />
+              </>
+            )}
+            {input.inputMode === 'dimensions' && input.areaShape === 'circle' && (
+              <NumberField
+                id="diameter"
+                label="Diameter"
+                value={input.diameter.value}
+                unit={input.diameter.unit}
+                error={errorFor('diameter')}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    diameter: { ...current.diameter, value: numberFromEvent(event) },
+                  }))
+                }
+              />
+            )}
             {input.inputMode === 'area' && (
               <UnitNumberField
                 id="known-area"
@@ -573,282 +432,236 @@ export default function GravelCalculator() {
               />
             )}
           </div>
-          <p className="mt-2 text-xs leading-4.5 text-ink-soft">
-            {input.inputMode === 'volume'
-              ? 'Enter the complete volume in the unit you already know.'
-              : input.inputMode === 'area'
-                ? 'Enter the known surface area and material depth.'
-                : measurementSystem === 'imperial'
-                  ? 'Measure at the widest points. Driveways often need a compacted gravel depth of 4–6 inches.'
-                  : 'Metric measurements · US ordering units (cubic yards and tons).'}
-          </p>
         </fieldset>
 
-        <label className="mt-4 grid gap-1.5 text-sm font-bold text-ink">
-          Gravel type
-          <span className="relative">
-            <select
-              name="gravel-type"
-              className={`${inputClass()} appearance-none pr-10`}
-              value={input.gravelType}
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_8rem] gap-2.5">
+          <SelectField
+            label="Gravel type"
+            name="gravel-type"
+            value={input.gravelType}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, gravelType: value as GravelType }))
+            }
+          >
+            {gravelOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Extra allowance"
+            name="allowance"
+            value={String(input.allowancePercent)}
+            onChange={(value) =>
+              setInput((current) => ({ ...current, allowancePercent: Number(value) }))
+            }
+            invalid={Boolean(errorFor('allowancePercent'))}
+          >
+            {[0, 5, 10, 15, 20].map((value) => (
+              <option key={value} value={value}>
+                {value}%
+              </option>
+            ))}
+          </SelectField>
+        </div>
+
+        {input.gravelType === 'custom' && (
+          <div className="mt-3 max-w-64">
+            <NumberField
+              id="custom-density"
+              label="Custom density"
+              value={input.customDensityTonsPerYard ?? Number.NaN}
+              unit="tons / yd³"
+              error={errorFor('customDensityTonsPerYard')}
               onChange={(event) =>
                 setInput((current) => ({
                   ...current,
-                  gravelType: event.target.value as GravelType,
+                  customDensityTonsPerYard: optionalNumberFromEvent(event),
                 }))
               }
-            >
-              <option value="" disabled>
-                Select a gravel type
-              </option>
-              {gravelOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft"
-              size={16}
-              aria-hidden="true"
             />
-          </span>
-          <span className="text-xs font-normal text-ink-soft">
-            {recommendation?.materialGuidance || 'Choose the material you plan to use.'}
-          </span>
-        </label>
-
-        <details className="mt-4 rounded-control border border-line bg-surface">
-          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3.5 text-sm font-bold text-ink marker:content-none">
-            Advanced options{' '}
-            <ChevronDown
-              className="transition-transform [[open]_&]:rotate-180"
-              size={17}
-              aria-hidden="true"
-            />
-          </summary>
-          <div className="grid gap-2.5 border-t border-line p-2.5 @2xl/calculator:grid-cols-2 @4xl/calculator:grid-cols-3 @4xl/calculator:p-3">
-            <details open className="group rounded-control border border-line">
-              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
-                Material &amp; Density
-                <ChevronDown
-                  className="transition-transform group-open:rotate-180"
-                  size={16}
-                  aria-hidden="true"
-                />
-              </summary>
-              <div className="hidden gap-3 border-t border-line p-3 group-open:grid">
-                <NumberField
-                  id="allowance"
-                  label="Allowance / waste"
-                  value={input.allowancePercent ?? Number.NaN}
-                  unit="%"
-                  error={errorFor('allowancePercent')}
-                  min={0}
-                  max={50}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      allowancePercent: numberFromEvent(event),
-                    }))
-                  }
-                />
-                {input.gravelType === 'custom' && (
-                  <NumberField
-                    id="custom-density"
-                    label="Custom density"
-                    value={input.customDensityTonsPerYard ?? Number.NaN}
-                    unit="tons / yd³"
-                    error={errorFor('customDensityTonsPerYard')}
-                    onChange={(event) =>
-                      setInput((current) => ({
-                        ...current,
-                        customDensityTonsPerYard: optionalNumberFromEvent(event),
-                      }))
-                    }
-                  />
-                )}
-              </div>
-            </details>
-
-            <details open className="group rounded-control border border-line">
-              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
-                Pricing
-                <ChevronDown
-                  className="transition-transform group-open:rotate-180"
-                  size={16}
-                  aria-hidden="true"
-                />
-              </summary>
-              <div className="hidden gap-3 border-t border-line p-3 group-open:grid">
-                <OptionalNumberField
-                  id="price"
-                  label="Price per cubic yard"
-                  value={input.pricePerCubicYard}
-                  unit={input.currency}
-                  error={errorFor('pricePerCubicYard')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      pricePerCubicYard: optionalNumberFromEvent(event),
-                    }))
-                  }
-                />
-                <OptionalNumberField
-                  id="delivery-fee"
-                  label="Delivery fee"
-                  value={input.deliveryFee}
-                  unit={input.currency}
-                  error={errorFor('deliveryFee')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      deliveryFee: optionalNumberFromEvent(event),
-                    }))
-                  }
-                />
-              </div>
-            </details>
-
-            <details
-              open
-              className="group rounded-control border border-line @2xl/calculator:col-span-2 @4xl/calculator:col-span-1"
-            >
-              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
-                Bags &amp; Delivery
-                <ChevronDown
-                  className="transition-transform group-open:rotate-180"
-                  size={16}
-                  aria-hidden="true"
-                />
-              </summary>
-              <div className="hidden gap-3 border-t border-line p-3 group-open:grid @2xl/calculator:grid-cols-2 @4xl/calculator:grid-cols-1">
-                <NumberField
-                  id="truck-capacity"
-                  label="Truck capacity"
-                  value={input.truckCapacityCubicYards ?? Number.NaN}
-                  unit="yd³"
-                  error={errorFor('truckCapacityCubicYards')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      truckCapacityCubicYards: optionalNumberFromEvent(event),
-                    }))
-                  }
-                />
-                <OptionalNumberField
-                  id="bag-size"
-                  label="Bag size"
-                  value={input.bagSizeCubicFeet}
-                  unit="ft³"
-                  error={errorFor('bagSizeCubicFeet')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      bagSizeCubicFeet: optionalNumberFromEvent(event),
-                    }))
-                  }
-                />
-                <OptionalNumberField
-                  id="bag-price"
-                  label="Bag price"
-                  value={input.bagPrice}
-                  unit={input.currency}
-                  error={errorFor('bagPrice')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      bagPrice: optionalNumberFromEvent(event),
-                    }))
-                  }
-                />
-              </div>
-            </details>
-          </div>
-        </details>
-      </section>
-
-      <section aria-labelledby="results-heading">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-bold text-brand">Your estimate</p>
-            <h2
-              id="results-heading"
-              className="mt-0.5 text-xl font-extrabold tracking-[-0.04em] text-ink"
-            >
-              Results
-            </h2>
-          </div>
-          <span className="text-xs text-ink-soft" aria-live="polite">
-            {hasInteracted && validationIssues.length
-              ? 'Fix the highlighted field to update.'
-              : calculation
-                ? 'Calculated locally in your browser.'
-                : 'Enter your measurements to calculate.'}
-          </span>
-        </div>
-        {calculation && recommendation && calculationInput ? (
-          <Results
-            calculation={calculation}
-            recommendation={recommendation}
-            measurementSystem={measurementSystem}
-            input={calculationInput}
-          />
-        ) : (
-          <div className="rounded-card border border-dashed border-line bg-panel p-8 text-center text-sm text-ink-soft">
-            {input.inputMode === 'volume'
-              ? 'Enter a project type, gravel type, and volume to see your estimate.'
-              : input.inputMode === 'area'
-                ? 'Enter a project type, gravel type, area, and depth to see your estimate.'
-                : input.areaShape === 'circle'
-                  ? 'Enter a project type, gravel type, diameter, and depth to see your estimate.'
-                  : 'Enter a project type, gravel type, length, width, and depth to see your estimate.'}
           </div>
         )}
+
+        <div className="mt-3 grid gap-2 @xl/calculator:grid-cols-3">
+          <OptionalGroup title="Price (optional)">
+            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+              <select
+                aria-label="Currency"
+                className={controlClass()}
+                value={input.currency}
+                onChange={(event) => {
+                  const currency = event.target.value as CurrencyCode;
+                  setInput((current) => ({ ...current, currency }));
+                  localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+                }}
+              >
+                {currencies.map(([code, symbol]) => (
+                  <option key={code} value={code}>
+                    {code} ({symbol})
+                  </option>
+                ))}
+              </select>
+              <OptionalNumberField
+                id="price"
+                label="Price per cubic yard"
+                hideLabel
+                value={input.pricePerCubicYard}
+                unit="per yd³"
+                error={errorFor('pricePerCubicYard')}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    pricePerCubicYard: optionalNumberFromEvent(event),
+                  }))
+                }
+              />
+            </div>
+            <OptionalNumberField
+              id="delivery-fee"
+              label="Delivery fee"
+              value={input.deliveryFee}
+              unit={input.currency}
+              error={errorFor('deliveryFee')}
+              onChange={(event) =>
+                setInput((current) => ({ ...current, deliveryFee: optionalNumberFromEvent(event) }))
+              }
+            />
+          </OptionalGroup>
+          <OptionalGroup title="Bag size (optional)">
+            <OptionalNumberField
+              id="bag-size"
+              label="Bag volume"
+              value={input.bagSizeCubicFeet}
+              unit="ft³ / bag"
+              error={errorFor('bagSizeCubicFeet')}
+              onChange={(event) =>
+                setInput((current) => ({
+                  ...current,
+                  bagSizeCubicFeet: optionalNumberFromEvent(event),
+                }))
+              }
+            />
+            <OptionalNumberField
+              id="bag-price"
+              label="Price per bag"
+              value={input.bagPrice}
+              unit={input.currency}
+              error={errorFor('bagPrice')}
+              onChange={(event) =>
+                setInput((current) => ({ ...current, bagPrice: optionalNumberFromEvent(event) }))
+              }
+            />
+          </OptionalGroup>
+          <OptionalGroup title="Truck capacity (optional)">
+            <OptionalNumberField
+              id="truck-capacity"
+              label="Capacity"
+              value={input.truckCapacityCubicYards}
+              unit="yd³ / truck"
+              error={errorFor('truckCapacityCubicYards')}
+              onChange={(event) =>
+                setInput((current) => ({
+                  ...current,
+                  truckCapacityCubicYards: optionalNumberFromEvent(event),
+                }))
+              }
+            />
+          </OptionalGroup>
+        </div>
+
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.42fr)] gap-2">
+          <button
+            type="button"
+            onClick={calculateEstimate}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-bold text-white transition-colors hover:bg-brand-strong sm:min-h-10"
+          >
+            Calculate <Calculator size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={clearInputs}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-3 text-sm font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
+          >
+            <RotateCcw size={15} aria-hidden="true" /> Clear
+          </button>
+        </div>
+        <p className="mt-2 min-h-4 text-center text-xs text-ink-soft" aria-live="polite">
+          {status}
+        </p>
       </section>
 
-      {calculation && recommendation && (
-        <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <button
-              type="button"
-              onClick={copyEstimate}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
-            >
-              <Copy size={16} aria-hidden="true" /> Copy estimate
-            </button>
-            <button
-              type="button"
-              onClick={printEstimate}
-              title="Open the browser print dialog."
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
-            >
-              <Printer size={16} aria-hidden="true" /> Print
-            </button>
-            <button
-              type="button"
-              onClick={downloadEstimate}
-              disabled={isPreparingPdf}
-              title="Download a PDF estimate."
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
-            >
-              <Download size={16} aria-hidden="true" />{' '}
-              {isPreparingPdf ? 'Preparing PDF…' : 'Save as PDF'}
-            </button>
-            <button
-              type="button"
-              onClick={shareEstimate}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
-            >
-              <Share2 size={16} aria-hidden="true" /> Share
-            </button>
-          </div>
-          <p className="text-center text-xs text-ink-soft" aria-live="polite">
-            {copyStatus}
-          </p>
-        </>
+      {calculation && recommendation && submitted && (
+        <ResultPanel
+          calculation={calculation}
+          recommendation={recommendation}
+          input={submitted.input}
+          system={submitted.system}
+          onCopy={copyEstimate}
+          onPrint={printEstimate}
+          onDownload={downloadEstimate}
+          onShare={shareEstimate}
+          isPreparingPdf={isPreparingPdf}
+        />
       )}
     </div>
+  );
+}
+
+function SelectField({
+  label,
+  name,
+  value,
+  onChange,
+  children,
+  disabled = false,
+  invalid = false,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+  disabled?: boolean;
+  invalid?: boolean;
+}) {
+  return (
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink">
+      {label}
+      <span className="relative">
+        <select
+          name={name}
+          className={`${controlClass(invalid)} appearance-none pr-7 disabled:cursor-not-allowed disabled:opacity-55`}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-ink-soft"
+          size={14}
+          aria-hidden="true"
+        />
+      </span>
+    </label>
+  );
+}
+
+function OptionalGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-control border border-line bg-surface">
+      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
+        {title}
+        <ChevronDown
+          className="transition-transform group-open:rotate-180"
+          size={15}
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="grid gap-2 border-t border-line p-2.5">{children}</div>
+    </details>
   );
 }
 
@@ -859,8 +672,6 @@ function NumberField({
   unit,
   error,
   onChange,
-  min,
-  max,
 }: {
   id: string;
   label: string;
@@ -868,22 +679,19 @@ function NumberField({
   unit: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  min?: number;
-  max?: number;
 }) {
   return (
-    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
       {label}
       <span className="relative">
         <input
           id={id}
           name={id}
-          className={`${inputClass(Boolean(error))} pr-16`}
+          className={`${controlClass(Boolean(error))} pr-14 tabular-nums`}
           type="number"
           inputMode="decimal"
           autoComplete="off"
-          min={min ?? 0}
-          max={max}
+          min="0"
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
@@ -891,12 +699,12 @@ function NumberField({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-soft">
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.68rem] font-semibold text-ink-soft">
           {unit}
         </span>
       </span>
       {error && (
-        <span id={`${id}-error`} className="text-xs font-medium text-danger">
+        <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
           {error}
         </span>
       )}
@@ -911,6 +719,7 @@ function OptionalNumberField({
   unit,
   error,
   onChange,
+  hideLabel = false,
 }: {
   id: string;
   label: string;
@@ -918,15 +727,16 @@ function OptionalNumberField({
   unit: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  hideLabel?: boolean;
 }) {
   return (
-    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
-      {label}
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
+      <span className={hideLabel ? 'sr-only' : ''}>{label}</span>
       <span className="relative">
         <input
           id={id}
           name={id}
-          className={`${inputClass(Boolean(error))} pr-16`}
+          className={`${controlClass(Boolean(error))} pr-16 tabular-nums`}
           type="number"
           inputMode="decimal"
           autoComplete="off"
@@ -939,12 +749,12 @@ function OptionalNumberField({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-soft">
+        <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] font-semibold text-ink-soft">
           {unit}
         </span>
       </span>
       {error && (
-        <span id={`${id}-error`} className="text-xs font-medium text-danger">
+        <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
           {error}
         </span>
       )}
@@ -972,13 +782,13 @@ function UnitNumberField({
   onUnitChange: (unit: string) => void;
 }) {
   return (
-    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
       {label}
-      <span className="grid grid-cols-[minmax(0,1fr)_4.5rem]">
+      <span className="grid grid-cols-[minmax(0,1fr)_4rem]">
         <input
           id={id}
           name={id}
-          className={`${inputClass(Boolean(error))} rounded-r-none`}
+          className={`${controlClass(Boolean(error))} rounded-r-none tabular-nums`}
           type="number"
           inputMode="decimal"
           autoComplete="off"
@@ -992,7 +802,7 @@ function UnitNumberField({
         />
         <select
           aria-label={`${label} unit`}
-          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand/60 sm:h-10"
+          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-1.5 text-xs font-semibold text-ink sm:h-9"
           value={unit}
           onChange={(event) => onUnitChange(event.target.value)}
         >
@@ -1004,7 +814,7 @@ function UnitNumberField({
         </select>
       </span>
       {error && (
-        <span id={`${id}-error`} className="text-xs font-medium text-danger">
+        <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
           {error}
         </span>
       )}
@@ -1012,153 +822,201 @@ function UnitNumberField({
   );
 }
 
-function Results({
+function ResultPanel({
   calculation,
   recommendation,
-  measurementSystem,
   input,
+  system,
+  onCopy,
+  onPrint,
+  onDownload,
+  onShare,
+  isPreparingPdf,
 }: {
   calculation: ReturnType<typeof calculateGravel>;
   recommendation: ReturnType<typeof recommendGravel>;
-  measurementSystem: MeasurementSystem;
   input: GravelInput;
+  system: MeasurementSystem;
+  onCopy: () => void;
+  onPrint: () => void;
+  onDownload: () => void;
+  onShare: () => void;
+  isPreparingPdf: boolean;
 }) {
-  const cards = [
-    {
-      label: 'Calculated need',
-      value: `${formatNumber(calculation.volumeCubicYards)} yd³`,
-      detail:
-        measurementSystem === 'metric'
-          ? `${formatNumber(calculation.volumeCubicMeters)} m³`
-          : 'Before allowance',
-    },
-    {
-      label: 'After allowance',
-      value: `${formatNumber(calculation.adjustedVolumeCubicYards)} yd³`,
-      detail: `Includes ${input.allowancePercent}% allowance`,
-    },
-    {
-      label: 'Estimated weight',
-      value: `${formatNumber(calculation.estimatedWeightTons)} tons`,
-      detail: `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
-    },
-    {
-      label: 'Density used',
-      value: `${formatNumber(calculation.densityTonsPerYard)} tons / yd³`,
-      detail:
-        input.gravelType === 'custom'
-          ? 'Custom density'
-          : 'Typical estimate — confirm with your supplier',
-    },
-    {
-      label: 'Estimated cost',
-      value: formatCurrency(calculation.estimatedCost, input.currency),
-      detail:
-        calculation.estimatedCost === undefined
-          ? 'Add optional pricing'
-          : input.pricePerCubicYard !== undefined
-            ? 'Bulk pricing used; includes delivery fee'
-            : 'Bag pricing used; includes delivery fee',
-    },
-    {
-      label: 'Truck loads',
-      value: calculation.truckLoads ? String(calculation.truckLoads) : 'Add capacity',
-      detail: calculation.truckLoads ? 'Based on your capacity' : 'Optional setting',
-    },
-    {
-      label: 'Bags (by volume)',
-      value: calculation.bagCount ? formatNumber(calculation.bagCount, 0) : 'Add bag size',
-      detail: input.bagSizeCubicFeet ? `${input.bagSizeCubicFeet} ft³ bags` : 'Optional setting',
-    },
-  ];
+  const areaApplicable = input.inputMode !== 'volume';
+  const gravelLabel = selectLabel(gravelOptions, input.gravelType);
+  const optionalDetails = [
+    calculation.estimatedCost !== undefined
+      ? {
+          label: 'Cost',
+          value: formatMoney(calculation.estimatedCost, input.currency),
+        }
+      : undefined,
+    input.bagSizeCubicFeet !== undefined && calculation.bagCount !== undefined
+      ? {
+          label: 'Bags',
+          value: `${formatNumber(calculation.bagCount, 0)} bags`,
+        }
+      : undefined,
+    input.truckCapacityCubicYards !== undefined && calculation.truckLoads !== undefined
+      ? {
+          label: 'Truck loads',
+          value: `${calculation.truckLoads} load${calculation.truckLoads === 1 ? '' : 's'}`,
+        }
+      : undefined,
+  ].filter((detail): detail is { label: string; value: string } => detail !== undefined);
+  const optionalGridClass =
+    optionalDetails.length === 1
+      ? 'grid-cols-1'
+      : optionalDetails.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-3';
   return (
-    <div className="grid gap-3" aria-live="polite">
-      <div className="grid grid-cols-2 items-start gap-2.5 @2xl/calculator:grid-cols-3 @4xl/calculator:grid-cols-4">
-        <article
-          data-result-card="primary"
-          className="col-span-2 rounded-card bg-brand p-3.5 text-white shadow-card @2xl/calculator:col-span-3 @2xl/calculator:p-4 @4xl/calculator:col-span-2 @4xl/calculator:row-span-2 @4xl/calculator:self-stretch"
-        >
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/85">
-            Recommended order
-          </p>
-          <p className="mt-2 text-3xl font-extrabold tracking-[-0.055em] @4xl/calculator:text-4xl">
-            {formatRecommendedOrder(calculation.recommendedOrderCubicYards)}{' '}
-            <span className="text-xl @4xl/calculator:text-2xl">yd³</span>
-          </p>
-          <p className="mt-2 text-xs leading-5 text-white/85 @4xl/calculator:text-[0.8125rem]">
-            Includes your selected {input.allowancePercent}% allowance and minimal upward rounding.
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold">
-            <Check size={14} aria-hidden="true" /> Ready to order
-          </span>
-          <p className="mt-2 text-[0.7rem] text-white/75">Supplier order increments may vary.</p>
-        </article>
-        {cards.slice(0, 4).map((card) => (
-          <ResultCard key={card.label} {...card} />
-        ))}
-        {cards.slice(4).map((card, index) => (
-          <ResultCard
-            key={card.label}
-            {...card}
-            className={
-              index === 2 ? 'col-span-2 @2xl/calculator:col-span-3 @4xl/calculator:col-span-1' : ''
-            }
-          />
-        ))}
+    <section
+      className="rounded-card border border-brand/25 bg-brand-soft/55 p-3 shadow-card sm:p-4"
+      aria-labelledby="gravel-results-heading"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-brand">
+        <CheckCircle2 size={14} aria-hidden="true" /> Your gravel estimate
       </div>
-      <article className="rounded-card border border-brand/30 bg-brand-soft p-3.5 @2xl/calculator:p-4">
-        <h3 className="text-sm font-extrabold tracking-[-0.025em] text-ink @2xl/calculator:text-base">
-          Why order {formatRecommendedOrder(calculation.recommendedOrderCubicYards)} yd³?
-        </h3>
-        <p className="mt-1.5 text-[0.8125rem] leading-5 text-ink-soft @2xl/calculator:text-sm">
-          {recommendation.explanation}
-        </p>
-        {input.inputMode !== 'volume' && (
-          <p className="mt-2 text-[0.8125rem] font-semibold leading-5 text-ink @2xl/calculator:text-sm">
-            Depth guidance:{' '}
-            <span className="font-normal text-ink-soft">{recommendation.depthGuidance}</span>
-          </p>
+      <h2
+        id="gravel-results-heading"
+        className="mt-1 text-3xl font-extrabold tracking-[-0.055em] text-ink tabular-nums"
+      >
+        {formatOrder(calculation.recommendedOrderCubicYards)} <span className="text-xl">yd³</span>
+      </h2>
+      <p className="text-xs text-ink-soft">Suggested order quantity</p>
+      <div
+        className={`mt-3 grid divide-y divide-line overflow-hidden rounded-control border border-line bg-panel ${areaApplicable ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-2 sm:divide-x sm:divide-y-0'}`}
+      >
+        <ResultColumn
+          title="Volume"
+          values={[
+            `${formatNumber(calculation.volumeCubicYards)} yd³`,
+            `${formatNumber(calculation.volumeCubicFeet)} ft³`,
+            `${formatNumber(calculation.volumeCubicMeters)} m³`,
+            `${formatNumber(calculation.volumeCubicMeters * 1000, 0)} L`,
+          ]}
+        />
+        <ResultColumn
+          title="Weight"
+          values={[
+            `${formatNumber(calculation.estimatedWeightTons)} short tons`,
+            `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
+            `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
+            `${formatNumber(calculation.estimatedWeightKilograms / 1000)} metric tons`,
+          ]}
+        />
+        {areaApplicable && (
+          <ResultColumn
+            title="Area"
+            values={[
+              `${formatNumber(calculation.surfaceAreaSquareFeet)} ft²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet / 9)} yd²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`,
+            ]}
+          />
         )}
-      </article>
+      </div>
+      <p className="mt-2 text-[0.68rem] leading-4 text-ink">
+        <strong>Gravel:</strong> {gravelLabel} · <strong>Density:</strong>{' '}
+        {formatNumber(calculation.densityTonsPerYard)} tons/yd³ · <strong>Allowance:</strong>{' '}
+        {input.allowancePercent}% · <strong>Units:</strong>{' '}
+        {system === 'imperial' ? 'Imperial (US)' : 'Metric'}
+      </p>
+      <p className="mt-1 text-[0.68rem] leading-4 text-ink-soft">
+        Estimate only. Actual requirements vary with density, moisture, compaction, site conditions,
+        measurements, and supplier specifications.
+      </p>
+      {optionalDetails.length > 0 && (
+        <div className={`mt-2 grid gap-1.5 ${optionalGridClass}`}>
+          {optionalDetails.map((detail) => (
+            <CompactDetail key={detail.label} {...detail} />
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-[0.7rem] leading-4 text-ink-soft">{recommendation.explanation}</p>
       {recommendation.warnings.map((warning) => (
         <div
           key={warning}
-          className="flex gap-2.5 rounded-card border border-warning/35 bg-warning-soft px-3.5 py-3 text-[0.8125rem] leading-5 text-ink @2xl/calculator:text-sm"
+          className="mt-2 flex gap-2 rounded-control border border-warning/35 bg-warning-soft p-2 text-[0.7rem] leading-4 text-ink"
         >
-          <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={18} aria-hidden="true" />
-          <p>
-            <strong>Consider this:</strong> {warning}
-          </p>
+          <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={14} aria-hidden="true" />
+          {warning}
         </div>
       ))}
+      <div className="mt-3 grid grid-cols-4 gap-1.5">
+        <ActionButton label="Copy" icon={<Copy size={13} aria-hidden="true" />} onClick={onCopy} />
+        <ActionButton
+          label="Print"
+          icon={<Printer size={13} aria-hidden="true" />}
+          onClick={onPrint}
+        />
+        <ActionButton
+          label={isPreparingPdf ? 'Preparing…' : 'PDF'}
+          icon={<Download size={13} aria-hidden="true" />}
+          onClick={onDownload}
+          disabled={isPreparingPdf}
+        />
+        <ActionButton
+          label="Share"
+          icon={<Share2 size={13} aria-hidden="true" />}
+          onClick={onShare}
+        />
+      </div>
+    </section>
+  );
+}
+
+function ResultColumn({ title, values }: { title: string; values: string[] }) {
+  return (
+    <div className="min-w-0 p-2">
+      <h3 className="text-[0.62rem] font-extrabold uppercase tracking-[0.08em] text-ink-soft">
+        {title}
+      </h3>
+      <ul className="mt-1 space-y-0.5">
+        {values.map((value) => (
+          <li key={value} className="text-[0.7rem] font-semibold text-ink tabular-nums">
+            {value}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function ResultCard({
-  label,
-  value,
-  detail,
-  className = '',
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  className?: string;
-}) {
-  const isOptional = value.startsWith('Add ');
+function CompactDetail({ label, value }: { label: string; value: string }) {
   return (
-    <article
-      data-result-card="metric"
-      className={`min-w-0 rounded-card border border-line bg-panel p-3 shadow-card @4xl/calculator:p-3.5 ${className}`}
-    >
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-ink-soft">{label}</p>
-      <p
-        className={`mt-1 break-words font-extrabold tracking-[-0.035em] text-ink tabular-nums ${isOptional ? 'text-base text-ink-soft @4xl/calculator:text-lg' : 'text-lg @4xl/calculator:text-xl'}`}
-      >
+    <div className="min-w-0 rounded-control border border-line bg-panel p-2 text-center">
+      <p className="text-[0.58rem] font-bold uppercase tracking-[0.06em] text-ink-soft">{label}</p>
+      <p className="mt-0.5 break-words text-[0.7rem] font-extrabold text-ink tabular-nums">
         {value}
       </p>
-      <p className="mt-1 text-[0.72rem] leading-4 text-ink-soft">{detail}</p>
-    </article>
+    </div>
+  );
+}
+
+function ActionButton({
+  label,
+  icon,
+  onClick,
+  disabled = false,
+}: {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex min-h-10 items-center justify-center gap-1 rounded-control border border-line bg-panel px-1.5 text-[0.68rem] font-bold text-ink transition-colors hover:bg-panel-muted disabled:opacity-60"
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

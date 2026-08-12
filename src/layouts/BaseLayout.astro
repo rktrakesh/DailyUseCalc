@@ -45,7 +45,7 @@ const gaInitialization = `
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light" data-theme-preference="system">
+<html lang="en" data-theme="light" data-theme-preference="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -66,11 +66,10 @@ const gaInitialization = `
     <title>{title}</title>
     <script is:inline>
       try {
-        const preference = localStorage.getItem('duc-theme') || 'system';
-        const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = preference === 'system' ? (systemIsDark ? 'dark' : 'light') : preference;
+        const savedTheme = localStorage.getItem('duc-theme');
+        const theme = savedTheme === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = theme;
-        document.documentElement.dataset.themePreference = preference;
+        document.documentElement.dataset.themePreference = theme;
         document.documentElement.style.colorScheme = theme;
       } catch {}
     </script>

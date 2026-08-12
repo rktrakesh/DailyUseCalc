@@ -137,8 +137,7 @@ html[data-theme='dark'] {
 }
 
 html[data-theme-preference='light'] .theme-icon-light,
-html[data-theme-preference='dark'] .theme-icon-dark,
-html[data-theme-preference='system'] .theme-icon-system {
+html[data-theme-preference='dark'] .theme-icon-dark {
   display: block;
 }
 
