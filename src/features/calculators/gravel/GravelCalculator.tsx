@@ -99,7 +99,7 @@ function formatCurrency(value: number | undefined, currency: CurrencyCode) {
 }
 
 function inputClass(invalid = false) {
-  return `h-11 w-full rounded-control border bg-panel px-3 text-base text-ink outline-none transition-colors placeholder:text-ink focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 sm:text-sm ${invalid ? 'border-danger' : 'border-line'}`;
+  return `h-11 w-full rounded-control border bg-panel px-3 text-base text-ink outline-none transition-colors placeholder:text-ink focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-2 sm:h-10 sm:text-sm ${invalid ? 'border-danger' : 'border-line'}`;
 }
 
 export default function GravelCalculator() {
@@ -279,9 +279,9 @@ export default function GravelCalculator() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="@container/calculator grid gap-4">
       <section
-        className="rounded-card border border-line bg-panel p-5 shadow-card sm:p-6"
+        className="rounded-card border border-line bg-panel p-4 shadow-card md:p-5"
         aria-labelledby="project-details-heading"
         onChangeCapture={() => setHasInteracted(true)}
       >
@@ -309,8 +309,8 @@ export default function GravelCalculator() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-bold text-ink">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="grid gap-1.5 text-sm font-bold text-ink">
             What are you building?
             <span className="relative">
               <select
@@ -346,14 +346,14 @@ export default function GravelCalculator() {
           <fieldset>
             <legend className="text-sm font-bold text-ink">Measurement system</legend>
             <div
-              className="mt-2 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+              className="mt-1.5 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
               role="radiogroup"
               aria-label="Measurement system"
             >
               {(['imperial', 'metric'] as const).map((system) => (
                 <label
                   key={system}
-                  className={`cursor-pointer rounded-md px-3 py-2.5 text-center text-sm font-bold transition-colors ${measurementSystem === system ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+                  className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${measurementSystem === system ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
                 >
                   <input
                     className="sr-only"
@@ -370,63 +370,65 @@ export default function GravelCalculator() {
           </fieldset>
         </div>
 
-        <fieldset className="mt-6">
-          <legend className="text-sm font-bold text-ink">How do you know your project size?</legend>
-          <div
-            className="mt-2 grid grid-cols-3 rounded-control border border-line bg-surface p-1"
-            role="radiogroup"
-            aria-label="Project size input mode"
-          >
-            {(['dimensions', 'area', 'volume'] as ProjectSizeMode[]).map((mode) => (
-              <label
-                key={mode}
-                className={`cursor-pointer rounded-md px-2 py-2.5 text-center text-sm font-bold transition-colors ${input.inputMode === mode ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
-              >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="input-mode"
-                  value={mode}
-                  checked={input.inputMode === mode}
-                  onChange={() => setInput((current) => ({ ...current, inputMode: mode }))}
-                />
-                {mode[0].toUpperCase() + mode.slice(1)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {input.inputMode === 'dimensions' && (
-          <fieldset className="mt-5 sm:mt-6">
-            <legend className="text-sm font-bold text-ink">Area shape</legend>
+        <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)] md:items-start">
+          <fieldset className="md:max-w-[28rem]">
+            <legend className="text-sm font-bold text-ink">Project size</legend>
             <div
-              className="mt-2 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+              className="mt-1.5 grid grid-cols-3 rounded-control border border-line bg-surface p-1"
               role="radiogroup"
-              aria-label="Area shape"
+              aria-label="Project size input mode"
             >
-              {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
+              {(['dimensions', 'area', 'volume'] as ProjectSizeMode[]).map((mode) => (
                 <label
-                  key={shape}
-                  className={`cursor-pointer rounded-md px-3 py-2.5 text-center text-sm font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+                  key={mode}
+                  className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${input.inputMode === mode ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
                 >
                   <input
                     className="sr-only"
                     type="radio"
-                    name="area-shape"
-                    value={shape}
-                    checked={input.areaShape === shape}
-                    onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
+                    name="input-mode"
+                    value={mode}
+                    checked={input.inputMode === mode}
+                    onChange={() => setInput((current) => ({ ...current, inputMode: mode }))}
                   />
-                  {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
+                  {mode[0].toUpperCase() + mode.slice(1)}
                 </label>
               ))}
             </div>
           </fieldset>
-        )}
 
-        <fieldset className="mt-6">
+          {input.inputMode === 'dimensions' && (
+            <fieldset className="md:max-w-[20rem]">
+              <legend className="text-sm font-bold text-ink">Area shape</legend>
+              <div
+                className="mt-1.5 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+                role="radiogroup"
+                aria-label="Area shape"
+              >
+                {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
+                  <label
+                    key={shape}
+                    className={`cursor-pointer rounded-md px-3 py-2 text-center text-[0.8125rem] font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+                  >
+                    <input
+                      className="sr-only"
+                      type="radio"
+                      name="area-shape"
+                      value={shape}
+                      checked={input.areaShape === shape}
+                      onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
+                    />
+                    {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </div>
+
+        <fieldset className="mt-4">
           <legend className="text-sm font-bold text-ink">Measurements</legend>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {input.inputMode === 'dimensions' &&
               (input.areaShape === 'rectangle' ? (
                 <>
@@ -532,7 +534,7 @@ export default function GravelCalculator() {
               />
             )}
           </div>
-          <p className="mt-3 text-xs text-ink-soft">
+          <p className="mt-2 text-xs leading-4.5 text-ink-soft">
             {input.inputMode === 'volume'
               ? 'Enter the complete volume in the unit you already know.'
               : input.inputMode === 'area'
@@ -543,7 +545,7 @@ export default function GravelCalculator() {
           </p>
         </fieldset>
 
-        <label className="mt-6 grid gap-2 text-sm font-bold text-ink">
+        <label className="mt-4 grid gap-1.5 text-sm font-bold text-ink">
           Gravel type
           <span className="relative">
             <select
@@ -577,8 +579,8 @@ export default function GravelCalculator() {
           </span>
         </label>
 
-        <details className="mt-6 rounded-control border border-line bg-surface">
-          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 text-sm font-bold text-ink marker:content-none">
+        <details className="mt-4 rounded-control border border-line bg-surface">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3.5 text-sm font-bold text-ink marker:content-none">
             Advanced options{' '}
             <ChevronDown
               className="transition-transform [[open]_&]:rotate-180"
@@ -586,9 +588,9 @@ export default function GravelCalculator() {
               aria-hidden="true"
             />
           </summary>
-          <div className="grid gap-3 border-t border-line p-3 md:grid-cols-2 md:gap-5 md:p-4">
-            <details className="group rounded-control border border-line md:contents">
-              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+          <div className="grid gap-2.5 border-t border-line p-2.5 @2xl/calculator:grid-cols-2 @4xl/calculator:grid-cols-3 @4xl/calculator:p-3">
+            <details open className="group rounded-control border border-line">
+              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
                 Material &amp; Density
                 <ChevronDown
                   className="transition-transform group-open:rotate-180"
@@ -596,7 +598,7 @@ export default function GravelCalculator() {
                   aria-hidden="true"
                 />
               </summary>
-              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
+              <div className="hidden gap-3 border-t border-line p-3 group-open:grid">
                 <NumberField
                   id="allowance"
                   label="Allowance / waste"
@@ -630,8 +632,8 @@ export default function GravelCalculator() {
               </div>
             </details>
 
-            <details className="group rounded-control border border-line md:contents">
-              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+            <details open className="group rounded-control border border-line">
+              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
                 Pricing
                 <ChevronDown
                   className="transition-transform group-open:rotate-180"
@@ -639,8 +641,8 @@ export default function GravelCalculator() {
                   aria-hidden="true"
                 />
               </summary>
-              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
-                <label className="grid gap-2 text-sm font-bold text-ink md:col-span-2">
+              <div className="hidden gap-3 border-t border-line p-3 group-open:grid">
+                <label className="grid gap-1.5 text-sm font-bold text-ink">
                   Currency
                   <select
                     className={`${inputClass()} bg-panel`}
@@ -688,8 +690,11 @@ export default function GravelCalculator() {
               </div>
             </details>
 
-            <details className="group rounded-control border border-line md:contents">
-              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+            <details
+              open
+              className="group rounded-control border border-line @2xl/calculator:col-span-2 @4xl/calculator:col-span-1"
+            >
+              <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-3 px-3 text-[0.8125rem] font-bold text-ink marker:content-none">
                 Bags &amp; Delivery
                 <ChevronDown
                   className="transition-transform group-open:rotate-180"
@@ -697,7 +702,7 @@ export default function GravelCalculator() {
                   aria-hidden="true"
                 />
               </summary>
-              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
+              <div className="hidden gap-3 border-t border-line p-3 group-open:grid @2xl/calculator:grid-cols-2 @4xl/calculator:grid-cols-1">
                 <NumberField
                   id="truck-capacity"
                   label="Truck capacity"
@@ -744,12 +749,12 @@ export default function GravelCalculator() {
       </section>
 
       <section aria-labelledby="results-heading">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-brand">Your estimate</p>
             <h2
               id="results-heading"
-              className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink"
+              className="mt-0.5 text-xl font-extrabold tracking-[-0.04em] text-ink"
             >
               Results
             </h2>
@@ -784,11 +789,11 @@ export default function GravelCalculator() {
 
       {calculation && recommendation && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <button
               type="button"
               onClick={copyEstimate}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
             >
               <Copy size={16} aria-hidden="true" /> Copy estimate
             </button>
@@ -796,7 +801,7 @@ export default function GravelCalculator() {
               type="button"
               onClick={printEstimate}
               title="Open the browser print dialog."
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
             >
               <Printer size={16} aria-hidden="true" /> Print
             </button>
@@ -805,7 +810,7 @@ export default function GravelCalculator() {
               onClick={downloadEstimate}
               disabled={isPreparingPdf}
               title="Download a PDF estimate."
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
             >
               <Download size={16} aria-hidden="true" />{' '}
               {isPreparingPdf ? 'Preparing PDF…' : 'Save as PDF'}
@@ -813,7 +818,7 @@ export default function GravelCalculator() {
             <button
               type="button"
               onClick={shareEstimate}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-line bg-panel px-3 text-xs font-bold text-ink transition-colors hover:bg-panel-muted sm:min-h-10"
             >
               <Share2 size={16} aria-hidden="true" /> Share
             </button>
@@ -847,7 +852,7 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
       {label}
       <span className="relative">
         <input
@@ -895,7 +900,7 @@ function OptionalNumberField({
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
       {label}
       <span className="relative">
         <input
@@ -947,7 +952,7 @@ function UnitNumberField({
   onUnitChange: (unit: string) => void;
 }) {
   return (
-    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink" htmlFor={id}>
       {label}
       <span className="grid grid-cols-[minmax(0,1fr)_4.5rem]">
         <input
@@ -967,7 +972,7 @@ function UnitNumberField({
         />
         <select
           aria-label={`${label} unit`}
-          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand/60"
+          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand/60 sm:h-10"
           value={unit}
           onChange={(event) => onUnitChange(event.target.value)}
         >
@@ -1047,36 +1052,49 @@ function Results({
     },
   ];
   return (
-    <div className="grid gap-4" aria-live="polite">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-1 sm:gap-4 lg:grid-cols-3">
-        <article className="col-span-2 rounded-card bg-brand p-4 text-white shadow-card sm:col-span-1 sm:p-5 lg:row-span-2">
-          <p className="text-sm font-bold text-white/85">Recommended order</p>
-          <p className="mt-3 text-4xl font-extrabold tracking-[-0.055em]">
-            {formatRecommendedOrder(calculation.recommendedOrderCubicYards)}{' '}
-            <span className="text-2xl">yd³</span>
+    <div className="grid gap-3" aria-live="polite">
+      <div className="grid grid-cols-2 items-start gap-2.5 @2xl/calculator:grid-cols-3 @4xl/calculator:grid-cols-4">
+        <article
+          data-result-card="primary"
+          className="col-span-2 rounded-card bg-brand p-3.5 text-white shadow-card @2xl/calculator:col-span-3 @2xl/calculator:p-4 @4xl/calculator:col-span-2 @4xl/calculator:row-span-2 @4xl/calculator:self-stretch"
+        >
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/85">
+            Recommended order
           </p>
-          <p className="mt-3 text-sm leading-5 text-white/85">
+          <p className="mt-2 text-3xl font-extrabold tracking-[-0.055em] @4xl/calculator:text-4xl">
+            {formatRecommendedOrder(calculation.recommendedOrderCubicYards)}{' '}
+            <span className="text-xl @4xl/calculator:text-2xl">yd³</span>
+          </p>
+          <p className="mt-2 text-xs leading-5 text-white/85 @4xl/calculator:text-[0.8125rem]">
             Includes your selected {input.allowancePercent}% allowance and minimal upward rounding.
           </p>
-          <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold">
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold">
             <Check size={14} aria-hidden="true" /> Ready to order
           </span>
-          <p className="mt-3 text-xs text-white/75">Supplier order increments may vary.</p>
+          <p className="mt-2 text-[0.7rem] text-white/75">Supplier order increments may vary.</p>
         </article>
-        {cards.slice(0, 2).map((card) => (
+        {cards.slice(0, 4).map((card) => (
           <ResultCard key={card.label} {...card} />
         ))}
-        {cards.slice(2).map((card) => (
-          <ResultCard key={card.label} {...card} />
+        {cards.slice(4).map((card, index) => (
+          <ResultCard
+            key={card.label}
+            {...card}
+            className={
+              index === 2 ? 'col-span-2 @2xl/calculator:col-span-3 @4xl/calculator:col-span-1' : ''
+            }
+          />
         ))}
       </div>
-      <article className="rounded-card border border-brand/30 bg-brand-soft p-5">
-        <h3 className="text-base font-extrabold tracking-[-0.025em] text-ink">
+      <article className="rounded-card border border-brand/30 bg-brand-soft p-3.5 @2xl/calculator:p-4">
+        <h3 className="text-sm font-extrabold tracking-[-0.025em] text-ink @2xl/calculator:text-base">
           Why order {formatRecommendedOrder(calculation.recommendedOrderCubicYards)} yd³?
         </h3>
-        <p className="mt-2 text-sm leading-6 text-ink-soft">{recommendation.explanation}</p>
+        <p className="mt-1.5 text-[0.8125rem] leading-5 text-ink-soft @2xl/calculator:text-sm">
+          {recommendation.explanation}
+        </p>
         {input.inputMode !== 'volume' && (
-          <p className="mt-3 text-sm font-semibold text-ink">
+          <p className="mt-2 text-[0.8125rem] font-semibold leading-5 text-ink @2xl/calculator:text-sm">
             Depth guidance:{' '}
             <span className="font-normal text-ink-soft">{recommendation.depthGuidance}</span>
           </p>
@@ -1085,7 +1103,7 @@ function Results({
       {recommendation.warnings.map((warning) => (
         <div
           key={warning}
-          className="flex gap-3 rounded-card border border-warning/35 bg-warning-soft p-4 text-sm text-ink"
+          className="flex gap-2.5 rounded-card border border-warning/35 bg-warning-soft px-3.5 py-3 text-[0.8125rem] leading-5 text-ink @2xl/calculator:text-sm"
         >
           <AlertTriangle className="mt-0.5 shrink-0 text-warning" size={18} aria-hidden="true" />
           <p>
@@ -1097,14 +1115,30 @@ function Results({
   );
 }
 
-function ResultCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+function ResultCard({
+  label,
+  value,
+  detail,
+  className = '',
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  className?: string;
+}) {
+  const isOptional = value.startsWith('Add ');
   return (
-    <article className="min-w-0 rounded-card border border-line bg-panel p-4 shadow-card sm:p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-soft">{label}</p>
-      <p className="mt-1.5 break-words text-xl font-extrabold tracking-[-0.04em] text-ink tabular-nums sm:mt-2 sm:text-2xl">
+    <article
+      data-result-card="metric"
+      className={`min-w-0 rounded-card border border-line bg-panel p-3 shadow-card @4xl/calculator:p-3.5 ${className}`}
+    >
+      <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-ink-soft">{label}</p>
+      <p
+        className={`mt-1 break-words font-extrabold tracking-[-0.035em] text-ink tabular-nums ${isOptional ? 'text-base text-ink-soft @4xl/calculator:text-lg' : 'text-lg @4xl/calculator:text-xl'}`}
+      >
         {value}
       </p>
-      <p className="mt-1.5 text-xs leading-5 text-ink-soft sm:mt-2 sm:text-sm">{detail}</p>
+      <p className="mt-1 text-[0.72rem] leading-4 text-ink-soft">{detail}</p>
     </article>
   );
 }
