@@ -28,10 +28,19 @@ const schemas = structuredData
 const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
 const analyticsEnabled = import.meta.env.PROD && /^G-[A-Z0-9]+$/.test(gaMeasurementId || '');
 const gaInitialization = `
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', ${JSON.stringify(gaMeasurementId)});
+  if (window.location.hostname === 'dailyusecalc.com' && !window.__dailyUseCalcGaLoaded) {
+    window.__dailyUseCalcGaLoaded = true;
+
+    var gaScript = document.createElement('script');
+    gaScript.async = true;
+    gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}';
+    document.head.appendChild(gaScript);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', ${JSON.stringify(gaMeasurementId)});
+  }
 `;
 ---
 
@@ -65,18 +74,7 @@ const gaInitialization = `
         document.documentElement.style.colorScheme = theme;
       } catch {}
     </script>
-    {
-      analyticsEnabled && (
-        <>
-          <script
-            is:inline
-            async
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
-          />
-          <script is:inline set:html={gaInitialization} />
-        </>
-      )
-    }
+    {analyticsEnabled && <script is:inline set:html={gaInitialization} />}
     {
       schemas.map((schema) => (
         <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
