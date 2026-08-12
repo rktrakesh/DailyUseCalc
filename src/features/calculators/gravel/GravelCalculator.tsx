@@ -338,7 +338,7 @@ export default function GravelCalculator() {
 
         <fieldset className="mt-6">
           <legend className="text-sm font-bold text-ink">Measurements</legend>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             <NumberField
               id="length"
               label="Length"
@@ -618,7 +618,7 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
       {label}
       <span className="relative">
         <input
@@ -666,7 +666,7 @@ function OptionalNumberField({
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-bold text-ink" htmlFor={id}>
+    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
       {label}
       <span className="relative">
         <input
@@ -759,8 +759,8 @@ function Results({
   ];
   return (
     <div className="grid gap-4" aria-live="polite">
-      <div className="grid gap-4 lg:grid-cols-3">
-        <article className="rounded-card bg-brand p-5 text-white shadow-card lg:row-span-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-1 sm:gap-4 lg:grid-cols-3">
+        <article className="col-span-2 rounded-card bg-brand p-4 text-white shadow-card sm:col-span-1 sm:p-5 lg:row-span-2">
           <p className="text-sm font-bold text-white/85">Recommended order</p>
           <p className="mt-3 text-4xl font-extrabold tracking-[-0.055em]">
             {formatRecommendedOrder(calculation.recommendedOrderCubicYards)}{' '}
@@ -808,12 +808,12 @@ function Results({
 
 function ResultCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <article className="rounded-card border border-line bg-panel p-5 shadow-card">
+    <article className="min-w-0 rounded-card border border-line bg-panel p-4 shadow-card sm:p-5">
       <p className="text-xs font-bold uppercase tracking-[0.08em] text-ink-soft">{label}</p>
-      <p className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-ink tabular-nums">
+      <p className="mt-1.5 break-words text-xl font-extrabold tracking-[-0.04em] text-ink tabular-nums sm:mt-2 sm:text-2xl">
         {value}
       </p>
-      <p className="mt-2 text-sm text-ink-soft">{detail}</p>
+      <p className="mt-1.5 text-xs leading-5 text-ink-soft sm:mt-2 sm:text-sm">{detail}</p>
     </article>
   );
 }
