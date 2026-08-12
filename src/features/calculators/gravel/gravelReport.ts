@@ -1,4 +1,5 @@
 import type { EstimateReportData } from '../../../components/reports/EstimateReport';
+import { createReportFilename } from '../../../lib/reports/reportFilename';
 import type {
   GravelCalculation,
   GravelInput,
@@ -45,6 +46,7 @@ export function createGravelEstimateReport({
   notes,
   generatedAt,
 }: GravelReportOptions): EstimateReportData {
+  const reportGeneratedAt = generatedAt ?? new Date();
   const metric = measurementSystem === 'metric';
   const volume = metric
     ? `${number(calculation.volumeCubicMeters)} m³`
@@ -64,9 +66,9 @@ export function createGravelEstimateReport({
   const factor = (1 + input.allowancePercent / 100).toFixed(2);
   const recommendedOrder = calculation.recommendedOrderCubicYards.toFixed(1);
   return {
-    documentTitle: 'dailyusecalc-gravel-estimate',
+    documentTitle: createReportFilename('gravel', reportGeneratedAt),
     reportTitle: 'GRAVEL ESTIMATE',
-    generatedAt: generatedAt ?? new Date(),
+    generatedAt: reportGeneratedAt,
     projectName: projectName?.trim() || 'Gravel Project Estimate',
     projectTypeLabel: projectLabels[input.projectType],
     primaryResult: {

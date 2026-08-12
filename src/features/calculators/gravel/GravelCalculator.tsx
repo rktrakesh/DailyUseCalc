@@ -97,6 +97,7 @@ export default function GravelCalculator() {
   const [input, setInput] = useState<GravelFormInput>(createEmptyInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
   const [copyStatus, setCopyStatus] = useState('');
+  const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const calculationInput = useMemo(() => toCalculationInput(input), [input]);
   const validationIssues = useMemo(
@@ -217,25 +218,30 @@ export default function GravelCalculator() {
       )
     ) {
       setCopyStatus('Allow pop-ups to print your estimate.');
+      return;
     }
+    setCopyStatus('Choose a printer or another destination in the print dialog.');
   }
 
-  function downloadEstimate() {
+  async function downloadEstimate() {
     if (!calculation || !recommendation || !calculationInput) return;
-    if (
-      !downloadReportAsPdf(
+    setIsPreparingPdf(true);
+    try {
+      await downloadReportAsPdf(
         createGravelEstimateReport({
           calculation,
           input: calculationInput,
           recommendation,
           measurementSystem,
         }),
-      )
-    ) {
-      setCopyStatus('Allow pop-ups to save your estimate as a PDF.');
-      return;
+      );
+      setCopyStatus('PDF download started.');
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      setCopyStatus('Could not prepare the PDF. Please try again.');
+    } finally {
+      setIsPreparingPdf(false);
     }
-    setCopyStatus('Choose “Save as PDF” in the print dialog to download your estimate.');
   }
 
   return (
@@ -560,6 +566,7 @@ export default function GravelCalculator() {
             <button
               type="button"
               onClick={printEstimate}
+              title="Open the browser print dialog."
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
             >
               <Printer size={16} aria-hidden="true" /> Print
@@ -567,9 +574,12 @@ export default function GravelCalculator() {
             <button
               type="button"
               onClick={downloadEstimate}
+              disabled={isPreparingPdf}
+              title="Download a PDF estimate."
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-line bg-panel px-4 text-sm font-bold text-ink transition-colors hover:bg-panel-muted"
             >
-              <Download size={16} aria-hidden="true" /> Save as PDF
+              <Download size={16} aria-hidden="true" />{' '}
+              {isPreparingPdf ? 'Preparing PDF…' : 'Save as PDF'}
             </button>
             <button
               type="button"

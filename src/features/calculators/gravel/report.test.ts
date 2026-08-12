@@ -3,6 +3,7 @@ import { calculateGravel } from './calculator';
 import { recommendGravel } from './recommendations';
 import { createGravelEstimateReport } from './gravelReport';
 import { createEstimateReportHtml } from '../../../components/reports/EstimateReport';
+import { createPdfFilename, createReportFilename } from '../../../lib/reports/reportFilename';
 import type { GravelInput } from './types';
 
 const input: GravelInput = {
@@ -30,11 +31,33 @@ describe('gravel estimate report', () => {
     });
 
     expect(report.projectName).toBe('Gravel Project Estimate');
+    expect(report.documentTitle).toBe('dailyusecalc-gravel-2026-08-09');
     expect(report.primaryResult.value).toBe('24.7 yd³');
     expect(report.summary).toContainEqual({ label: 'Allowance', value: '0%' });
     expect(report.additionalDetails).toContainEqual({ label: 'Estimated cost', value: '$1,167' });
     expect(report.customSections?.[0]?.title).toBe('WHY 24.7 YD³?');
     expect(report.footerUrl).toBe('dailyusecalc.com/gravel');
+  });
+
+  it('creates reusable, browser-safe report filename hints', () => {
+    const date = new Date(2026, 7, 12);
+
+    expect(createReportFilename('gravel', date)).toBe('dailyusecalc-gravel-2026-08-12');
+    expect(createReportFilename('Paint & CoNCrete!', date)).toBe(
+      'dailyusecalc-paint-concrete-2026-08-12',
+    );
+    expect(createPdfFilename('dailyusecalc-gravel-2026-08-12')).toBe(
+      'dailyusecalc-gravel-2026-08-12.pdf',
+    );
+    expect(createPdfFilename('dailyusecalc-gravel-2026-08-12.pdf')).toBe(
+      'dailyusecalc-gravel-2026-08-12.pdf',
+    );
+  });
+
+  it('exposes the shared PDF renderer without calculator-specific PDF logic', async () => {
+    const renderer = await import('../../../lib/reports/pdfRenderer');
+
+    expect(renderer.downloadEstimatePdf).toBeTypeOf('function');
   });
 
   it('supports metric presentation and optional user-provided content', () => {
@@ -70,6 +93,7 @@ describe('gravel estimate report', () => {
     });
 
     const html = createEstimateReportHtml(report);
+    expect(html).toContain('src="/logo/dailyusecalc-logo-176.png"');
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).not.toContain('<img src=x onerror=alert(1)>');
   });
