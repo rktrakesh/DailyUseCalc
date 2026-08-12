@@ -13,9 +13,15 @@ import {
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
-import { calculateGravel, recommendGravel, validateGravelInput } from './index';
+import {
+  adjustedVolumeConversions,
+  calculateGravel,
+  recommendGravel,
+  validateGravelInput,
+} from './index';
 import { createGravelEstimateReport } from './gravelReport';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
+import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
 import type {
   AreaShape,
   GravelInput,
@@ -48,47 +54,6 @@ const CURRENCY_STORAGE_KEY = 'duc-gravel-currency';
 
 type GravelFormInput = GravelInput;
 
-function createDefaultInput(): GravelFormInput {
-  return {
-    inputMode: 'dimensions',
-    areaShape: 'rectangle',
-    projectType: 'driveway',
-    gravelType: 'crushed-stone',
-    length: { value: 20, unit: 'ft' },
-    width: { value: 15, unit: 'ft' },
-    diameter: { value: 20, unit: 'ft' },
-    depth: { value: 3, unit: 'in' },
-    knownArea: { value: 300, unit: 'ft²' },
-    knownVolume: { value: 3, unit: 'yd³' },
-    currency: 'USD',
-    allowancePercent: 0,
-    pricePerCubicYard: undefined,
-    deliveryFee: undefined,
-    bagSizeCubicFeet: undefined,
-    bagPrice: undefined,
-    truckCapacityCubicYards: undefined,
-  };
-}
-
-function createEmptyInput(currency: CurrencyCode): GravelFormInput {
-  return {
-    ...createDefaultInput(),
-    projectType: 'driveway',
-    gravelType: 'pea-gravel',
-    length: { value: Number.NaN, unit: 'ft' },
-    width: { value: Number.NaN, unit: 'ft' },
-    diameter: { value: Number.NaN, unit: 'ft' },
-    depth: { value: Number.NaN, unit: 'in' },
-    knownArea: { value: Number.NaN, unit: 'ft²' },
-    knownVolume: { value: Number.NaN, unit: 'yd³' },
-    currency,
-    allowancePercent: 10,
-    pricePerCubicYard: undefined,
-    bagSizeCubicFeet: undefined,
-    truckCapacityCubicYards: undefined,
-  };
-}
-
 function numberFromEvent(event: ChangeEvent<HTMLInputElement>) {
   return Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : Number.NaN;
 }
@@ -117,7 +82,7 @@ function selectLabel<T extends string>(options: Array<{ value: T; label: string 
 }
 
 export default function GravelCalculator() {
-  const [input, setInput] = useState<GravelFormInput>(createDefaultInput);
+  const [input, setInput] = useState<GravelFormInput>(createDefaultGravelInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
   const [submitted, setSubmitted] = useState<{
     input: GravelInput;
@@ -192,7 +157,7 @@ export default function GravelCalculator() {
   }
 
   function clearInputs() {
-    setInput(createEmptyInput(input.currency));
+    setInput(createClearedGravelInput(input.currency));
     setSubmitted(undefined);
     setValidationIssues([]);
     setMeasurementSystem('imperial');
@@ -845,6 +810,7 @@ function ResultPanel({
 }) {
   const areaApplicable = input.inputMode !== 'volume';
   const gravelLabel = selectLabel(gravelOptions, input.gravelType);
+  const adjustedVolume = adjustedVolumeConversions(calculation.adjustedVolumeCubicYards);
   const optionalDetails = [
     calculation.estimatedCost !== undefined
       ? {
@@ -893,14 +859,14 @@ function ResultPanel({
         <ResultColumn
           title="Volume"
           values={[
-            `${formatNumber(calculation.volumeCubicYards)} yd³`,
-            `${formatNumber(calculation.volumeCubicFeet)} ft³`,
-            `${formatNumber(calculation.volumeCubicMeters)} m³`,
-            `${formatNumber(calculation.volumeCubicMeters * 1000, 0)} L`,
+            `${formatNumber(adjustedVolume.cubicYards)} yd³`,
+            `${formatNumber(adjustedVolume.cubicFeet)} ft³`,
+            `${formatNumber(adjustedVolume.cubicMeters)} m³`,
+            `${formatNumber(adjustedVolume.liters, 0)} L`,
           ]}
         />
         <ResultColumn
-          title="Weight"
+          title="Estimated weight"
           values={[
             `${formatNumber(calculation.estimatedWeightTons)} short tons`,
             `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
@@ -919,6 +885,10 @@ function ResultPanel({
           />
         )}
       </div>
+      <p className="mt-2 text-[0.68rem] leading-4 text-ink-soft tabular-nums">
+        Measured: {formatNumber(calculation.volumeCubicYards)} yd³ · Extra: +
+        {formatNumber(calculation.allowanceVolumeCubicYards)} yd³ ({input.allowancePercent}%)
+      </p>
       <p className="mt-2 text-[0.68rem] leading-4 text-ink">
         <strong>Gravel:</strong> {gravelLabel} · <strong>Density:</strong>{' '}
         {formatNumber(calculation.densityTonsPerYard)} tons/yd³ · <strong>Allowance:</strong>{' '}

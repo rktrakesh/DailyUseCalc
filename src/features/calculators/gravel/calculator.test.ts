@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adjustedVolumeConversions,
   calculateGravel,
   recommendGravel,
   recommendedOrderCubicYards,
   validateGravelInput,
 } from '.';
+import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
 import { convertLength } from '../../../lib/units/measurements';
 import type { GravelInput } from './types';
 
@@ -41,6 +43,21 @@ describe('measurement conversion', () => {
 });
 
 describe('gravel calculation', () => {
+  it('keeps measured volume unchanged while adjusted display volume matches estimated weight', () => {
+    const result = calculateGravel(baseInput);
+    const adjusted = adjustedVolumeConversions(result.adjustedVolumeCubicYards);
+
+    expect(result.volumeCubicYards).toBeCloseTo(2.96296, 4);
+    expect(result.adjustedVolumeCubicYards).toBeCloseTo(3.25926, 4);
+    expect(adjusted.cubicYards).toBe(result.adjustedVolumeCubicYards);
+    expect(adjusted.cubicFeet).toBeCloseTo(result.adjustedVolumeCubicYards * 27, 10);
+    expect(adjusted.liters).toBeCloseTo(adjusted.cubicMeters * 1_000, 10);
+    expect(result.estimatedWeightTons).toBeCloseTo(
+      adjusted.cubicYards * result.densityTonsPerYard,
+      10,
+    );
+  });
+
   it('calculates volume, allowance, weight, bags, and truckloads', () => {
     const result = calculateGravel(baseInput);
     expect(result.surfaceAreaSquareFeet).toBe(240);
@@ -252,6 +269,82 @@ describe('recommended order rounding', () => {
 });
 
 describe('validation and recommendations', () => {
+  it('uses consistent defaults and clears every optional purchasing input', () => {
+    const defaults = createDefaultGravelInput();
+    const cleared = createClearedGravelInput('EUR');
+
+    for (const input of [defaults, cleared]) {
+      expect(input.projectType).toBe('driveway');
+      expect(input.gravelType).toBe('crushed-stone');
+      expect(input.allowancePercent).toBe(0);
+      expect(input.pricePerCubicYard).toBeUndefined();
+      expect(input.deliveryFee).toBeUndefined();
+      expect(input.bagSizeCubicFeet).toBeUndefined();
+      expect(input.bagPrice).toBeUndefined();
+      expect(input.truckCapacityCubicYards).toBeUndefined();
+    }
+    expect(cleared.currency).toBe('EUR');
+    expect(cleared.length.value).toBeNaN();
+  });
+
+  it('normalizes known-area maximum validation across units', () => {
+    const realistic = validateGravelInput({
+      ...baseInput,
+      inputMode: 'area',
+      knownArea: { value: 5_000_000, unit: 'ft²' },
+    });
+    const excessiveFeet = validateGravelInput({
+      ...baseInput,
+      inputMode: 'area',
+      knownArea: { value: 100_000_001, unit: 'ft²' },
+    });
+    const excessiveMeters = validateGravelInput({
+      ...baseInput,
+      inputMode: 'area',
+      knownArea: { value: 100_000_001 / 10.763910417, unit: 'm²' },
+    });
+
+    expect(realistic).toEqual([]);
+    expect(excessiveFeet.map((issue) => issue.field)).toContain('knownArea');
+    expect(excessiveMeters.map((issue) => issue.field)).toContain('knownArea');
+  });
+
+  it('normalizes known-volume maximum validation across units', () => {
+    const realistic = validateGravelInput({
+      ...baseInput,
+      inputMode: 'volume',
+      knownVolume: { value: 1_000_000, unit: 'ft³' },
+    });
+    const excessiveYards = validateGravelInput({
+      ...baseInput,
+      inputMode: 'volume',
+      knownVolume: { value: 100_000_001 / 27, unit: 'yd³' },
+    });
+    const excessiveMeters = validateGravelInput({
+      ...baseInput,
+      inputMode: 'volume',
+      knownVolume: { value: 100_000_001 / 35.3146667215, unit: 'm³' },
+    });
+
+    expect(realistic).toEqual([]);
+    expect(excessiveYards.map((issue) => issue.field)).toContain('knownVolume');
+    expect(excessiveMeters.map((issue) => issue.field)).toContain('knownVolume');
+  });
+
+  it('does not infer a shallow-depth warning in volume mode', () => {
+    const volumeInput: GravelInput = {
+      ...baseInput,
+      inputMode: 'volume',
+      knownVolume: { value: 5, unit: 'yd³' },
+      depth: { value: Number.NaN, unit: 'in' },
+    };
+    const recommendation = recommendGravel(volumeInput, calculateGravel(volumeInput));
+
+    expect(recommendation.warnings).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('shallow for a driveway')]),
+    );
+  });
+
   it('validates only the active shape dimensions', () => {
     const validCircle = validateGravelInput({
       ...baseInput,

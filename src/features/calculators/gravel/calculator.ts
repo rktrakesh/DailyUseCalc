@@ -29,6 +29,17 @@ export function recommendedOrderCubicYards(adjustedVolumeCubicYards: number): nu
   return Math.ceil(scaledVolume - floatingPointTolerance) / TENTHS_PER_CUBIC_YARD;
 }
 
+export function adjustedVolumeConversions(adjustedVolumeCubicYards: number) {
+  const cubicFeet = adjustedVolumeCubicYards * 27;
+  const cubicMeters = cubicFeetToCubicMeters(cubicFeet);
+  return {
+    cubicYards: adjustedVolumeCubicYards,
+    cubicFeet,
+    cubicMeters,
+    liters: cubicMeters * 1_000,
+  };
+}
+
 export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {
   if (input.inputMode === 'volume') return 0;
   if (input.inputMode === 'area')

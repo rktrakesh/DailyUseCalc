@@ -38,9 +38,10 @@ export function recommendGravel(
   input: GravelInput,
   calculation: GravelCalculation,
 ): GravelRecommendation {
-  const depthInches = toFeet(input.depth.value, input.depth.unit) * 12;
+  const depthInches =
+    input.inputMode === 'volume' ? undefined : toFeet(input.depth.value, input.depth.unit) * 12;
   const warnings: string[] = [];
-  if (input.projectType === 'driveway' && depthInches < 4) {
+  if (input.projectType === 'driveway' && depthInches !== undefined && depthInches < 4) {
     warnings.push(
       'This depth may be shallow for a driveway. Many driveways need at least 4 inches of compacted gravel, depending on soil and vehicle load.',
     );

@@ -1,4 +1,5 @@
 export {
+  adjustedVolumeConversions,
   calculateGravel,
   calculateSurfaceAreaSquareFeet,
   densityForGravel,

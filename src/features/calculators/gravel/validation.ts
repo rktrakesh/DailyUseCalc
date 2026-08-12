@@ -1,4 +1,4 @@
-import { toFeet } from '../../../lib/units/measurements';
+import { areaToSquareFeet, toFeet, volumeToCubicFeet } from '../../../lib/units/measurements';
 import type { DimensionInput, GravelInput, ValidationIssue } from './types';
 
 const MAX_SURFACE_DIMENSION_FEET = 100_000;
@@ -8,6 +8,8 @@ const MAX_PRICE = 100_000;
 const MAX_DELIVERY_FEE = 1_000_000;
 const MAX_BAG_SIZE_CUBIC_FEET = 1_000;
 const MAX_TRUCK_CAPACITY_CUBIC_YARDS = 1_000;
+const MAX_KNOWN_AREA_SQUARE_FEET = 100_000_000;
+const MAX_KNOWN_VOLUME_CUBIC_FEET = 100_000_000;
 
 function isPositiveNumber(value: number): boolean {
   return Number.isFinite(value) && value > 0;
@@ -47,9 +49,18 @@ export function validateGravelInput(input: GravelInput): ValidationIssue[] {
   if (input.inputMode === 'volume') {
     if (!isPositiveNumber(input.knownVolume.value))
       issues.push({ field: 'knownVolume', message: 'Enter a volume greater than zero.' });
+    else if (
+      volumeToCubicFeet(input.knownVolume.value, input.knownVolume.unit) >
+      MAX_KNOWN_VOLUME_CUBIC_FEET
+    )
+      issues.push({ field: 'knownVolume', message: 'Enter a smaller volume.' });
   } else if (input.inputMode === 'area') {
     if (!isPositiveNumber(input.knownArea.value))
       issues.push({ field: 'knownArea', message: 'Enter an area greater than zero.' });
+    else if (
+      areaToSquareFeet(input.knownArea.value, input.knownArea.unit) > MAX_KNOWN_AREA_SQUARE_FEET
+    )
+      issues.push({ field: 'knownArea', message: 'Enter a smaller area.' });
     validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
   } else if (input.areaShape === 'circle') {
     validateDimension(input.diameter, 'diameter', MAX_SURFACE_DIMENSION_FEET, issues);
