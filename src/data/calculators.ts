@@ -12,17 +12,31 @@ export interface CalculatorListing {
   name: string;
   description: string;
   category: CalculatorCategory;
-  href: string;
+  href?: string;
   keywords: string[];
   status: 'available' | 'coming-soon';
 }
+
+export const calculatorCategories: Array<{
+  name: CalculatorCategory;
+  id: string;
+  icon: 'home' | 'finance' | 'automotive' | 'garden' | 'construction' | 'health' | 'utilities';
+}> = [
+  { name: 'Construction', id: 'construction', icon: 'construction' },
+  { name: 'Home Improvement', id: 'home-improvement', icon: 'home' },
+  { name: 'Garden', id: 'garden', icon: 'garden' },
+  { name: 'Automotive', id: 'automotive', icon: 'automotive' },
+  { name: 'Finance', id: 'finance', icon: 'finance' },
+  { name: 'Health', id: 'health', icon: 'health' },
+  { name: 'Utilities', id: 'utilities', icon: 'utilities' },
+];
 
 export const calculatorListings: CalculatorListing[] = [
   {
     id: 'gravel',
     name: 'Gravel Calculator',
-    description: 'Calculate gravel in yards, tons, bags, and estimated material cost.',
-    category: 'Home Improvement',
+    description: 'Yards · tons · bags · cost',
+    category: 'Construction',
     href: '/gravel/',
     keywords: ['gravel', 'stone', 'driveway', 'yard', 'tons'],
     status: 'available',
@@ -30,7 +44,7 @@ export const calculatorListings: CalculatorListing[] = [
   {
     id: 'concrete',
     name: 'Concrete Calculator',
-    description: 'Plan concrete volume, materials, and estimated cost for your project.',
+    description: 'Volume · bags · weight · cost',
     category: 'Construction',
     href: '/concrete/',
     keywords: ['concrete', 'cement', 'slab', 'volume'],
@@ -39,37 +53,186 @@ export const calculatorListings: CalculatorListing[] = [
   {
     id: 'mulch',
     name: 'Mulch Calculator',
-    description: 'Estimate the mulch you need for beds, paths, and landscaping.',
     category: 'Garden',
-    href: '/#popular-calculators',
+    description: 'Yards · bags · coverage',
     keywords: ['mulch', 'landscaping', 'garden', 'yard'],
     status: 'coming-soon',
   },
   {
     id: 'paint',
     name: 'Paint Calculator',
-    description: 'Estimate paint coverage, coats, and project supplies.',
     category: 'Home Improvement',
-    href: '/#popular-calculators',
+    description: 'Gallons · coats · coverage',
     keywords: ['paint', 'wall', 'coverage', 'room'],
     status: 'coming-soon',
   },
   {
     id: 'tile',
     name: 'Tile Calculator',
-    description: 'Calculate tiles, adhesive, grout, and cuts for your space.',
     category: 'Home Improvement',
-    href: '/#popular-calculators',
+    description: 'Tiles · adhesive · grout',
     keywords: ['tile', 'floor', 'bathroom', 'kitchen'],
     status: 'coming-soon',
   },
   {
     id: 'topsoil',
     name: 'Topsoil Calculator',
-    description: 'Work out the soil volume your lawn or garden needs.',
     category: 'Garden',
-    href: '/#popular-calculators',
+    description: 'Yards · weight · cost',
     keywords: ['topsoil', 'soil', 'lawn', 'garden'],
     status: 'coming-soon',
   },
+  ...[
+    [
+      'sand',
+      'Sand Calculator',
+      'Construction',
+      'Volume · weight · cost',
+      ['sand', 'concrete', 'base'],
+    ],
+    [
+      'rebar',
+      'Rebar Calculator',
+      'Construction',
+      'Length · weight · cost',
+      ['rebar', 'steel', 'reinforcement'],
+    ],
+    [
+      'footing',
+      'Footing Calculator',
+      'Construction',
+      'Size · concrete · rebar',
+      ['footing', 'foundation'],
+    ],
+    ['block', 'Block Calculator', 'Construction', 'Blocks · mortar · cost', ['block', 'masonry']],
+    [
+      'flooring',
+      'Flooring Calculator',
+      'Home Improvement',
+      'Area · materials · cost',
+      ['flooring', 'floor', 'area'],
+    ],
+    [
+      'drywall',
+      'Drywall Calculator',
+      'Home Improvement',
+      'Sheets · screws · cost',
+      ['drywall', 'sheetrock'],
+    ],
+    [
+      'lawn-area',
+      'Lawn Area Calculator',
+      'Garden',
+      'Area · seed · cost',
+      ['lawn', 'grass', 'seed'],
+    ],
+    ['soil', 'Soil Calculator', 'Garden', 'Volume · weight', ['soil', 'garden', 'volume']],
+    [
+      'gas-mileage',
+      'Gas Mileage Calculator',
+      'Automotive',
+      'MPG · distance · fuel',
+      ['gas', 'mileage', 'mpg'],
+    ],
+    [
+      'fuel-cost',
+      'Fuel Cost Calculator',
+      'Automotive',
+      'Fuel · distance · cost',
+      ['fuel', 'trip', 'cost'],
+    ],
+    [
+      'tire-size',
+      'Tire Size Calculator',
+      'Automotive',
+      'Diameter · speed · fit',
+      ['tire', 'wheel', 'size'],
+    ],
+    [
+      'trip-cost',
+      'Trip Cost Calculator',
+      'Automotive',
+      'Distance · fuel · cost',
+      ['trip', 'travel', 'fuel'],
+    ],
+    [
+      'mortgage',
+      'Mortgage Calculator',
+      'Finance',
+      'Payment · interest · term',
+      ['mortgage', 'home', 'loan'],
+    ],
+    [
+      'loan',
+      'Loan Calculator',
+      'Finance',
+      'Payment · interest · term',
+      ['loan', 'payment', 'interest'],
+    ],
+    [
+      'savings',
+      'Savings Calculator',
+      'Finance',
+      'Deposits · growth · goal',
+      ['savings', 'money', 'goal'],
+    ],
+    [
+      'compound-interest',
+      'Compound Interest Calculator',
+      'Finance',
+      'Principal · rate · growth',
+      ['compound', 'interest', 'investment'],
+    ],
+    ['bmi', 'BMI Calculator', 'Health', 'Height · weight · BMI', ['bmi', 'body', 'weight']],
+    [
+      'calorie',
+      'Calorie Calculator',
+      'Health',
+      'Energy · activity · goal',
+      ['calorie', 'energy', 'diet'],
+    ],
+    [
+      'body-fat',
+      'Body Fat Calculator',
+      'Health',
+      'Measurements · estimate',
+      ['body fat', 'fitness'],
+    ],
+    [
+      'ideal-weight',
+      'Ideal Weight Calculator',
+      'Health',
+      'Height · reference range',
+      ['ideal', 'weight', 'height'],
+    ],
+    ['age', 'Age Calculator', 'Utilities', 'Years · months · days', ['age', 'birthday', 'date']],
+    [
+      'date',
+      'Date Calculator',
+      'Utilities',
+      'Dates · duration · difference',
+      ['date', 'days', 'duration'],
+    ],
+    [
+      'percentage',
+      'Percentage Calculator',
+      'Utilities',
+      'Percent · change · difference',
+      ['percentage', 'percent', 'change'],
+    ],
+    [
+      'unit-converter',
+      'Unit Converter',
+      'Utilities',
+      'Length · weight · volume',
+      ['unit', 'conversion', 'measurement'],
+    ],
+  ].map(([id, name, category, description, keywords]) => ({
+    id: id as string,
+    name: name as string,
+    category: category as CalculatorCategory,
+    description: description as string,
+    keywords: keywords as string[],
+    status: 'coming-soon' as const,
+  })),
 ];

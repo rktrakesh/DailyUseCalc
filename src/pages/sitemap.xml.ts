@@ -3,7 +3,7 @@ import { calculatorListings } from '../data/calculators';
 import { absoluteUrl } from '../lib/seo/site';
 
 export const GET: APIRoute = () => {
-  const staticPublicPaths = ['/', '/about/', '/contact/', '/privacy/', '/terms/'];
+  const staticPublicPaths = ['/', '/calculators/', '/about/', '/contact/', '/privacy/', '/terms/'];
   const availableCalculatorPaths = calculatorListings
     .filter((calculator) => calculator.status === 'available')
     .map((calculator) => calculator.href);
