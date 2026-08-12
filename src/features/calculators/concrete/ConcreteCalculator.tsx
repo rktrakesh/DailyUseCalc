@@ -311,7 +311,7 @@ export default function ConcreteCalculator() {
             ))}
           </SelectField>
         </div>
-        <div className="mt-3 grid gap-2 @xl/calculator:grid-cols-2">
+        <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-2">
           <OptionalGroup title="Ready-mix price (optional)">
             <OptionalNumberField
               id="ready-mix-price"
@@ -461,7 +461,7 @@ function SelectField({
 }
 function OptionalGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <details className="group rounded-control border border-line bg-surface">
+    <details className="group self-start rounded-control border border-line bg-surface">
       <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
         {title}
         <ChevronDown
