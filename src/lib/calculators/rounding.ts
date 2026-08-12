@@ -1,0 +1,13 @@
+export function roundUpToIncrement(value: number, increment: number): number {
+  const scaledValue = value / increment;
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 10;
+  const rounded = Math.ceil(scaledValue - tolerance) * increment;
+  const decimalPlaces = increment.toString().split('.')[1]?.length ?? 0;
+  return Number(rounded.toFixed(decimalPlaces));
+}
+
+export function requiredWholeUnits(requiredAmount: number, unitYield: number): number {
+  const exactCount = requiredAmount / unitYield;
+  const tolerance = Number.EPSILON * Math.max(1, Math.abs(exactCount)) * 10;
+  return Math.ceil(exactCount - tolerance);
+}

@@ -5,6 +5,7 @@ import {
   toFeet,
   volumeToCubicFeet,
 } from '../../../lib/units/measurements';
+import { requiredWholeUnits, roundUpToIncrement } from '../../../lib/calculators/rounding';
 import type { GravelCalculation, GravelInput, GravelType } from './types';
 
 const DENSITY_TONS_PER_YARD: Record<Exclude<GravelType, 'custom'>, number> = {
@@ -16,7 +17,6 @@ const DENSITY_TONS_PER_YARD: Record<Exclude<GravelType, 'custom'>, number> = {
 };
 
 const KILOGRAMS_PER_US_TON = 907.18474;
-const TENTHS_PER_CUBIC_YARD = 10;
 
 export function densityForGravel(input: GravelInput): number {
   if (input.gravelType === 'custom') return input.customDensityTonsPerYard ?? 0;
@@ -24,9 +24,7 @@ export function densityForGravel(input: GravelInput): number {
 }
 
 export function recommendedOrderCubicYards(adjustedVolumeCubicYards: number): number {
-  const scaledVolume = adjustedVolumeCubicYards * TENTHS_PER_CUBIC_YARD;
-  const floatingPointTolerance = Number.EPSILON * Math.max(1, Math.abs(scaledVolume)) * 10;
-  return Math.ceil(scaledVolume - floatingPointTolerance) / TENTHS_PER_CUBIC_YARD;
+  return roundUpToIncrement(adjustedVolumeCubicYards, 0.1);
 }
 
 export function adjustedVolumeConversions(adjustedVolumeCubicYards: number) {
@@ -44,9 +42,7 @@ export function requiredWholeBags(
   requiredVolumeCubicFeet: number,
   bagVolumeCubicFeet: number,
 ): number {
-  const exactBagCount = requiredVolumeCubicFeet / bagVolumeCubicFeet;
-  const floatingPointTolerance = Number.EPSILON * Math.max(1, Math.abs(exactBagCount)) * 10;
-  return Math.ceil(exactBagCount - floatingPointTolerance);
+  return requiredWholeUnits(requiredVolumeCubicFeet, bagVolumeCubicFeet);
 }
 
 export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {

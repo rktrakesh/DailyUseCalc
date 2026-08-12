@@ -449,7 +449,7 @@ export default function GravelCalculator() {
           </div>
         )}
 
-        <div className="mt-3 grid gap-2 @xl/calculator:grid-cols-3">
+        <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
           <OptionalGroup title="Price (optional)">
             <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
               <select
@@ -616,7 +616,7 @@ function SelectField({
 
 function OptionalGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <details className="group rounded-control border border-line bg-surface">
+    <details className="group self-start rounded-control border border-line bg-surface">
       <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
         {title}
         <ChevronDown
