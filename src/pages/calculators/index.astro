@@ -1,0 +1,226 @@
+---
+import { ArrowUp, ChevronRight, Search } from 'lucide-react';
+import AdSlot from '../../components/common/AdSlot.astro';
+import CategoryIcon from '../../components/common/CategoryIcon.astro';
+import CompactCalculatorItem from '../../components/common/CompactCalculatorItem.astro';
+import { calculatorCategories, calculatorListings } from '../../data/calculators';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { breadcrumbSchema, collectionPageSchema } from '../../lib/seo/schema';
+
+const title = 'All Calculators | DailyUseCalc';
+const description =
+  'Browse DailyUseCalc calculators for construction, home improvement, garden, finance, automotive, health, utilities, and everyday projects.';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'All Calculators', path: '/calculators/' },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/calculators/"
+  structuredData={[
+    breadcrumbSchema(breadcrumbs),
+    collectionPageSchema({ name: 'All Calculators', description, path: '/calculators/' }),
+  ]}
+>
+  <div id="top" class="site-container py-5 sm:py-7">
+    <nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-xs text-ink-soft">
+      <a class="hover:text-brand" href="/">Home</a><ChevronRight size={13} aria-hidden="true" />
+      <a class="text-brand" href="/calculators/" aria-current="page">All Calculators</a>
+    </nav>
+    <div
+      class="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_16rem] xl:grid-cols-[minmax(0,1fr)_18rem]"
+    >
+      <div>
+        <header>
+          <h1 class="text-balance text-3xl font-extrabold tracking-[-0.045em] text-ink">
+            All Calculators
+          </h1>
+          <p class="mt-1 text-sm text-ink-soft">Find the right tool for your project.</p>
+        </header>
+
+        <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+          <label class="relative block min-w-0 flex-1" for="directory-search">
+            <span class="sr-only">Search calculators</span>
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft"
+              size={16}
+              aria-hidden="true"
+            />
+            <input
+              id="directory-search"
+              data-directory-search
+              class="h-11 w-full rounded-control border border-line bg-panel pl-9 pr-3 text-sm text-ink outline-none placeholder:text-ink-soft focus:border-brand"
+              type="search"
+              name="q"
+              placeholder="Search calculators…"
+              autocomplete="off"
+            />
+          </label>
+          <div
+            class="grid grid-cols-2 rounded-control border border-line bg-panel p-1"
+            aria-label="Calculator availability filter"
+          >
+            <button
+              data-directory-filter="all"
+              class="min-h-9 rounded-md bg-brand px-3 text-xs font-bold text-on-brand"
+              type="button"
+              aria-pressed="true">All</button
+            >
+            <button
+              data-directory-filter="available"
+              class="min-h-9 rounded-md px-3 text-xs font-bold text-ink-soft hover:bg-panel-muted"
+              type="button"
+              aria-pressed="false">Available only</button
+            >
+          </div>
+        </div>
+        <p data-directory-status class="mt-2 min-h-5 text-xs text-ink-soft" aria-live="polite"></p>
+
+        <div class="mt-5 space-y-7" data-directory-groups>
+          {
+            calculatorCategories.map((category, index) => {
+              const calculators = calculatorListings.filter(
+                (calculator) => calculator.category === category.name,
+              );
+              return (
+                <>
+                  <section id={category.id} data-directory-group>
+                    <div class="flex items-center gap-2">
+                      <span class="text-brand">
+                        <CategoryIcon name={category.icon} />
+                      </span>
+                      <h2 class="text-base font-extrabold tracking-[-0.025em] text-ink">
+                        {category.name}
+                      </h2>
+                    </div>
+                    <div class="mt-2 grid gap-2 md:grid-cols-2">
+                      {calculators.map((calculator) => (
+                        <CompactCalculatorItem calculator={calculator} />
+                      ))}
+                    </div>
+                  </section>
+                  {index === 1 && <AdSlot class="min-h-24 lg:hidden" />}
+                </>
+              );
+            })
+          }
+        </div>
+        <div
+          data-directory-empty
+          class="hidden rounded-card border border-line bg-panel-muted p-6 text-center"
+        >
+          <p class="font-bold text-ink">No calculators found</p>
+          <p class="mt-1 text-sm text-ink-soft">Try another search or show all calculators.</p>
+        </div>
+        <div class="mt-7 text-right">
+          <a
+            class="inline-flex min-h-10 items-center gap-1 text-xs font-bold text-brand hover:text-brand-strong"
+            href="#top"
+          >
+            Back to top <ArrowUp size={14} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+
+      <aside class="hidden space-y-3 lg:block" aria-label="Calculator directory resources">
+        <AdSlot class="min-h-56" />
+        <section class="rounded-card border border-line bg-panel p-4 shadow-card">
+          <h2 class="text-sm font-extrabold text-ink">Quick Links</h2>
+          <nav
+            class="mt-2 grid text-xs font-semibold text-brand"
+            aria-label="Directory quick links"
+          >
+            <a class="min-h-9 content-center hover:text-brand-strong" href="#construction"
+              >Popular Calculators</a
+            >
+            <button
+              data-sidebar-available
+              class="min-h-9 text-left hover:text-brand-strong"
+              type="button">Available Calculators</button
+            >
+            <a class="min-h-9 content-center hover:text-brand-strong" href="#utilities"
+              >New Calculators</a
+            >
+          </nav>
+        </section>
+        <section class="rounded-card border border-line bg-panel p-4 shadow-card">
+          <h2 class="text-sm font-extrabold text-ink">Categories</h2>
+          <nav class="mt-2 grid" aria-label="Calculator categories">
+            {
+              calculatorCategories.map((category) => (
+                <a
+                  class="min-h-9 content-center text-xs font-semibold text-brand hover:text-brand-strong"
+                  href={`#${category.id}`}
+                >
+                  {category.name}
+                </a>
+              ))
+            }
+          </nav>
+        </section>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const search = document.querySelector<HTMLInputElement>('[data-directory-search]');
+  const items = [...document.querySelectorAll<HTMLElement>('[data-calculator-item]')];
+  const groups = [...document.querySelectorAll<HTMLElement>('[data-directory-group]')];
+  const status = document.querySelector<HTMLElement>('[data-directory-status]');
+  const empty = document.querySelector<HTMLElement>('[data-directory-empty]');
+  const filters = [...document.querySelectorAll<HTMLButtonElement>('[data-directory-filter]')];
+  let availability =
+    new URLSearchParams(window.location.search).get('available') === '1' ? 'available' : 'all';
+
+  function updateUrl(query: string) {
+    const url = new URL(window.location.href);
+    if (query) url.searchParams.set('q', query);
+    else url.searchParams.delete('q');
+    if (availability === 'available') url.searchParams.set('available', '1');
+    else url.searchParams.delete('available');
+    history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function applyDirectoryFilters() {
+    const query = search?.value.trim().toLowerCase() || '';
+    let visible = 0;
+    items.forEach((item) => {
+      const matchesSearch = !query || item.dataset.searchable?.includes(query);
+      const matchesStatus = availability === 'all' || item.dataset.status === 'available';
+      item.hidden = !(matchesSearch && matchesStatus);
+      if (!item.hidden) visible += 1;
+    });
+    groups.forEach((group) => {
+      group.hidden = !group.querySelector('[data-calculator-item]:not([hidden])');
+    });
+    filters.forEach((button) => {
+      const selected = button.dataset.directoryFilter === availability;
+      button.setAttribute('aria-pressed', String(selected));
+      button.classList.toggle('bg-brand', selected);
+      button.classList.toggle('text-on-brand', selected);
+      button.classList.toggle('text-ink-soft', !selected);
+    });
+    if (status) status.textContent = `${visible} calculator${visible === 1 ? '' : 's'} shown.`;
+    empty?.classList.toggle('hidden', visible !== 0);
+    updateUrl(query);
+  }
+
+  if (search) search.value = new URLSearchParams(window.location.search).get('q') || '';
+  search?.addEventListener('input', applyDirectoryFilters);
+  filters.forEach((button) =>
+    button.addEventListener('click', () => {
+      availability = button.dataset.directoryFilter || 'all';
+      applyDirectoryFilters();
+    }),
+  );
+  document.querySelector('[data-sidebar-available]')?.addEventListener('click', () => {
+    availability = 'available';
+    applyDirectoryFilters();
+    search?.focus();
+  });
+  applyDirectoryFilters();
+</script>

@@ -1,0 +1,59 @@
+---
+import { ChevronRight } from 'lucide-react';
+import type { CalculatorListing } from '../../data/calculators';
+
+interface Props {
+  calculator: CalculatorListing;
+}
+
+const { calculator } = Astro.props;
+const available = calculator.status === 'available';
+const searchable = [
+  calculator.name,
+  calculator.description,
+  calculator.category,
+  ...calculator.keywords,
+]
+  .join(' ')
+  .toLowerCase();
+---
+
+{
+  available && calculator.href ? (
+    <a
+      data-calculator-item
+      data-status={calculator.status}
+      data-searchable={searchable}
+      class="block min-h-16 rounded-control border border-line bg-panel px-3 py-2.5 transition-[border-color,background-color] hover:border-brand/45 hover:bg-panel-muted"
+      href={calculator.href}
+    >
+      <span class="flex min-w-0 items-center justify-between gap-2">
+        <strong class="min-w-0 text-sm font-bold text-ink">{calculator.name}</strong>
+        <span class="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-[0.62rem] font-bold text-brand">
+          Available
+        </span>
+        <ChevronRight className="shrink-0 text-brand" size={14} aria-hidden="true" />
+      </span>
+      <span class="mt-0.5 block text-[0.7rem] leading-4 text-ink-soft">
+        {calculator.description}
+      </span>
+    </a>
+  ) : (
+    <article
+      data-calculator-item
+      data-status={calculator.status}
+      data-searchable={searchable}
+      class="min-h-16 rounded-control border border-line bg-panel px-3 py-2.5"
+    >
+      <span class="flex min-w-0 items-center justify-between gap-2">
+        <strong class="min-w-0 text-sm font-bold text-ink">{calculator.name}</strong>
+        <span class="shrink-0 rounded-full border border-line bg-panel-muted px-2 py-0.5 text-[0.62rem] font-bold text-ink-soft">
+          Coming soon
+        </span>
+      </span>
+      <span class="mt-0.5 block text-[0.7rem] leading-4 text-ink-soft">
+        {calculator.description}
+      </span>
+    </article>
+  )
+}

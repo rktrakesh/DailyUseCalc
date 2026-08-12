@@ -12,6 +12,7 @@
   --color-brand: var(--duc-brand);
   --color-brand-strong: var(--duc-brand-strong);
   --color-brand-soft: var(--duc-brand-soft);
+  --color-on-brand: var(--duc-on-brand);
   --color-success: var(--duc-success);
   --color-warning: var(--duc-warning);
   --color-warning-soft: var(--duc-warning-soft);
@@ -37,6 +38,7 @@
   --duc-brand: #087b80;
   --duc-brand-strong: #04646a;
   --duc-brand-soft: #e3f4f3;
+  --duc-on-brand: #ffffff;
   --duc-success: #087b80;
   --duc-warning: #a75a00;
   --duc-warning-soft: #fff2dd;
@@ -54,6 +56,7 @@ html[data-theme='dark'] {
   --duc-brand: #48bab8;
   --duc-brand-strong: #7ad5d0;
   --duc-brand-soft: #153c41;
+  --duc-on-brand: var(--duc-surface);
   --duc-success: #60c8c4;
   --duc-warning: #ffc16e;
   --duc-warning-soft: #3c2b13;
@@ -103,7 +106,7 @@ html[data-theme='dark'] {
     border-radius: 0.5rem;
     background: var(--duc-brand);
     padding: 0.75rem 1rem;
-    color: white;
+    color: var(--duc-on-brand);
     font-weight: 700;
     transition: transform 150ms ease-out;
   }
@@ -119,7 +122,7 @@ html[data-theme='dark'] {
 
   ::selection {
     background: var(--duc-brand);
-    color: white;
+    color: var(--duc-on-brand);
   }
 }
 
