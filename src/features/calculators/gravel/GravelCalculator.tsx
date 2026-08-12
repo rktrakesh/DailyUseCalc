@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import {
   AlertTriangle,
   Check,
@@ -10,10 +10,19 @@ import {
   Share2,
 } from 'lucide-react';
 import { convertLength } from '../../../lib/units/measurements';
+import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
 import { createGravelEstimateReport } from './gravelReport';
-import type { AreaShape, GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
+import { currencies, currencyForLocale, formatMoney, type CurrencyCode } from './currencies';
+import type {
+  AreaShape,
+  GravelInput,
+  GravelType,
+  MeasurementSystem,
+  ProjectSizeMode,
+  ProjectType,
+} from './types';
 
 const projectOptions: Array<{ value: ProjectType; label: string }> = [
   { value: 'driveway', label: 'Driveway' },
@@ -42,6 +51,7 @@ type GravelFormInput = Omit<GravelInput, 'allowancePercent' | 'gravelType' | 'pr
 
 function createEmptyInput(): GravelFormInput {
   return {
+    inputMode: 'dimensions',
     areaShape: 'rectangle',
     projectType: '',
     gravelType: '',
@@ -49,6 +59,9 @@ function createEmptyInput(): GravelFormInput {
     width: { value: Number.NaN, unit: 'ft' },
     diameter: { value: Number.NaN, unit: 'ft' },
     depth: { value: Number.NaN, unit: 'in' },
+    knownArea: { value: Number.NaN, unit: 'ft²' },
+    knownVolume: { value: Number.NaN, unit: 'yd³' },
+    currency: 'USD',
   };
 }
 
@@ -81,14 +94,8 @@ function formatRecommendedOrder(value: number) {
   }).format(value);
 }
 
-function formatCurrency(value?: number) {
-  return value === undefined
-    ? 'Add pricing'
-    : new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(value);
+function formatCurrency(value: number | undefined, currency: CurrencyCode) {
+  return value === undefined ? 'Add pricing' : formatMoney(value, currency);
 }
 
 function inputClass(invalid = false) {
@@ -101,6 +108,9 @@ export default function GravelCalculator() {
   const [copyStatus, setCopyStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  useEffect(() => {
+    setInput((current) => ({ ...current, currency: currencyForLocale(navigator.language) }));
+  }, []);
   const calculationInput = useMemo(() => toCalculationInput(input), [input]);
   const validationIssues = useMemo(
     () => (calculationInput ? validateGravelInput(calculationInput) : []),
@@ -176,9 +186,13 @@ export default function GravelCalculator() {
   function estimateLines() {
     if (!calculation || !recommendation)
       return [
-        input.areaShape === 'circle'
-          ? 'Complete the diameter and depth fields to calculate your estimate.'
-          : 'Complete the length, width, and depth fields to calculate your estimate.',
+        input.inputMode === 'volume'
+          ? 'Complete the volume field to calculate your estimate.'
+          : input.inputMode === 'area'
+            ? 'Complete the area and depth fields to calculate your estimate.'
+            : input.areaShape === 'circle'
+              ? 'Complete the diameter and depth fields to calculate your estimate.'
+              : 'Complete the length, width, and depth fields to calculate your estimate.',
       ];
     return [
       `Project: ${projectOptions.find((option) => option.value === calculationInput?.projectType)?.label}`,
@@ -195,7 +209,9 @@ export default function GravelCalculator() {
   }
 
   function clearInputs() {
-    setInput(createEmptyInput());
+    const clearedInput = createEmptyInput();
+    clearedInput.currency = currencyForLocale(navigator.language);
+    setInput(clearedInput);
     setMeasurementSystem('imperial');
     setHasInteracted(false);
     setCopyStatus('All calculator fields were cleared.');
@@ -355,96 +371,175 @@ export default function GravelCalculator() {
         </div>
 
         <fieldset className="mt-6">
-          <legend className="text-sm font-bold text-ink">Area shape</legend>
+          <legend className="text-sm font-bold text-ink">How do you know your project size?</legend>
           <div
-            className="mt-2 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+            className="mt-2 grid grid-cols-3 rounded-control border border-line bg-surface p-1"
             role="radiogroup"
-            aria-label="Area shape"
+            aria-label="Project size input mode"
           >
-            {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
+            {(['dimensions', 'area', 'volume'] as ProjectSizeMode[]).map((mode) => (
               <label
-                key={shape}
-                className={`cursor-pointer rounded-md px-3 py-2.5 text-center text-sm font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+                key={mode}
+                className={`cursor-pointer rounded-md px-2 py-2.5 text-center text-sm font-bold transition-colors ${input.inputMode === mode ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
               >
                 <input
                   className="sr-only"
                   type="radio"
-                  name="area-shape"
-                  value={shape}
-                  checked={input.areaShape === shape}
-                  onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
+                  name="input-mode"
+                  value={mode}
+                  checked={input.inputMode === mode}
+                  onChange={() => setInput((current) => ({ ...current, inputMode: mode }))}
                 />
-                {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
+                {mode[0].toUpperCase() + mode.slice(1)}
               </label>
             ))}
           </div>
         </fieldset>
 
+        {input.inputMode === 'dimensions' && (
+          <fieldset className="mt-5 sm:mt-6">
+            <legend className="text-sm font-bold text-ink">Area shape</legend>
+            <div
+              className="mt-2 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+              role="radiogroup"
+              aria-label="Area shape"
+            >
+              {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
+                <label
+                  key={shape}
+                  className={`cursor-pointer rounded-md px-3 py-2.5 text-center text-sm font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+                >
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name="area-shape"
+                    value={shape}
+                    checked={input.areaShape === shape}
+                    onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
+                  />
+                  {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
         <fieldset className="mt-6">
           <legend className="text-sm font-bold text-ink">Measurements</legend>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            {input.areaShape === 'rectangle' ? (
-              <>
+            {input.inputMode === 'dimensions' &&
+              (input.areaShape === 'rectangle' ? (
+                <>
+                  <NumberField
+                    id="length"
+                    label="Length"
+                    value={input.length.value}
+                    unit={input.length.unit}
+                    error={errorFor('length')}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        length: { ...current.length, value: numberFromEvent(event) },
+                      }))
+                    }
+                  />
+                  <NumberField
+                    id="width"
+                    label="Width"
+                    value={input.width.value}
+                    unit={input.width.unit}
+                    error={errorFor('width')}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        width: { ...current.width, value: numberFromEvent(event) },
+                      }))
+                    }
+                  />
+                </>
+              ) : (
                 <NumberField
-                  id="length"
-                  label="Length"
-                  value={input.length.value}
-                  unit={input.length.unit}
-                  error={errorFor('length')}
+                  id="diameter"
+                  label="Diameter"
+                  value={input.diameter.value}
+                  unit={input.diameter.unit}
+                  error={errorFor('diameter')}
                   onChange={(event) =>
                     setInput((current) => ({
                       ...current,
-                      length: { ...current.length, value: numberFromEvent(event) },
+                      diameter: { ...current.diameter, value: numberFromEvent(event) },
                     }))
                   }
                 />
-                <NumberField
-                  id="width"
-                  label="Width"
-                  value={input.width.value}
-                  unit={input.width.unit}
-                  error={errorFor('width')}
-                  onChange={(event) =>
-                    setInput((current) => ({
-                      ...current,
-                      width: { ...current.width, value: numberFromEvent(event) },
-                    }))
-                  }
-                />
-              </>
-            ) : (
-              <NumberField
-                id="diameter"
-                label="Diameter"
-                value={input.diameter.value}
-                unit={input.diameter.unit}
-                error={errorFor('diameter')}
-                onChange={(event) =>
+              ))}
+            {input.inputMode === 'area' && (
+              <UnitNumberField
+                id="known-area"
+                label="Area"
+                value={input.knownArea.value}
+                unit={input.knownArea.unit}
+                units={['ft²', 'yd²', 'm²', 'cm²']}
+                error={errorFor('knownArea')}
+                onValueChange={(value) =>
                   setInput((current) => ({
                     ...current,
-                    diameter: { ...current.diameter, value: numberFromEvent(event) },
+                    knownArea: { ...current.knownArea, value },
+                  }))
+                }
+                onUnitChange={(unit) =>
+                  setInput((current) => ({
+                    ...current,
+                    knownArea: { ...current.knownArea, unit: unit as AreaUnit },
                   }))
                 }
               />
             )}
-            <NumberField
-              id="depth"
-              label="Depth"
-              value={input.depth.value}
-              unit={input.depth.unit}
-              error={errorFor('depth')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  depth: { ...current.depth, value: numberFromEvent(event) },
-                }))
-              }
-            />
+            {input.inputMode === 'volume' && (
+              <UnitNumberField
+                id="known-volume"
+                label="Volume"
+                value={input.knownVolume.value}
+                unit={input.knownVolume.unit}
+                units={['ft³', 'yd³', 'm³']}
+                error={errorFor('knownVolume')}
+                onValueChange={(value) =>
+                  setInput((current) => ({
+                    ...current,
+                    knownVolume: { ...current.knownVolume, value },
+                  }))
+                }
+                onUnitChange={(unit) =>
+                  setInput((current) => ({
+                    ...current,
+                    knownVolume: { ...current.knownVolume, unit: unit as VolumeUnit },
+                  }))
+                }
+              />
+            )}
+            {input.inputMode !== 'volume' && (
+              <NumberField
+                id="depth"
+                label="Depth"
+                value={input.depth.value}
+                unit={input.depth.unit}
+                error={errorFor('depth')}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    depth: { ...current.depth, value: numberFromEvent(event) },
+                  }))
+                }
+              />
+            )}
           </div>
           <p className="mt-3 text-xs text-ink-soft">
-            {measurementSystem === 'imperial'
-              ? 'Measure at the widest points. Driveways often need a compacted gravel depth of 4–6 inches.'
-              : 'Metric measurements · US ordering units (cubic yards and tons).'}
+            {input.inputMode === 'volume'
+              ? 'Enter the complete volume in the unit you already know.'
+              : input.inputMode === 'area'
+                ? 'Enter the known surface area and material depth.'
+                : measurementSystem === 'imperial'
+                  ? 'Measure at the widest points. Driveways often need a compacted gravel depth of 4–6 inches.'
+                  : 'Metric measurements · US ordering units (cubic yards and tons).'}
           </p>
         </fieldset>
 
@@ -491,93 +586,159 @@ export default function GravelCalculator() {
               aria-hidden="true"
             />
           </summary>
-          <div className="grid gap-5 border-t border-line p-4 sm:grid-cols-2">
-            <NumberField
-              id="allowance"
-              label="Allowance / waste"
-              value={input.allowancePercent ?? Number.NaN}
-              unit="%"
-              error={errorFor('allowancePercent')}
-              min={0}
-              max={50}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, allowancePercent: numberFromEvent(event) }))
-              }
-            />
-            <NumberField
-              id="truck-capacity"
-              label="Truck capacity"
-              value={input.truckCapacityCubicYards ?? Number.NaN}
-              unit="yd³"
-              error={errorFor('truckCapacityCubicYards')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  truckCapacityCubicYards: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-            {input.gravelType === 'custom' && (
-              <NumberField
-                id="custom-density"
-                label="Custom density"
-                value={input.customDensityTonsPerYard ?? Number.NaN}
-                unit="tons / yd³"
-                error={errorFor('customDensityTonsPerYard')}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    customDensityTonsPerYard: optionalNumberFromEvent(event),
-                  }))
-                }
-              />
-            )}
-            <OptionalNumberField
-              id="price"
-              label="Price per cubic yard"
-              value={input.pricePerCubicYard}
-              unit="USD"
-              error={errorFor('pricePerCubicYard')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  pricePerCubicYard: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-            <OptionalNumberField
-              id="delivery-fee"
-              label="Delivery fee"
-              value={input.deliveryFee}
-              unit="USD"
-              error={errorFor('deliveryFee')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, deliveryFee: optionalNumberFromEvent(event) }))
-              }
-            />
-            <OptionalNumberField
-              id="bag-size"
-              label="Bag size"
-              value={input.bagSizeCubicFeet}
-              unit="ft³"
-              error={errorFor('bagSizeCubicFeet')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  bagSizeCubicFeet: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-            <OptionalNumberField
-              id="bag-price"
-              label="Bag price"
-              value={input.bagPrice}
-              unit="USD"
-              error={errorFor('bagPrice')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, bagPrice: optionalNumberFromEvent(event) }))
-              }
-            />
+          <div className="grid gap-3 border-t border-line p-3 md:grid-cols-2 md:gap-5 md:p-4">
+            <details className="group rounded-control border border-line md:contents">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+                Material &amp; Density
+                <ChevronDown
+                  className="transition-transform group-open:rotate-180"
+                  size={16}
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
+                <NumberField
+                  id="allowance"
+                  label="Allowance / waste"
+                  value={input.allowancePercent ?? Number.NaN}
+                  unit="%"
+                  error={errorFor('allowancePercent')}
+                  min={0}
+                  max={50}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      allowancePercent: numberFromEvent(event),
+                    }))
+                  }
+                />
+                {input.gravelType === 'custom' && (
+                  <NumberField
+                    id="custom-density"
+                    label="Custom density"
+                    value={input.customDensityTonsPerYard ?? Number.NaN}
+                    unit="tons / yd³"
+                    error={errorFor('customDensityTonsPerYard')}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        customDensityTonsPerYard: optionalNumberFromEvent(event),
+                      }))
+                    }
+                  />
+                )}
+              </div>
+            </details>
+
+            <details className="group rounded-control border border-line md:contents">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+                Pricing
+                <ChevronDown
+                  className="transition-transform group-open:rotate-180"
+                  size={16}
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
+                <label className="grid gap-2 text-sm font-bold text-ink md:col-span-2">
+                  Currency
+                  <select
+                    className={`${inputClass()} bg-panel`}
+                    value={input.currency}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        currency: event.target.value as CurrencyCode,
+                      }))
+                    }
+                  >
+                    {currencies.map(([code, symbol, name]) => (
+                      <option key={code} value={code}>
+                        {code} — {symbol} — {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <OptionalNumberField
+                  id="price"
+                  label="Price per cubic yard"
+                  value={input.pricePerCubicYard}
+                  unit={input.currency}
+                  error={errorFor('pricePerCubicYard')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      pricePerCubicYard: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+                <OptionalNumberField
+                  id="delivery-fee"
+                  label="Delivery fee"
+                  value={input.deliveryFee}
+                  unit={input.currency}
+                  error={errorFor('deliveryFee')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      deliveryFee: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </div>
+            </details>
+
+            <details className="group rounded-control border border-line md:contents">
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 text-sm font-bold text-ink marker:content-none md:hidden">
+                Bags &amp; Delivery
+                <ChevronDown
+                  className="transition-transform group-open:rotate-180"
+                  size={16}
+                  aria-hidden="true"
+                />
+              </summary>
+              <div className="hidden gap-4 border-t border-line p-3 group-open:grid md:contents!">
+                <NumberField
+                  id="truck-capacity"
+                  label="Truck capacity"
+                  value={input.truckCapacityCubicYards ?? Number.NaN}
+                  unit="yd³"
+                  error={errorFor('truckCapacityCubicYards')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      truckCapacityCubicYards: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+                <OptionalNumberField
+                  id="bag-size"
+                  label="Bag size"
+                  value={input.bagSizeCubicFeet}
+                  unit="ft³"
+                  error={errorFor('bagSizeCubicFeet')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagSizeCubicFeet: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+                <OptionalNumberField
+                  id="bag-price"
+                  label="Bag price"
+                  value={input.bagPrice}
+                  unit={input.currency}
+                  error={errorFor('bagPrice')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagPrice: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </div>
+            </details>
           </div>
         </details>
       </section>
@@ -610,9 +771,13 @@ export default function GravelCalculator() {
           />
         ) : (
           <div className="rounded-card border border-dashed border-line bg-panel p-8 text-center text-sm text-ink-soft">
-            {input.areaShape === 'circle'
-              ? 'Enter a project type, gravel type, diameter, and depth to see your estimate.'
-              : 'Enter a project type, gravel type, length, width, and depth to see your estimate.'}
+            {input.inputMode === 'volume'
+              ? 'Enter a project type, gravel type, and volume to see your estimate.'
+              : input.inputMode === 'area'
+                ? 'Enter a project type, gravel type, area, and depth to see your estimate.'
+                : input.areaShape === 'circle'
+                  ? 'Enter a project type, gravel type, diameter, and depth to see your estimate.'
+                  : 'Enter a project type, gravel type, length, width, and depth to see your estimate.'}
           </div>
         )}
       </section>
@@ -762,6 +927,66 @@ function OptionalNumberField({
   );
 }
 
+function UnitNumberField({
+  id,
+  label,
+  value,
+  unit,
+  units,
+  error,
+  onValueChange,
+  onUnitChange,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  unit: string;
+  units: readonly string[];
+  error?: string;
+  onValueChange: (value: number) => void;
+  onUnitChange: (unit: string) => void;
+}) {
+  return (
+    <label className="grid min-w-0 gap-2 text-sm font-bold text-ink" htmlFor={id}>
+      {label}
+      <span className="grid grid-cols-[minmax(0,1fr)_4.5rem]">
+        <input
+          id={id}
+          name={id}
+          className={`${inputClass(Boolean(error))} rounded-r-none`}
+          type="number"
+          inputMode="decimal"
+          autoComplete="off"
+          min="0"
+          step="any"
+          value={Number.isFinite(value) ? value : ''}
+          onChange={(event) => onValueChange(numberFromEvent(event))}
+          onWheel={(event) => event.currentTarget.blur()}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+        />
+        <select
+          aria-label={`${label} unit`}
+          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand/60"
+          value={unit}
+          onChange={(event) => onUnitChange(event.target.value)}
+        >
+          {units.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </span>
+      {error && (
+        <span id={`${id}-error`} className="text-xs font-medium text-danger">
+          {error}
+        </span>
+      )}
+    </label>
+  );
+}
+
 function Results({
   calculation,
   recommendation,
@@ -802,7 +1027,7 @@ function Results({
     },
     {
       label: 'Estimated cost',
-      value: formatCurrency(calculation.estimatedCost),
+      value: formatCurrency(calculation.estimatedCost, input.currency),
       detail:
         calculation.estimatedCost === undefined
           ? 'Add optional pricing'
@@ -850,10 +1075,12 @@ function Results({
           Why order {formatRecommendedOrder(calculation.recommendedOrderCubicYards)} yd³?
         </h3>
         <p className="mt-2 text-sm leading-6 text-ink-soft">{recommendation.explanation}</p>
-        <p className="mt-3 text-sm font-semibold text-ink">
-          Depth guidance:{' '}
-          <span className="font-normal text-ink-soft">{recommendation.depthGuidance}</span>
-        </p>
+        {input.inputMode !== 'volume' && (
+          <p className="mt-3 text-sm font-semibold text-ink">
+            Depth guidance:{' '}
+            <span className="font-normal text-ink-soft">{recommendation.depthGuidance}</span>
+          </p>
+        )}
       </article>
       {recommendation.warnings.map((warning) => (
         <div

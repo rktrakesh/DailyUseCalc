@@ -5,8 +5,10 @@ import { createGravelEstimateReport } from './gravelReport';
 import { createEstimateReportHtml } from '../../../components/reports/EstimateReport';
 import { createPdfFilename, createReportFilename } from '../../../lib/reports/reportFilename';
 import type { GravelInput } from './types';
+import { currencyForLocale, formatMoney } from './currencies';
 
 const input: GravelInput = {
+  inputMode: 'dimensions',
   areaShape: 'rectangle',
   projectType: 'driveway',
   gravelType: 'crushed-stone',
@@ -14,6 +16,9 @@ const input: GravelInput = {
   width: { value: 20, unit: 'ft' },
   diameter: { value: Number.NaN, unit: 'ft' },
   depth: { value: 10, unit: 'in' },
+  knownArea: { value: Number.NaN, unit: 'ft²' },
+  knownVolume: { value: Number.NaN, unit: 'yd³' },
+  currency: 'USD',
   allowancePercent: 0,
   pricePerCubicYard: 45,
   deliveryFee: 55,
@@ -54,6 +59,42 @@ describe('gravel estimate report', () => {
     expect(createPdfFilename('dailyusecalc-gravel-2026-08-12.pdf')).toBe(
       'dailyusecalc-gravel-2026-08-12.pdf',
     );
+  });
+
+  it('maps locale defaults and formats currencies without conversion', () => {
+    expect(currencyForLocale('en-US')).toBe('USD');
+    expect(currencyForLocale('en-IN')).toBe('INR');
+    expect(currencyForLocale('en-GB')).toBe('GBP');
+    expect(currencyForLocale('xx-ZZ')).toBe('USD');
+    expect(formatMoney(1234.5, 'USD', 'en-US')).toContain('$');
+    expect(formatMoney(1234.5, 'EUR', 'de-DE')).toContain('€');
+    expect(formatMoney(1234.5, 'INR', 'en-IN')).toContain('₹');
+    expect(formatMoney(1234.5, 'JPY', 'ja-JP')).not.toContain('.50');
+  });
+
+  it('reports area and volume modes without fake dimensions', () => {
+    for (const inputMode of ['area', 'volume'] as const) {
+      const modeInput: GravelInput = {
+        ...input,
+        inputMode,
+        knownArea: { value: 1000, unit: 'ft²' },
+        knownVolume: { value: 4.5, unit: 'yd³' },
+        currency: 'EUR',
+      };
+      const calculation = calculateGravel(modeInput);
+      const report = createGravelEstimateReport({
+        calculation,
+        input: modeInput,
+        recommendation: recommendGravel(modeInput, calculation),
+        measurementSystem: 'imperial',
+      });
+      const rows = report.sections[0].rows;
+      expect(rows.some((row) => row.label === 'Length' || row.label === 'Width')).toBe(false);
+      expect(rows.some((row) => row.label === (inputMode === 'area' ? 'Area' : 'Volume'))).toBe(
+        true,
+      );
+      expect(report.additionalDetails).toContainEqual({ label: 'Currency', value: 'EUR' });
+    }
   });
 
   it('exposes the shared PDF renderer without calculator-specific PDF logic', async () => {

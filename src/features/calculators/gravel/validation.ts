@@ -44,13 +44,21 @@ function validateOptionalPrice(
 
 export function validateGravelInput(input: GravelInput): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  if (input.areaShape === 'circle') {
+  if (input.inputMode === 'volume') {
+    if (!isPositiveNumber(input.knownVolume.value))
+      issues.push({ field: 'knownVolume', message: 'Enter a volume greater than zero.' });
+  } else if (input.inputMode === 'area') {
+    if (!isPositiveNumber(input.knownArea.value))
+      issues.push({ field: 'knownArea', message: 'Enter an area greater than zero.' });
+    validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
+  } else if (input.areaShape === 'circle') {
     validateDimension(input.diameter, 'diameter', MAX_SURFACE_DIMENSION_FEET, issues);
+    validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
   } else {
     validateDimension(input.length, 'length', MAX_SURFACE_DIMENSION_FEET, issues);
     validateDimension(input.width, 'width', MAX_SURFACE_DIMENSION_FEET, issues);
+    validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
   }
-  validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
 
   if (
     !Number.isFinite(input.allowancePercent) ||

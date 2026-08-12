@@ -1,7 +1,9 @@
 import {
   cubicFeetToCubicMeters,
   cubicFeetToCubicYards,
+  areaToSquareFeet,
   toFeet,
+  volumeToCubicFeet,
 } from '../../../lib/units/measurements';
 import type { GravelCalculation, GravelInput, GravelType } from './types';
 
@@ -28,6 +30,9 @@ export function recommendedOrderCubicYards(adjustedVolumeCubicYards: number): nu
 }
 
 export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {
+  if (input.inputMode === 'volume') return 0;
+  if (input.inputMode === 'area')
+    return areaToSquareFeet(input.knownArea.value, input.knownArea.unit);
   if (input.areaShape === 'circle') {
     const diameterFeet = toFeet(input.diameter.value, input.diameter.unit);
     return Math.PI * (diameterFeet / 2) ** 2;
@@ -40,7 +45,10 @@ export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {
 export function calculateGravel(input: GravelInput): GravelCalculation {
   const depthFeet = toFeet(input.depth.value, input.depth.unit);
   const surfaceAreaSquareFeet = calculateSurfaceAreaSquareFeet(input);
-  const volumeCubicFeet = surfaceAreaSquareFeet * depthFeet;
+  const volumeCubicFeet =
+    input.inputMode === 'volume'
+      ? volumeToCubicFeet(input.knownVolume.value, input.knownVolume.unit)
+      : surfaceAreaSquareFeet * depthFeet;
   const volumeCubicYards = cubicFeetToCubicYards(volumeCubicFeet);
   const allowanceVolumeCubicYards = volumeCubicYards * (input.allowancePercent / 100);
   const adjustedVolumeCubicYards = volumeCubicYards + allowanceVolumeCubicYards;

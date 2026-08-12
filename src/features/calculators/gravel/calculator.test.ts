@@ -9,6 +9,7 @@ import { convertLength } from '../../../lib/units/measurements';
 import type { GravelInput } from './types';
 
 const baseInput: GravelInput = {
+  inputMode: 'dimensions',
   areaShape: 'rectangle',
   projectType: 'driveway',
   gravelType: 'crushed-stone',
@@ -16,6 +17,9 @@ const baseInput: GravelInput = {
   width: { value: 12, unit: 'ft' },
   diameter: { value: Number.NaN, unit: 'ft' },
   depth: { value: 4, unit: 'in' },
+  knownArea: { value: Number.NaN, unit: 'ft²' },
+  knownVolume: { value: Number.NaN, unit: 'yd³' },
+  currency: 'USD',
   allowancePercent: 10,
   bagSizeCubicFeet: 0.5,
   truckCapacityCubicYards: 12,
@@ -114,6 +118,60 @@ describe('gravel calculation', () => {
     });
     expect(circle.surfaceAreaSquareFeet).toBeCloseTo(Math.PI * 100, 10);
     expect(rectangle.surfaceAreaSquareFeet).toBe(240);
+  });
+
+  it('normalizes known area units through the shared pipeline', () => {
+    const equivalents = [
+      { value: 1_000, unit: 'ft²' as const },
+      { value: 1_000 / 9, unit: 'yd²' as const },
+      { value: 92.90304, unit: 'm²' as const },
+      { value: 929_030.4, unit: 'cm²' as const },
+    ].map((knownArea) =>
+      calculateGravel({
+        ...baseInput,
+        inputMode: 'area',
+        knownArea,
+        depth: { value: 3, unit: 'in' },
+      }),
+    );
+    for (const result of equivalents) expect(result.volumeCubicFeet).toBeCloseTo(250, 5);
+    expect(equivalents[0].recommendedOrderCubicYards).toBe(10.2);
+  });
+
+  it('normalizes known volume units without using area or depth', () => {
+    const equivalents = [
+      { value: 121.5, unit: 'ft³' as const },
+      { value: 4.5, unit: 'yd³' as const },
+      { value: 3.440496861, unit: 'm³' as const },
+    ].map((knownVolume) =>
+      calculateGravel({
+        ...baseInput,
+        inputMode: 'volume',
+        knownVolume,
+        depth: { value: Number.NaN, unit: 'in' },
+      }),
+    );
+    for (const result of equivalents) expect(result.volumeCubicYards).toBeCloseTo(4.5, 5);
+  });
+
+  it('ignores inactive dimension and volume values in area mode', () => {
+    const result = calculateGravel({
+      ...baseInput,
+      inputMode: 'area',
+      knownArea: { value: 900, unit: 'ft²' },
+      knownVolume: { value: 999, unit: 'yd³' },
+      length: { value: 999, unit: 'ft' },
+      width: { value: 999, unit: 'ft' },
+      depth: { value: 3, unit: 'in' },
+      allowancePercent: 0,
+    });
+    expect(result.volumeCubicYards).toBeCloseTo(8.333333, 5);
+  });
+
+  it('keeps numerical results independent of the selected display currency', () => {
+    const usd = calculateGravel({ ...baseInput, currency: 'USD' });
+    const inr = calculateGravel({ ...baseInput, currency: 'INR' });
+    expect(inr).toEqual(usd);
   });
 
   it('uses bag pricing only when bulk pricing is absent', () => {

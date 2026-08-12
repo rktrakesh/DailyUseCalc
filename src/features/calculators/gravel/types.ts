@@ -1,7 +1,9 @@
-import type { LengthUnit } from '../../../lib/units/measurements';
+import type { AreaUnit, LengthUnit, VolumeUnit } from '../../../lib/units/measurements';
+import type { CurrencyCode } from './currencies';
 
 export type MeasurementSystem = 'imperial' | 'metric';
 export type AreaShape = 'rectangle' | 'circle';
+export type ProjectSizeMode = 'dimensions' | 'area' | 'volume';
 export type ProjectType =
   'driveway' | 'walkway' | 'patio' | 'landscaping' | 'french-drain' | 'shed-base' | 'other';
 export type GravelType =
@@ -13,6 +15,7 @@ export interface DimensionInput {
 }
 
 export interface GravelInput {
+  inputMode: ProjectSizeMode;
   areaShape: AreaShape;
   projectType: ProjectType;
   gravelType: GravelType;
@@ -20,6 +23,9 @@ export interface GravelInput {
   width: DimensionInput;
   diameter: DimensionInput;
   depth: DimensionInput;
+  knownArea: { value: number; unit: AreaUnit };
+  knownVolume: { value: number; unit: VolumeUnit };
+  currency: CurrencyCode;
   allowancePercent: number;
   customDensityTonsPerYard?: number;
   pricePerCubicYard?: number;

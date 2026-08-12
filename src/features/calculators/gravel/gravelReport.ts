@@ -6,6 +6,7 @@ import type {
   GravelRecommendation,
   MeasurementSystem,
 } from './types';
+import { formatMoney } from './currencies';
 
 export interface GravelReportOptions {
   calculation: GravelCalculation;
@@ -78,7 +79,10 @@ export function createGravelEstimateReport({
       confirmation: 'Minimal upward rounding to 0.1 yd³; supplier order increments may vary.',
     },
     summary: [
-      { label: 'Area shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' },
+      { label: 'Input method', value: input.inputMode[0].toUpperCase() + input.inputMode.slice(1) },
+      ...(input.inputMode === 'dimensions'
+        ? [{ label: 'Area shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' }]
+        : []),
       { label: 'Gravel type', value: gravelLabels[input.gravelType] },
       { label: 'Measurement system', value: metric ? 'Metric' : 'Imperial (US)' },
       { label: 'Allowance', value: `${input.allowancePercent}%` },
@@ -88,20 +92,43 @@ export function createGravelEstimateReport({
       {
         title: 'PROJECT MEASUREMENTS',
         rows: [
-          { label: 'Shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' },
-          ...(input.areaShape === 'circle'
+          ...(input.inputMode === 'volume'
             ? [
                 {
-                  label: 'Diameter',
-                  value: `${number(input.diameter.value)} ${input.diameter.unit}`,
+                  label: 'Volume',
+                  value: `${number(input.knownVolume.value)} ${input.knownVolume.unit}`,
                 },
               ]
-            : [
-                { label: 'Length', value: `${number(input.length.value)} ${input.length.unit}` },
-                { label: 'Width', value: `${number(input.width.value)} ${input.width.unit}` },
-              ]),
-          { label: 'Depth', value: `${number(input.depth.value)} ${input.depth.unit}` },
-          { label: 'Area', value: area },
+            : input.inputMode === 'area'
+              ? [
+                  {
+                    label: 'Area',
+                    value: `${number(input.knownArea.value)} ${input.knownArea.unit}`,
+                  },
+                  { label: 'Depth', value: `${number(input.depth.value)} ${input.depth.unit}` },
+                ]
+              : [
+                  { label: 'Shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' },
+                  ...(input.areaShape === 'circle'
+                    ? [
+                        {
+                          label: 'Diameter',
+                          value: `${number(input.diameter.value)} ${input.diameter.unit}`,
+                        },
+                      ]
+                    : [
+                        {
+                          label: 'Length',
+                          value: `${number(input.length.value)} ${input.length.unit}`,
+                        },
+                        {
+                          label: 'Width',
+                          value: `${number(input.width.value)} ${input.width.unit}`,
+                        },
+                      ]),
+                  { label: 'Depth', value: `${number(input.depth.value)} ${input.depth.unit}` },
+                ]),
+          ...(input.inputMode === 'volume' ? [] : [{ label: 'Calculated area', value: area }]),
           { label: 'Volume', value: `${volume} (calculated)` },
         ],
       },
@@ -128,15 +155,15 @@ export function createGravelEstimateReport({
     ],
     additionalDetails: [
       {
+        label: 'Currency',
+        value: input.currency,
+      },
+      {
         label: 'Estimated cost',
         value:
           calculation.estimatedCost === undefined
             ? '—'
-            : new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                maximumFractionDigits: 0,
-              }).format(calculation.estimatedCost),
+            : formatMoney(calculation.estimatedCost, input.currency, undefined, 0),
       },
       {
         label: 'Bags',
