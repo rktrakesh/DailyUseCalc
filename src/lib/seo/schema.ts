@@ -1,11 +1,22 @@
-import { absoluteUrl, SITE_NAME, SITE_URL } from './site';
+import { absoluteUrl, SITE_NAME } from './site';
 
 export function organizationSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
-    url: SITE_URL,
+    url: absoluteUrl('/'),
+    logo: absoluteUrl('/logo/dailyusecalc-logo-176.png'),
+  };
+}
+
+export function websiteSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    alternateName: ['Daily Use Calc', 'dailyusecalc.com'],
+    url: absoluteUrl('/'),
   };
 }
 
