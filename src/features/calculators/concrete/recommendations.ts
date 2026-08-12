@@ -8,6 +8,11 @@ const guidance = {
   'post-hole': 'This estimate assumes the full cylindrical hole is filled with concrete.',
 } as const;
 
+// UX planning threshold only; supplier minimums and project constraints vary.
+export const READY_MIX_COMPARISON_VOLUME_YD3 = 5;
+export const LARGE_BAGGED_QUANTITY_WARNING =
+  'This is a substantial bagged-concrete quantity. Consider comparing it with ready-mix delivery.';
+
 export function recommendConcrete(
   input: ConcreteInput,
   calculation: ConcreteCalculation,
@@ -29,10 +34,8 @@ export function recommendConcrete(
     warnings.push(
       'This is a very thin concrete layer. Confirm the planned thickness with a qualified professional.',
     );
-  if (calculation.bagCount > 500)
-    warnings.push(
-      'This project requires many bags. Compare bagged concrete with ready-mix delivery.',
-    );
+  if (calculation.adjustedVolumeCubicYards >= READY_MIX_COMPARISON_VOLUME_YD3)
+    warnings.push(LARGE_BAGGED_QUANTITY_WARNING);
   if (input.bagPreset === 'custom')
     warnings.push('Confirm the custom yield against the concrete bag manufacturer’s instructions.');
   return {

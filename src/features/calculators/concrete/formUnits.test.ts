@@ -4,10 +4,13 @@ import {
   calculateConcrete,
   bagYieldFromCubicFeet,
   bagYieldToCubicFeet,
+  CONCRETE_BAG_PRESETS,
   convertBagWeight,
   convertConcreteDimension,
   convertConcreteMeasurementSystem,
   createDefaultConcreteInput,
+  customBagYieldAssumption,
+  presetBagYieldAssumption,
   validateConcreteInput,
 } from '.';
 
@@ -22,6 +25,27 @@ describe('concrete form unit conversion', () => {
     const liters = bagYieldFromCubicFeet(0.5, 'L');
     expect(liters).toBeCloseTo(14.1584, 4);
     expect(bagYieldToCubicFeet(liters, 'L')).toBeCloseTo(0.5, 10);
+  });
+
+  it.each(CONCRETE_BAG_PRESETS.filter((preset) => preset.yieldCubicFeet))(
+    'displays the configured $label preset yield in cubic feet and liters',
+    (preset) => {
+      const message = presetBagYieldAssumption(preset.yieldCubicFeet!);
+      const cubicFeet =
+        Number(preset.yieldCubicFeet!.toFixed(2)) === preset.yieldCubicFeet
+          ? preset.yieldCubicFeet!.toFixed(2)
+          : preset.yieldCubicFeet!.toFixed(3);
+      expect(message).toContain(`${cubicFeet} ft³`);
+      expect(message).toContain(
+        `(${bagYieldFromCubicFeet(preset.yieldCubicFeet, 'L')!.toFixed(1)} L)`,
+      );
+    },
+  );
+
+  it('describes a valid custom yield in the selected display unit', () => {
+    expect(customBagYieldAssumption(0.5, 'ft³')).toContain('0.50 ft³ per bag');
+    expect(customBagYieldAssumption(0.5, 'L')).toContain('14.2 L per bag');
+    expect(customBagYieldAssumption(undefined, 'L')).toBeUndefined();
   });
 
   it.each([

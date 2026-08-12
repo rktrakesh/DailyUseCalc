@@ -10,6 +10,9 @@ export {
   bagYieldToCubicFeet,
   concreteBagSizeLabel,
   convertBagWeight,
+  customBagYieldAssumption,
+  formatBagYieldCubicFeet,
+  presetBagYieldAssumption,
 } from './bagUnits';
 export { createClearedConcreteInput, createDefaultConcreteInput } from './formDefaults';
 export {
@@ -18,5 +21,6 @@ export {
   convertConcreteMeasurementSystem,
 } from './formUnits';
 export { recommendConcrete } from './recommendations';
+export { concreteQuantityUnit } from './quantityLabels';
 export { validateConcreteInput } from './validation';
 export type * from './types';

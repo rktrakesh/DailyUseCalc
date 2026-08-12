@@ -24,9 +24,12 @@ import {
   convertConcreteMeasurementSystem,
   convertBagWeight,
   concreteBagSizeLabel,
+  concreteQuantityUnit,
   createClearedConcreteInput,
   createDefaultConcreteInput,
   recommendConcrete,
+  customBagYieldAssumption,
+  presetBagYieldAssumption,
   validateConcreteInput,
 } from './index';
 import { concreteBagPreset } from './bagPresets';
@@ -82,6 +85,11 @@ export default function ConcreteCalculator() {
     [calculation, submitted],
   );
   const errorFor = (field: string) => issues.find((issue) => issue.field === field)?.message;
+  const activeBagPreset = concreteBagPreset(input.bagPreset);
+  const bagYieldHelper =
+    input.bagPreset === 'custom'
+      ? customBagYieldAssumption(input.customBagYieldCubicFeet, input.customBagYieldUnit)
+      : presetBagYieldAssumption(activeBagPreset.yieldCubicFeet!);
 
   function updateSystem(next: MeasurementSystem) {
     if (next === system) return;
@@ -275,7 +283,7 @@ export default function ConcreteCalculator() {
               id="quantity"
               label="Quantity"
               value={input.quantity}
-              unit="items"
+              unit={concreteQuantityUnit(input.concreteMode, input.quantity)}
               error={errorFor('quantity')}
               step="1"
               onChange={(event) =>
@@ -331,6 +339,9 @@ export default function ConcreteCalculator() {
             ))}
           </SelectField>
         </div>
+        {bagYieldHelper && (
+          <p className="mt-1.5 text-[0.68rem] leading-4 text-ink-soft">{bagYieldHelper}</p>
+        )}
         {input.bagPreset === 'custom' && (
           <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 @2xl/calculator:max-w-[31.5rem]">
             <OptionalNumberWithUnitField

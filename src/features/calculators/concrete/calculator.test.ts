@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { convertLength } from '../../../lib/units/measurements';
 import {
   calculateConcrete,
+  concreteQuantityUnit,
   concreteGeometry,
   createClearedConcreteInput,
   createDefaultConcreteInput,
@@ -137,6 +138,74 @@ describe('allowance, order, and weight', () => {
 
 describe('bags and pricing', () => {
   it.each([
+    {
+      name: 'slab',
+      input: {},
+      measured: 2.4691358,
+      adjusted: 2.7160494,
+      order: 2.8,
+      bags: 123,
+      readyMixCost: 76,
+      bagCost: 3690,
+    },
+    {
+      name: 'circular pad',
+      input: { concreteMode: 'circular-pad' as const, quantity: 3 },
+      measured: 2.9088821,
+      adjusted: 3.1997703,
+      order: 3.2,
+      bags: 144,
+      readyMixCost: 84,
+      bagCost: 4320,
+    },
+    {
+      name: 'column',
+      input: {
+        concreteMode: 'column' as const,
+        height: { value: 20, unit: 'ft' as const },
+        quantity: 2,
+      },
+      measured: 116.3552835,
+      adjusted: 127.9908119,
+      order: 128,
+      bags: 5760,
+      readyMixCost: 2580,
+      bagCost: 172800,
+    },
+    {
+      name: 'post hole',
+      input: {
+        concreteMode: 'post-hole' as const,
+        holeDepth: { value: 15, unit: 'ft' as const },
+        quantity: 2,
+      },
+      measured: 0.8726646,
+      adjusted: 0.9599311,
+      order: 1,
+      bags: 44,
+      readyMixCost: 40,
+      bagCost: 1320,
+    },
+  ])(
+    'preserves the known-good $name purchasing scenario',
+    ({ input: overrides, measured, adjusted, order, bags, readyMixCost, bagCost }) => {
+      const result = calculateConcrete({
+        ...base,
+        ...overrides,
+        readyMixPricePerCubicYard: 20,
+        readyMixDeliveryFee: 20,
+        bagPrice: 30,
+      });
+      expect(result.volumeCubicYards).toBeCloseTo(measured, 6);
+      expect(result.adjustedVolumeCubicYards).toBeCloseTo(adjusted, 6);
+      expect(result.recommendedOrderCubicYards).toBe(order);
+      expect(result.bagCount).toBe(bags);
+      expect(result.estimatedReadyMixCost).toBe(readyMixCost);
+      expect(result.estimatedBagCost).toBe(bagCost);
+    },
+  );
+
+  it.each([
     ['40-lb', 0.3, 245],
     ['50-lb', 0.375, 196],
     ['60-lb', 0.45, 163],
@@ -212,6 +281,19 @@ describe('bags and pricing', () => {
 });
 
 describe('concrete validation and defaults', () => {
+  it.each([
+    ['slab', 1, 'slab'],
+    ['slab', 2, 'slabs'],
+    ['circular-pad', 1, 'pad'],
+    ['circular-pad', 2, 'pads'],
+    ['column', 1, 'column'],
+    ['column', 2, 'columns'],
+    ['post-hole', 1, 'hole'],
+    ['post-hole', 2, 'holes'],
+  ] as const)('uses %s quantity wording for %s', (mode, quantity, expected) => {
+    expect(concreteQuantityUnit(mode, quantity)).toBe(expected);
+  });
+
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
     'rejects invalid active dimension %s',
     (value) =>

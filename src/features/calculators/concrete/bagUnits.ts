@@ -22,6 +22,28 @@ export function bagYieldToCubicFeet(value: number | undefined, unit: ConcreteBag
   return value / LITERS_PER_CUBIC_FOOT;
 }
 
+export function formatBagYieldCubicFeet(value: number) {
+  return Number(value.toFixed(2)) === value ? value.toFixed(2) : value.toFixed(3);
+}
+
+export function presetBagYieldAssumption(cubicFeet: number) {
+  const liters = cubicFeet * LITERS_PER_CUBIC_FOOT;
+  return `Typical yield: ${formatBagYieldCubicFeet(cubicFeet)} ft³ (${liters.toFixed(1)} L) per bag · Check your product bag for exact yield.`;
+}
+
+export function customBagYieldAssumption(
+  cubicFeet: number | undefined,
+  unit: ConcreteBagYieldUnit,
+) {
+  if (cubicFeet === undefined || !Number.isFinite(cubicFeet) || cubicFeet <= 0) return;
+  const displayValue = bagYieldFromCubicFeet(cubicFeet, unit)!;
+  const formatted =
+    unit === 'ft³'
+      ? formatBagYieldCubicFeet(displayValue)
+      : new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(displayValue);
+  return `Bag count uses your custom yield of ${formatted} ${unit} per bag.`;
+}
+
 export function concreteBagSizeLabel({
   presetLabel,
   customWeight,

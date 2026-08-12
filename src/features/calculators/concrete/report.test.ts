@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createEstimateReportHtml } from '../../../components/reports/EstimateReport';
-import { calculateConcrete, createDefaultConcreteInput, recommendConcrete } from '.';
+import {
+  calculateConcrete,
+  CONCRETE_BAG_PRESETS,
+  createDefaultConcreteInput,
+  formatBagYieldCubicFeet,
+  recommendConcrete,
+} from '.';
 import { createConcreteEstimateReport } from './concreteReport';
 import type { ConcreteMode } from './types';
 
@@ -26,6 +32,27 @@ describe('concrete report', () => {
       expect(report.footerUrl).toBe('dailyusecalc.com/concrete');
     },
   );
+  it.each([
+    ['slab', 1, '1 slab'],
+    ['slab', 2, '2 slabs'],
+    ['circular-pad', 1, '1 pad'],
+    ['circular-pad', 3, '3 pads'],
+    ['column', 1, '1 column'],
+    ['column', 2, '2 columns'],
+    ['post-hole', 1, '1 hole'],
+    ['post-hole', 2, '2 holes'],
+  ] as const)('uses contextual quantity wording for %s quantity %s', (mode, quantity, expected) => {
+    const input = { ...createDefaultConcreteInput(), concreteMode: mode, quantity };
+    const calculation = calculateConcrete(input);
+    const report = createConcreteEstimateReport({
+      input,
+      calculation,
+      recommendation: recommendConcrete(input, calculation),
+      measurementSystem: 'imperial',
+    });
+    expect(report.leftSections?.[0].rows).toContainEqual({ label: 'Quantity', value: expected });
+    expect(report.summary).toContainEqual({ label: 'Quantity', value: expected });
+  });
   it('keeps measured and adjusted semantics and uses adjusted weight', () => {
     const input = createDefaultConcreteInput();
     const calculation = calculateConcrete(input);
@@ -116,11 +143,28 @@ describe('concrete report', () => {
     expect(report.additionalDetails).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: 'Bag size', value: expected }),
-        expect.objectContaining({ label: 'Bag yield', value: '0.5 ft³ / bag' }),
+        expect.objectContaining({ label: 'Bag yield', value: '0.50 ft³ / bag' }),
         expect.objectContaining({ label: 'Bags', value: '147 bags' }),
       ]),
     );
   });
+  it.each(CONCRETE_BAG_PRESETS.filter((preset) => preset.yieldCubicFeet))(
+    'preserves deliberate report precision for the $label preset',
+    (preset) => {
+      const input = { ...createDefaultConcreteInput(), bagPreset: preset.id };
+      const calculation = calculateConcrete(input);
+      const report = createConcreteEstimateReport({
+        input,
+        calculation,
+        recommendation: recommendConcrete(input, calculation),
+        measurementSystem: 'imperial',
+      });
+      expect(report.additionalDetails).toContainEqual({
+        label: 'Bag yield',
+        value: `${formatBagYieldCubicFeet(preset.yieldCubicFeet!)} ft³ / bag`,
+      });
+    },
+  );
   it('omits empty warnings and retains HTML escaping', () => {
     const input = { ...createDefaultConcreteInput(), allowancePercent: 10 };
     const calculation = calculateConcrete(input);

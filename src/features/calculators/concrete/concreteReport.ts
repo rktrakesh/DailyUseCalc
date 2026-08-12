@@ -3,7 +3,8 @@ import { createReportFilename } from '../../../lib/reports/reportFilename';
 import { formatMoney } from '../gravel/currencies';
 import { adjustedConcreteVolumeConversions } from './calculator';
 import { concreteBagPreset } from './bagPresets';
-import { concreteBagSizeLabel } from './bagUnits';
+import { concreteBagSizeLabel, formatBagYieldCubicFeet } from './bagUnits';
+import { concreteQuantityUnit } from './quantityLabels';
 import type {
   ConcreteCalculation,
   ConcreteInput,
@@ -74,7 +75,8 @@ export function createConcreteEstimateReport({
                 value: `${number(input.holeDepth.value)} ${input.holeDepth.unit}`,
               },
             ];
-  measurements.push({ label: 'Quantity', value: number(input.quantity, 0) });
+  const quantity = `${number(input.quantity, 0)} ${concreteQuantityUnit(input.concreteMode, input.quantity)}`;
+  measurements.push({ label: 'Quantity', value: quantity });
   const purchasing: ReportMetric[] = [
     ...(input.readyMixPricePerCubicYard === undefined
       ? []
@@ -93,7 +95,10 @@ export function createConcreteEstimateReport({
           },
         ]),
     { label: 'Bag size', value: bagSize ?? 'Custom' },
-    { label: 'Bag yield', value: `${number(calculation.bagYieldCubicFeet, 3)} ft³ / bag` },
+    {
+      label: 'Bag yield',
+      value: `${formatBagYieldCubicFeet(calculation.bagYieldCubicFeet)} ft³ / bag`,
+    },
     { label: 'Bags', value: `${number(calculation.bagCount, 0)} bags` },
     ...(input.bagPrice === undefined
       ? []
@@ -185,7 +190,7 @@ export function createConcreteEstimateReport({
         label: 'Measurement system',
         value: measurementSystem === 'imperial' ? 'Imperial (US)' : 'Metric',
       },
-      { label: 'Quantity', value: number(input.quantity, 0) },
+      { label: 'Quantity', value: quantity },
       { label: 'Allowance', value: `${input.allowancePercent}%` },
       { label: 'Typical density', value: '145 lb/ft³' },
     ],
