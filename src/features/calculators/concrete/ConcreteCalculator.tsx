@@ -10,13 +10,16 @@ import {
   RotateCcw,
   Share2,
 } from 'lucide-react';
-import { convertLength } from '../../../lib/units/measurements';
+import type { LengthUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from '../gravel/currencies';
 import {
   adjustedConcreteVolumeConversions,
   calculateConcrete,
   CONCRETE_BAG_PRESETS,
+  CONCRETE_LENGTH_UNITS,
+  convertConcreteDimension,
+  convertConcreteMeasurementSystem,
   createClearedConcreteInput,
   createDefaultConcreteInput,
   recommendConcrete,
@@ -76,31 +79,9 @@ export default function ConcreteCalculator() {
 
   function updateSystem(next: MeasurementSystem) {
     if (next === system) return;
-    const metric = next === 'metric';
-    setInput((current) => ({
-      ...current,
-      length: converted(current.length, metric ? 'm' : 'ft', 3),
-      width: converted(current.width, metric ? 'm' : 'ft', 3),
-      diameter: converted(current.diameter, metric ? 'm' : 'ft', 3),
-      thickness: converted(current.thickness, metric ? 'cm' : 'in', 2),
-      height: converted(current.height, metric ? 'm' : 'ft', 3),
-      holeDiameter: converted(current.holeDiameter, metric ? 'cm' : 'in', 2),
-      holeDepth: converted(current.holeDepth, metric ? 'm' : 'ft', 3),
-    }));
+    setInput((current) => convertConcreteMeasurementSystem(current, next));
     setSystem(next);
     setIssues([]);
-  }
-  function converted(
-    value: ConcreteInput['length'],
-    unit: 'm' | 'ft' | 'cm' | 'in',
-    digits: number,
-  ) {
-    return {
-      value: Number.isFinite(value.value)
-        ? Number(convertLength(value.value, value.unit, unit).toFixed(digits))
-        : value.value,
-      unit,
-    };
   }
   function calculateEstimate() {
     const next = validateConcreteInput(input);
@@ -228,18 +209,14 @@ export default function ConcreteCalculator() {
                   label="Length"
                   input={input.length}
                   error={errorFor('length')}
-                  onChange={(value) =>
-                    setInput((current) => ({ ...current, length: { ...current.length, value } }))
-                  }
+                  onChange={(length) => setInput((current) => ({ ...current, length }))}
                 />
                 <DimensionField
                   id="width"
                   label="Width"
                   input={input.width}
                   error={errorFor('width')}
-                  onChange={(value) =>
-                    setInput((current) => ({ ...current, width: { ...current.width, value } }))
-                  }
+                  onChange={(width) => setInput((current) => ({ ...current, width }))}
                 />
               </>
             )}
@@ -249,9 +226,7 @@ export default function ConcreteCalculator() {
                 label="Diameter"
                 input={input.diameter}
                 error={errorFor('diameter')}
-                onChange={(value) =>
-                  setInput((current) => ({ ...current, diameter: { ...current.diameter, value } }))
-                }
+                onChange={(diameter) => setInput((current) => ({ ...current, diameter }))}
               />
             )}
             {(input.concreteMode === 'slab' || input.concreteMode === 'circular-pad') && (
@@ -260,12 +235,7 @@ export default function ConcreteCalculator() {
                 label="Thickness"
                 input={input.thickness}
                 error={errorFor('thickness')}
-                onChange={(value) =>
-                  setInput((current) => ({
-                    ...current,
-                    thickness: { ...current.thickness, value },
-                  }))
-                }
+                onChange={(thickness) => setInput((current) => ({ ...current, thickness }))}
               />
             )}
             {input.concreteMode === 'column' && (
@@ -274,9 +244,7 @@ export default function ConcreteCalculator() {
                 label="Height"
                 input={input.height}
                 error={errorFor('height')}
-                onChange={(value) =>
-                  setInput((current) => ({ ...current, height: { ...current.height, value } }))
-                }
+                onChange={(height) => setInput((current) => ({ ...current, height }))}
               />
             )}
             {input.concreteMode === 'post-hole' && (
@@ -286,24 +254,14 @@ export default function ConcreteCalculator() {
                   label="Hole diameter"
                   input={input.holeDiameter}
                   error={errorFor('holeDiameter')}
-                  onChange={(value) =>
-                    setInput((current) => ({
-                      ...current,
-                      holeDiameter: { ...current.holeDiameter, value },
-                    }))
-                  }
+                  onChange={(holeDiameter) => setInput((current) => ({ ...current, holeDiameter }))}
                 />
                 <DimensionField
                   id="hole-depth"
                   label="Hole depth"
                   input={input.holeDepth}
                   error={errorFor('holeDepth')}
-                  onChange={(value) =>
-                    setInput((current) => ({
-                      ...current,
-                      holeDepth: { ...current.holeDepth, value },
-                    }))
-                  }
+                  onChange={(holeDepth) => setInput((current) => ({ ...current, holeDepth }))}
                 />
               </>
             )}
@@ -320,7 +278,7 @@ export default function ConcreteCalculator() {
             />
           </div>
         </fieldset>
-        <div className="mt-3 max-w-40">
+        <div className="mt-3 grid max-w-[20.5rem] grid-cols-2 gap-2.5">
           <SelectField
             label="Extra allowance"
             name="allowance"
@@ -336,41 +294,38 @@ export default function ConcreteCalculator() {
               </option>
             ))}
           </SelectField>
+          <SelectField
+            label="Currency"
+            name="currency"
+            value={input.currency}
+            onChange={(value) => {
+              const currency = value as CurrencyCode;
+              setInput((current) => ({ ...current, currency }));
+              localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+            }}
+          >
+            {currencies.map(([code, symbol]) => (
+              <option key={code} value={code}>
+                {code} ({symbol})
+              </option>
+            ))}
+          </SelectField>
         </div>
         <div className="mt-3 grid gap-2 @xl/calculator:grid-cols-2">
           <OptionalGroup title="Ready-mix price (optional)">
-            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-              <select
-                aria-label="Currency"
-                className={controlClass()}
-                value={input.currency}
-                onChange={(event) => {
-                  const currency = event.target.value as CurrencyCode;
-                  setInput((current) => ({ ...current, currency }));
-                  localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
-                }}
-              >
-                {currencies.map(([code, symbol]) => (
-                  <option key={code} value={code}>
-                    {code} ({symbol})
-                  </option>
-                ))}
-              </select>
-              <OptionalNumberField
-                id="ready-mix-price"
-                label="Ready-mix price"
-                hideLabel
-                value={input.readyMixPricePerCubicYard}
-                unit="per yd³"
-                error={errorFor('readyMixPricePerCubicYard')}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    readyMixPricePerCubicYard: optionalNumberFromEvent(event),
-                  }))
-                }
-              />
-            </div>
+            <OptionalNumberField
+              id="ready-mix-price"
+              label="Ready-mix price"
+              value={input.readyMixPricePerCubicYard}
+              unit="per yd³"
+              error={errorFor('readyMixPricePerCubicYard')}
+              onChange={(event) =>
+                setInput((current) => ({
+                  ...current,
+                  readyMixPricePerCubicYard: optionalNumberFromEvent(event),
+                }))
+              }
+            />
             <OptionalNumberField
               id="delivery-fee"
               label="Delivery fee"
@@ -578,17 +533,48 @@ function DimensionField({
   label: string;
   input: ConcreteInput['length'];
   error?: string;
-  onChange: (value: number) => void;
+  onChange: (dimension: ConcreteInput['length']) => void;
 }) {
   return (
-    <NumberField
-      id={id}
-      label={label}
-      value={input.value}
-      unit={input.unit}
-      error={error}
-      onChange={(event) => onChange(numberFromEvent(event))}
-    />
+    <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
+      {label}
+      <span className="grid grid-cols-[minmax(0,1fr)_3.75rem]">
+        <input
+          id={id}
+          name={id}
+          className={`${controlClass(Boolean(error))} rounded-r-none tabular-nums`}
+          type="number"
+          inputMode="decimal"
+          autoComplete="off"
+          min="0"
+          step="any"
+          value={Number.isFinite(input.value) ? input.value : ''}
+          onChange={(event) => onChange({ ...input, value: numberFromEvent(event) })}
+          onWheel={(event) => event.currentTarget.blur()}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+        />
+        <select
+          aria-label={`${label} unit`}
+          className="h-11 rounded-r-control border border-l-0 border-line bg-panel px-1.5 text-xs font-semibold text-ink outline-none focus:border-brand focus-visible:outline-2 focus-visible:outline-brand/60 focus-visible:outline-offset-1 sm:h-9"
+          value={input.unit}
+          onChange={(event) =>
+            onChange(convertConcreteDimension(input, event.target.value as LengthUnit))
+          }
+        >
+          {CONCRETE_LENGTH_UNITS.map((unit) => (
+            <option key={unit} value={unit}>
+              {unit}
+            </option>
+          ))}
+        </select>
+      </span>
+      {error && (
+        <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
+          {error}
+        </span>
+      )}
+    </label>
   );
 }
 function OptionalNumberField({
@@ -598,7 +584,6 @@ function OptionalNumberField({
   unit,
   error,
   onChange,
-  hideLabel = false,
 }: {
   id: string;
   label: string;
@@ -606,11 +591,10 @@ function OptionalNumberField({
   unit: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  hideLabel?: boolean;
 }) {
   return (
     <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink" htmlFor={id}>
-      <span className={hideLabel ? 'sr-only' : ''}>{label}</span>
+      <span>{label}</span>
       <span className="relative">
         <input
           id={id}

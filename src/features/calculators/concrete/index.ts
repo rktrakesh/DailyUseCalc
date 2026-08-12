@@ -6,6 +6,11 @@ export {
 } from './calculator';
 export { CONCRETE_BAG_PRESETS, concreteBagPreset } from './bagPresets';
 export { createClearedConcreteInput, createDefaultConcreteInput } from './formDefaults';
+export {
+  CONCRETE_LENGTH_UNITS,
+  convertConcreteDimension,
+  convertConcreteMeasurementSystem,
+} from './formUnits';
 export { recommendConcrete } from './recommendations';
 export { validateConcreteInput } from './validation';
 export type * from './types';

@@ -16,6 +16,7 @@ describe('concrete recommendations', () => {
     (concreteMode) => {
       expect(warningsFor(concreteMode, { value: 2, unit: 'in' })).toContain(thinWarning);
       expect(warningsFor(concreteMode, { value: 5.08, unit: 'cm' })).toContain(thinWarning);
+      expect(warningsFor(concreteMode, { value: 0.1667, unit: 'ft' })).toContain(thinWarning);
     },
   );
 

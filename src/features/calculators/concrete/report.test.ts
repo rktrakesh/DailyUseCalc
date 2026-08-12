@@ -72,6 +72,28 @@ describe('concrete report', () => {
       ]),
     );
   });
+
+  it('formats ready-mix and bag costs with the same selected currency', () => {
+    const input = {
+      ...createDefaultConcreteInput('EUR'),
+      readyMixPricePerCubicYard: 150,
+      bagPrice: 8,
+    };
+    const calculation = calculateConcrete(input);
+    const report = createConcreteEstimateReport({
+      input,
+      calculation,
+      recommendation: recommendConcrete(input, calculation),
+      measurementSystem: 'imperial',
+    });
+
+    expect(report.additionalDetails).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Ready-mix cost', value: expect.stringContaining('€') }),
+        expect.objectContaining({ label: 'Bag cost', value: expect.stringContaining('€') }),
+      ]),
+    );
+  });
   it('omits empty warnings and retains HTML escaping', () => {
     const input = { ...createDefaultConcreteInput(), allowancePercent: 10 };
     const calculation = calculateConcrete(input);

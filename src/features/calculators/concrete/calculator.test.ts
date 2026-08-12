@@ -248,5 +248,12 @@ describe('concrete validation and defaults', () => {
     expect(cleared.allowancePercent).toBe(10);
     expect(cleared.bagPreset).toBe('80-lb');
     expect(Number.isNaN(cleared.length.value)).toBe(true);
+    expect(cleared.length.unit).toBe('ft');
+    expect(cleared.width.unit).toBe('ft');
+    expect(cleared.thickness.unit).toBe('in');
+    expect(cleared.diameter.unit).toBe('ft');
+    expect(cleared.height.unit).toBe('ft');
+    expect(cleared.holeDiameter.unit).toBe('in');
+    expect(cleared.holeDepth.unit).toBe('ft');
   });
 });
