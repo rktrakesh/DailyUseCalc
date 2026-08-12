@@ -15,7 +15,7 @@ function isPositiveNumber(value: number): boolean {
 
 function validateDimension(
   value: DimensionInput,
-  field: 'length' | 'width' | 'depth',
+  field: 'length' | 'width' | 'diameter' | 'depth',
   maximumFeet: number,
   issues: ValidationIssue[],
 ) {
@@ -44,8 +44,12 @@ function validateOptionalPrice(
 
 export function validateGravelInput(input: GravelInput): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  validateDimension(input.length, 'length', MAX_SURFACE_DIMENSION_FEET, issues);
-  validateDimension(input.width, 'width', MAX_SURFACE_DIMENSION_FEET, issues);
+  if (input.areaShape === 'circle') {
+    validateDimension(input.diameter, 'diameter', MAX_SURFACE_DIMENSION_FEET, issues);
+  } else {
+    validateDimension(input.length, 'length', MAX_SURFACE_DIMENSION_FEET, issues);
+    validateDimension(input.width, 'width', MAX_SURFACE_DIMENSION_FEET, issues);
+  }
   validateDimension(input.depth, 'depth', MAX_DEPTH_FEET, issues);
 
   if (

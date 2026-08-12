@@ -1,6 +1,7 @@
 import type { LengthUnit } from '../../../lib/units/measurements';
 
 export type MeasurementSystem = 'imperial' | 'metric';
+export type AreaShape = 'rectangle' | 'circle';
 export type ProjectType =
   'driveway' | 'walkway' | 'patio' | 'landscaping' | 'french-drain' | 'shed-base' | 'other';
 export type GravelType =
@@ -12,10 +13,12 @@ export interface DimensionInput {
 }
 
 export interface GravelInput {
+  areaShape: AreaShape;
   projectType: ProjectType;
   gravelType: GravelType;
   length: DimensionInput;
   width: DimensionInput;
+  diameter: DimensionInput;
   depth: DimensionInput;
   allowancePercent: number;
   customDensityTonsPerYard?: number;

@@ -27,11 +27,19 @@ export function recommendedOrderCubicYards(adjustedVolumeCubicYards: number): nu
   return Math.ceil(scaledVolume - floatingPointTolerance) / TENTHS_PER_CUBIC_YARD;
 }
 
+export function calculateSurfaceAreaSquareFeet(input: GravelInput): number {
+  if (input.areaShape === 'circle') {
+    const diameterFeet = toFeet(input.diameter.value, input.diameter.unit);
+    return Math.PI * (diameterFeet / 2) ** 2;
+  }
+  return (
+    toFeet(input.length.value, input.length.unit) * toFeet(input.width.value, input.width.unit)
+  );
+}
+
 export function calculateGravel(input: GravelInput): GravelCalculation {
-  const lengthFeet = toFeet(input.length.value, input.length.unit);
-  const widthFeet = toFeet(input.width.value, input.width.unit);
   const depthFeet = toFeet(input.depth.value, input.depth.unit);
-  const surfaceAreaSquareFeet = lengthFeet * widthFeet;
+  const surfaceAreaSquareFeet = calculateSurfaceAreaSquareFeet(input);
   const volumeCubicFeet = surfaceAreaSquareFeet * depthFeet;
   const volumeCubicYards = cubicFeetToCubicYards(volumeCubicFeet);
   const allowanceVolumeCubicYards = volumeCubicYards * (input.allowancePercent / 100);

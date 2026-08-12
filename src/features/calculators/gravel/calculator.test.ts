@@ -9,10 +9,12 @@ import { convertLength } from '../../../lib/units/measurements';
 import type { GravelInput } from './types';
 
 const baseInput: GravelInput = {
+  areaShape: 'rectangle',
   projectType: 'driveway',
   gravelType: 'crushed-stone',
   length: { value: 20, unit: 'ft' },
   width: { value: 12, unit: 'ft' },
+  diameter: { value: Number.NaN, unit: 'ft' },
   depth: { value: 4, unit: 'in' },
   allowancePercent: 10,
   bagSizeCubicFeet: 0.5,
@@ -60,6 +62,58 @@ describe('gravel calculation', () => {
       depth: { value: 10.16, unit: 'cm' },
     });
     expect(result.volumeCubicYards).toBeCloseTo(2.96296, 3);
+  });
+
+  it('calculates an imperial circle through the shared gravel pipeline', () => {
+    const result = calculateGravel({
+      ...baseInput,
+      areaShape: 'circle',
+      diameter: { value: 20, unit: 'ft' },
+      depth: { value: 4, unit: 'in' },
+      allowancePercent: 10,
+    });
+    expect(result.surfaceAreaSquareFeet).toBeCloseTo(Math.PI * 100, 10);
+    expect(result.volumeCubicFeet).toBeCloseTo((Math.PI * 100) / 3, 10);
+    expect(result.volumeCubicYards).toBeCloseTo(3.87851, 5);
+    expect(result.adjustedVolumeCubicYards).toBeCloseTo(4.26636, 5);
+    expect(result.recommendedOrderCubicYards).toBe(4.3);
+    expect(result.estimatedWeightTons).toBeCloseTo(5.9729, 4);
+  });
+
+  it('calculates an equivalent metric circle and supports decimal diameters', () => {
+    const metric = calculateGravel({
+      ...baseInput,
+      areaShape: 'circle',
+      diameter: { value: 6, unit: 'm' },
+      depth: { value: 10, unit: 'cm' },
+      allowancePercent: 0,
+    });
+    const decimal = calculateGravel({
+      ...baseInput,
+      areaShape: 'circle',
+      diameter: { value: 12.5, unit: 'ft' },
+      allowancePercent: 0,
+    });
+    expect(metric.volumeCubicMeters).toBeCloseTo(Math.PI * 3 ** 2 * 0.1, 8);
+    expect(metric.recommendedOrderCubicYards).toBe(3.7);
+    expect(decimal.surfaceAreaSquareFeet).toBeCloseTo(Math.PI * 6.25 ** 2, 10);
+  });
+
+  it('ignores inactive geometry fields', () => {
+    const circle = calculateGravel({
+      ...baseInput,
+      areaShape: 'circle',
+      length: { value: 999, unit: 'ft' },
+      width: { value: 999, unit: 'ft' },
+      diameter: { value: 20, unit: 'ft' },
+    });
+    const rectangle = calculateGravel({
+      ...baseInput,
+      areaShape: 'rectangle',
+      diameter: { value: 999, unit: 'ft' },
+    });
+    expect(circle.surfaceAreaSquareFeet).toBeCloseTo(Math.PI * 100, 10);
+    expect(rectangle.surfaceAreaSquareFeet).toBe(240);
   });
 
   it('uses bag pricing only when bulk pricing is absent', () => {
@@ -140,6 +194,25 @@ describe('recommended order rounding', () => {
 });
 
 describe('validation and recommendations', () => {
+  it('validates only the active shape dimensions', () => {
+    const validCircle = validateGravelInput({
+      ...baseInput,
+      areaShape: 'circle',
+      length: { value: Number.NaN, unit: 'ft' },
+      width: { value: -1, unit: 'ft' },
+      diameter: { value: 20, unit: 'ft' },
+    });
+    expect(validCircle).toEqual([]);
+    for (const diameter of [0, -1, Number.NaN]) {
+      expect(
+        validateGravelInput({
+          ...baseInput,
+          areaShape: 'circle',
+          diameter: { value: diameter, unit: 'ft' },
+        }).map((issue) => issue.field),
+      ).toContain('diameter');
+    }
+  });
   it('rejects incomplete numeric input', () => {
     const issues = validateGravelInput({
       ...baseInput,

@@ -13,7 +13,7 @@ import { convertLength } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { calculateGravel, recommendGravel, validateGravelInput } from './index';
 import { createGravelEstimateReport } from './gravelReport';
-import type { GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
+import type { AreaShape, GravelInput, GravelType, MeasurementSystem, ProjectType } from './types';
 
 const projectOptions: Array<{ value: ProjectType; label: string }> = [
   { value: 'driveway', label: 'Driveway' },
@@ -42,10 +42,12 @@ type GravelFormInput = Omit<GravelInput, 'allowancePercent' | 'gravelType' | 'pr
 
 function createEmptyInput(): GravelFormInput {
   return {
+    areaShape: 'rectangle',
     projectType: '',
     gravelType: '',
     length: { value: Number.NaN, unit: 'ft' },
     width: { value: Number.NaN, unit: 'ft' },
+    diameter: { value: Number.NaN, unit: 'ft' },
     depth: { value: Number.NaN, unit: 'in' },
   };
 }
@@ -134,6 +136,12 @@ export default function GravelCalculator() {
           value: Number(convertLength(current.width.value, current.width.unit, 'm').toFixed(3)),
           unit: 'm',
         },
+        diameter: {
+          value: Number(
+            convertLength(current.diameter.value, current.diameter.unit, 'm').toFixed(3),
+          ),
+          unit: 'm',
+        },
         depth: {
           value: Number(convertLength(current.depth.value, current.depth.unit, 'cm').toFixed(2)),
           unit: 'cm',
@@ -150,6 +158,12 @@ export default function GravelCalculator() {
           value: Number(convertLength(current.width.value, current.width.unit, 'ft').toFixed(2)),
           unit: 'ft',
         },
+        diameter: {
+          value: Number(
+            convertLength(current.diameter.value, current.diameter.unit, 'ft').toFixed(2),
+          ),
+          unit: 'ft',
+        },
         depth: {
           value: Number(convertLength(current.depth.value, current.depth.unit, 'in').toFixed(2)),
           unit: 'in',
@@ -161,7 +175,11 @@ export default function GravelCalculator() {
 
   function estimateLines() {
     if (!calculation || !recommendation)
-      return ['Complete the length, width, and depth fields to calculate your estimate.'];
+      return [
+        input.areaShape === 'circle'
+          ? 'Complete the diameter and depth fields to calculate your estimate.'
+          : 'Complete the length, width, and depth fields to calculate your estimate.',
+      ];
     return [
       `Project: ${projectOptions.find((option) => option.value === calculationInput?.projectType)?.label}`,
       `Recommended order: ${formatRecommendedOrder(calculation.recommendedOrderCubicYards)} cubic yards`,
@@ -337,34 +355,78 @@ export default function GravelCalculator() {
         </div>
 
         <fieldset className="mt-6">
+          <legend className="text-sm font-bold text-ink">Area shape</legend>
+          <div
+            className="mt-2 grid grid-cols-2 rounded-control border border-line bg-surface p-1"
+            role="radiogroup"
+            aria-label="Area shape"
+          >
+            {(['rectangle', 'circle'] as AreaShape[]).map((shape) => (
+              <label
+                key={shape}
+                className={`cursor-pointer rounded-md px-3 py-2.5 text-center text-sm font-bold transition-colors ${input.areaShape === shape ? 'bg-brand text-white shadow-sm' : 'text-ink-soft hover:text-ink'}`}
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="area-shape"
+                  value={shape}
+                  checked={input.areaShape === shape}
+                  onChange={() => setInput((current) => ({ ...current, areaShape: shape }))}
+                />
+                {shape === 'rectangle' ? 'Rectangle' : 'Circle'}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-6">
           <legend className="text-sm font-bold text-ink">Measurements</legend>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            <NumberField
-              id="length"
-              label="Length"
-              value={input.length.value}
-              unit={input.length.unit}
-              error={errorFor('length')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  length: { ...current.length, value: numberFromEvent(event) },
-                }))
-              }
-            />
-            <NumberField
-              id="width"
-              label="Width"
-              value={input.width.value}
-              unit={input.width.unit}
-              error={errorFor('width')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  width: { ...current.width, value: numberFromEvent(event) },
-                }))
-              }
-            />
+            {input.areaShape === 'rectangle' ? (
+              <>
+                <NumberField
+                  id="length"
+                  label="Length"
+                  value={input.length.value}
+                  unit={input.length.unit}
+                  error={errorFor('length')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      length: { ...current.length, value: numberFromEvent(event) },
+                    }))
+                  }
+                />
+                <NumberField
+                  id="width"
+                  label="Width"
+                  value={input.width.value}
+                  unit={input.width.unit}
+                  error={errorFor('width')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      width: { ...current.width, value: numberFromEvent(event) },
+                    }))
+                  }
+                />
+              </>
+            ) : (
+              <NumberField
+                id="diameter"
+                label="Diameter"
+                value={input.diameter.value}
+                unit={input.diameter.unit}
+                error={errorFor('diameter')}
+                onChange={(event) =>
+                  setInput((current) => ({
+                    ...current,
+                    diameter: { ...current.diameter, value: numberFromEvent(event) },
+                  }))
+                }
+              />
+            )}
             <NumberField
               id="depth"
               label="Depth"
@@ -548,7 +610,9 @@ export default function GravelCalculator() {
           />
         ) : (
           <div className="rounded-card border border-dashed border-line bg-panel p-8 text-center text-sm text-ink-soft">
-            Enter a project type, gravel type, length, width, and depth to see your estimate.
+            {input.areaShape === 'circle'
+              ? 'Enter a project type, gravel type, diameter, and depth to see your estimate.'
+              : 'Enter a project type, gravel type, length, width, and depth to see your estimate.'}
           </div>
         )}
       </section>

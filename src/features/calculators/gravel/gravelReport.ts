@@ -78,6 +78,7 @@ export function createGravelEstimateReport({
       confirmation: 'Minimal upward rounding to 0.1 yd³; supplier order increments may vary.',
     },
     summary: [
+      { label: 'Area shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' },
       { label: 'Gravel type', value: gravelLabels[input.gravelType] },
       { label: 'Measurement system', value: metric ? 'Metric' : 'Imperial (US)' },
       { label: 'Allowance', value: `${input.allowancePercent}%` },
@@ -87,8 +88,18 @@ export function createGravelEstimateReport({
       {
         title: 'PROJECT MEASUREMENTS',
         rows: [
-          { label: 'Length', value: `${number(input.length.value)} ${input.length.unit}` },
-          { label: 'Width', value: `${number(input.width.value)} ${input.width.unit}` },
+          { label: 'Shape', value: input.areaShape === 'circle' ? 'Circle' : 'Rectangle' },
+          ...(input.areaShape === 'circle'
+            ? [
+                {
+                  label: 'Diameter',
+                  value: `${number(input.diameter.value)} ${input.diameter.unit}`,
+                },
+              ]
+            : [
+                { label: 'Length', value: `${number(input.length.value)} ${input.length.unit}` },
+                { label: 'Width', value: `${number(input.width.value)} ${input.width.unit}` },
+              ]),
           { label: 'Depth', value: `${number(input.depth.value)} ${input.depth.unit}` },
           { label: 'Area', value: area },
           { label: 'Volume', value: `${volume} (calculated)` },

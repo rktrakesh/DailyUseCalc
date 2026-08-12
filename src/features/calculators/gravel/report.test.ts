@@ -7,10 +7,12 @@ import { createPdfFilename, createReportFilename } from '../../../lib/reports/re
 import type { GravelInput } from './types';
 
 const input: GravelInput = {
+  areaShape: 'rectangle',
   projectType: 'driveway',
   gravelType: 'crushed-stone',
   length: { value: 40, unit: 'ft' },
   width: { value: 20, unit: 'ft' },
+  diameter: { value: Number.NaN, unit: 'ft' },
   depth: { value: 10, unit: 'in' },
   allowancePercent: 0,
   pricePerCubicYard: 45,
@@ -80,6 +82,30 @@ describe('gravel estimate report', () => {
       label: 'Notes',
       value: 'Base layer for the driveway',
     });
+  });
+
+  it('describes circular geometry without fake rectangular measurements', () => {
+    const circleInput: GravelInput = {
+      ...input,
+      areaShape: 'circle',
+      diameter: { value: 20, unit: 'ft' },
+    };
+    const calculation = calculateGravel(circleInput);
+    const report = createGravelEstimateReport({
+      calculation,
+      input: circleInput,
+      recommendation: recommendGravel(circleInput, calculation),
+      measurementSystem: 'imperial',
+    });
+    const measurements = report.sections[0].rows;
+    expect(report.summary).toContainEqual({ label: 'Area shape', value: 'Circle' });
+    expect(measurements).toContainEqual({ label: 'Shape', value: 'Circle' });
+    expect(measurements).toContainEqual({ label: 'Diameter', value: '20 ft' });
+    expect(measurements).toContainEqual({ label: 'Depth', value: '10 in' });
+    expect(measurements.some((row) => row.label === 'Length' || row.label === 'Width')).toBe(false);
+    expect(report.primaryResult.value).toBe(
+      `${calculation.recommendedOrderCubicYards.toFixed(1)} yd³`,
+    );
   });
 
   it('escapes user-provided notes in the rendered report', () => {
