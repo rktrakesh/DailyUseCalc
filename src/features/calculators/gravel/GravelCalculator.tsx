@@ -387,7 +387,7 @@ export default function GravelCalculator() {
           </fieldset>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(9rem,12rem)] md:items-start md:gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(9rem,12rem)] md:items-start md:gap-4">
           <fieldset
             className={`min-w-0 ${input.inputMode === 'dimensions' ? '' : 'col-span-2 md:col-span-1'} md:max-w-[28rem]`}
           >
@@ -447,12 +447,12 @@ export default function GravelCalculator() {
             </fieldset>
           )}
 
-          <label className="grid min-w-0 gap-1.5 text-sm font-bold text-ink">
+          <label className="col-span-full grid min-w-0 gap-1.5 text-sm font-bold text-ink md:col-span-1 md:w-full">
             Currency
             <select
               name="currency"
               aria-label="Currency"
-              className={`${inputClass()} bg-panel px-2 sm:px-3`}
+              className={`${inputClass()} w-full bg-panel px-3`}
               value={input.currency}
               onChange={(event) => updateCurrency(event.target.value as CurrencyCode)}
             >
