@@ -90,9 +90,10 @@ export const calculatorListings: CalculatorListing[] = [
     id: 'tile',
     name: 'Tile Calculator',
     category: 'Home Improvement',
-    description: 'Tiles · adhesive · grout',
+    href: '/tile/',
+    description: 'Tiles, boxes, waste & cost',
     keywords: ['tile', 'floor', 'bathroom', 'kitchen'],
-    status: 'coming-soon',
+    status: 'available',
   },
   ...[
     [
