@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type WheelEvent,
 } from 'react';
-import { Calculator, ChevronDown, Download, Printer, RotateCcw } from 'lucide-react';
+import { Calculator, ChevronDown, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from '../gravel/currencies';
@@ -16,7 +16,10 @@ import {
   convertPaintMeasurementSystem,
   createClearedPaintInput,
   createDefaultPaintInput,
+  createPaintEstimateText,
+  createPaintShareText,
   gallonsToLiters,
+  PAINT_CALCULATOR_URL,
   recommendPaint,
   squareFeetToSquareMeters,
   surfaceConditionLabels,
@@ -120,6 +123,42 @@ export default function PaintCalculator() {
       setPdf(false);
     }
   };
+  const copyText = async (text: string) => {
+    if (!navigator.clipboard?.writeText) throw new Error('Copy is unavailable.');
+    await navigator.clipboard.writeText(text);
+  };
+  const copy = async () => {
+    if (!calc || !submitted) return;
+    try {
+      await copyText(createPaintEstimateText(submitted.input, calc));
+      setStatus('Estimate copied.');
+    } catch {
+      setStatus('Copy is unavailable in this browser.');
+    }
+  };
+  const share = async () => {
+    if (!calc || !submitted) return;
+    const shareText = createPaintShareText(calc);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'DailyUseCalc Paint Calculator',
+          text: shareText,
+          url: PAINT_CALCULATOR_URL,
+        });
+        setStatus('Estimate shared.');
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+    try {
+      await copyText(`${shareText}\n${PAINT_CALCULATOR_URL}`);
+      setStatus('Share details copied.');
+    } catch {
+      setStatus('Sharing is unavailable in this browser.');
+    }
+  };
   const update = <K extends keyof PaintInput>(key: K, value: PaintInput[K]) =>
     setInput((x) => ({ ...x, [key]: value }));
   return (
@@ -217,7 +256,7 @@ export default function PaintCalculator() {
             <NumberField
               label="Coverage"
               value={input.coverageSquareFeetPerGallon}
-              unit={system === 'imperial' ? 'ft²/gal' : 'm²/L'}
+              unit={system === 'imperial' ? 'sq ft/gal' : 'sq m/L'}
               error={err('coverageSquareFeetPerGallon')}
               onChange={(e) => update('coverageSquareFeetPerGallon', num(e))}
             />
@@ -361,7 +400,7 @@ export default function PaintCalculator() {
               <NumberField
                 label="Primer coverage"
                 value={input.primerCoverageSquareFeetPerGallon}
-                unit={system === 'imperial' ? 'ft²/gal' : 'm²/L'}
+                unit={system === 'imperial' ? 'sq ft/gal' : 'sq m/L'}
                 error={err('primerCoverageSquareFeetPerGallon')}
                 onChange={(e) => update('primerCoverageSquareFeetPerGallon', num(e))}
               />
@@ -436,15 +475,18 @@ export default function PaintCalculator() {
             />
             <Metric
               label="Net wall area"
-              value={`${fmt(calc.netWallAreaSquareFeet)} ft²`}
-              detail={`${fmt(squareFeetToSquareMeters(calc.netWallAreaSquareFeet))} m²`}
+              value={`${fmt(calc.netWallAreaSquareFeet)} sq ft`}
+              detail={`${fmt(squareFeetToSquareMeters(calc.netWallAreaSquareFeet))} sq m`}
             />
           </div>
           <ResultDetails title="Area breakdown">
-            <Row label="Gross wall area" value={`${fmt(calc.grossWallAreaSquareFeet)} ft²`} />
-            <Row label="Door openings" value={`− ${fmt(calc.doorOpeningAreaSquareFeet)} ft²`} />
-            <Row label="Window openings" value={`− ${fmt(calc.windowOpeningAreaSquareFeet)} ft²`} />
-            <Row label="Net wall area" value={`${fmt(calc.netWallAreaSquareFeet)} ft²`} />
+            <Row label="Gross wall area" value={`${fmt(calc.grossWallAreaSquareFeet)} sq ft`} />
+            <Row label="Door openings" value={`- ${fmt(calc.doorOpeningAreaSquareFeet)} sq ft`} />
+            <Row
+              label="Window openings"
+              value={`- ${fmt(calc.windowOpeningAreaSquareFeet)} sq ft`}
+            />
+            <Row label="Net wall area" value={`${fmt(calc.netWallAreaSquareFeet)} sq ft`} />
           </ResultDetails>
           <ResultDetails title="Wall paint">
             <Row label="Base requirement" value={`${fmt(calc.wall.baseGallons)} gal`} />
@@ -473,19 +515,31 @@ export default function PaintCalculator() {
               </span>
             </div>
           )}
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <button
+              onClick={copy}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold hover:bg-panel-muted"
+            >
+              <Copy size={14} aria-hidden="true" /> Copy
+            </button>
+            <button
+              onClick={share}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold hover:bg-panel-muted"
+            >
+              <Share2 size={14} aria-hidden="true" /> Share
+            </button>
             <button
               onClick={print}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold hover:bg-panel-muted"
             >
-              <Printer size={14} /> Print
+              <Printer size={14} aria-hidden="true" /> Print
             </button>
             <button
               onClick={download}
               disabled={pdf}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-line text-xs font-bold hover:bg-panel-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Download size={14} /> {pdf ? 'Preparing…' : 'PDF'}
+              <Download size={14} aria-hidden="true" /> {pdf ? 'Preparing...' : 'PDF'}
             </button>
           </div>
           {rec.warnings.map((w) => (

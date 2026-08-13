@@ -28,6 +28,7 @@ export interface EstimateReportData {
   notice: { title: string; content: string };
   footerUrl: string;
   compactLayout?: boolean;
+  adaptivePrimaryResult?: boolean;
 }
 
 function escapeHtml(value: string) {

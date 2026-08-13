@@ -191,9 +191,9 @@ describe('paint calculation', () => {
   });
   it('converts US gallons to liters', () => expect(gallonsToLiters(1)).toBeCloseTo(3.785411784));
   it('recommends mixed practical container sizes', () => {
-    expect(recommendPaintPurchase(2.32).display).toBe('2 × 1 gal + 2 × 1 qt');
-    expect(recommendPaintPurchase(7).display).toBe('1 × 5 gal + 2 × 1 gal');
-    expect(recommendPaintPurchase(0.1).display).toBe('1 × 1 qt');
+    expect(recommendPaintPurchase(2.32).display).toBe('2 x 1 gal + 2 x 1 qt');
+    expect(recommendPaintPurchase(7).display).toBe('1 x 5 gal + 2 x 1 gal');
+    expect(recommendPaintPurchase(0.1).display).toBe('1 x 1 qt');
   });
   it.each([
     [0.25, 0.25, 1],

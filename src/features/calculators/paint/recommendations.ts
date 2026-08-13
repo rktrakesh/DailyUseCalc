@@ -6,7 +6,7 @@ export function recommendPaint(
 ): PaintRecommendation {
   const warnings: string[] = [];
   const guidance = [
-    `The wall estimate is based on ${calculation.netWallAreaSquareFeet.toFixed(2)} ft² of net paintable wall area.`,
+    `The wall estimate is based on ${calculation.netWallAreaSquareFeet.toFixed(2)} sq ft of net paintable wall area.`,
     'Coverage is editable because product, texture, porosity, color change, and application method affect actual yield.',
     'Container recommendations assume the selected paint is offered in quart, 1-gallon, and 5-gallon sizes; confirm availability before purchase.',
   ];

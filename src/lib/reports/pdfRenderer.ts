@@ -35,6 +35,29 @@ function wrap(value: string, font: PDFFont, size: number, width: number) {
   return lines;
 }
 
+function wrapPrimaryValue(value: string, font: PDFFont, size: number, width: number) {
+  const purchases = value
+    .split(' + ')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (purchases.length < 2) return wrap(value, font, size, width);
+
+  const lines: string[] = [];
+  let current = '';
+  for (const purchase of purchases) {
+    const candidate = current ? `${current} + ${purchase}` : purchase;
+    if (!current || font.widthOfTextAtSize(candidate, size) <= width) current = candidate;
+    else {
+      lines.push(current);
+      current = `+ ${purchase}`;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.some((line) => font.widthOfTextAtSize(line, size) > width)
+    ? wrap(value, font, size, width)
+    : lines;
+}
+
 function text(
   page: PDFPage,
   lines: string[],
@@ -223,11 +246,22 @@ export async function createEstimatePdfBytes(report: EstimateReportData) {
       color: brand,
     });
   y -= 18;
+  const primaryWidth = COLUMN - 24;
+  let primarySize =
+    report.primaryResult.value.length > 34 ? 16 : report.primaryResult.value.length > 20 ? 20 : 26;
+  let primaryLines = wrapPrimaryValue(report.primaryResult.value, bold, primarySize, primaryWidth);
+  while (primaryLines.length > 2 && primarySize > 13) {
+    primarySize -= 1;
+    primaryLines = wrapPrimaryValue(report.primaryResult.value, bold, primarySize, primaryWidth);
+  }
+  const primaryExtraHeight = report.adaptivePrimaryResult
+    ? Math.max(0, primaryLines.length - 1) * primarySize * 1.35
+    : 0;
   page.drawRectangle({
     x: MARGIN,
-    y: y - 92,
+    y: y - 92 - primaryExtraHeight,
     width: COLUMN,
-    height: 92,
+    height: 92 + primaryExtraHeight,
     color: softBrand,
     borderColor: brand,
     borderWidth: 0.8,
@@ -239,26 +273,18 @@ export async function createEstimatePdfBytes(report: EstimateReportData) {
     size: 9,
     color: brand,
   });
-  const primaryWidth = COLUMN - 24;
-  let primarySize =
-    report.primaryResult.value.length > 34 ? 16 : report.primaryResult.value.length > 20 ? 20 : 26;
-  let primaryLines = wrap(report.primaryResult.value, bold, primarySize, primaryWidth);
-  while (primaryLines.length > 2 && primarySize > 13) {
-    primarySize -= 1;
-    primaryLines = wrap(report.primaryResult.value, bold, primarySize, primaryWidth);
-  }
   const primaryStartY = primaryLines.length > 1 ? y - 42 : y - 51;
   text(page, primaryLines, MARGIN + 12, primaryStartY, bold, primarySize, brand);
   page.drawText(report.primaryResult.supportingText, {
     x: MARGIN + 12,
-    y: y - 70,
+    y: y - 70 - primaryExtraHeight,
     font: regular,
     size: 8.5,
     color: ink,
   });
   page.drawText(report.primaryResult.confirmation, {
     x: MARGIN + 12,
-    y: y - 83,
+    y: y - 83 - primaryExtraHeight,
     font: regular,
     size: 7.3,
     color: soft,
@@ -267,7 +293,7 @@ export async function createEstimatePdfBytes(report: EstimateReportData) {
   const summary: Cursor = { page, x: MARGIN + COLUMN + GAP, width: COLUMN, y };
   heading(summary, 'PROJECT SUMMARY', bold, compact);
   rows(summary, report.summary, regular, bold, compact);
-  const left: Cursor = { page, x: MARGIN, width: COLUMN, y: y - 108 };
+  const left: Cursor = { page, x: MARGIN, width: COLUMN, y: y - 108 - primaryExtraHeight };
   for (const section of report.leftSections ?? report.sections.slice(0, 2)) {
     heading(left, section.title, bold, compact);
     rows(left, section.rows, regular, bold, compact);

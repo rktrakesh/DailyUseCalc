@@ -12,12 +12,12 @@ import type {
 } from './types';
 const n = (value: number, digits = 2) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(value);
-const area = (value: number) => `${n(value)} ft² / ${n(squareFeetToSquareMeters(value))} m²`;
+const area = (value: number) => `${n(value)} sq ft / ${n(squareFeetToSquareMeters(value))} sq m`;
 const volume = (value: number) => `${n(value)} gal / ${n(gallonsToLiters(value))} L`;
 const dimensions = (width: PaintInput['length'], height: PaintInput['length']) =>
   width.unit === height.unit
-    ? `${n(width.value)} × ${n(height.value)} ${width.unit}`
-    : `${n(width.value)} ${width.unit} × ${n(height.value)} ${height.unit}`;
+    ? `${n(width.value)} x ${n(height.value)} ${width.unit}`
+    : `${n(width.value)} ${width.unit} x ${n(height.value)} ${height.unit}`;
 const requirementSection = (title: string, item: PaintRequirement): ReportSection => ({
   title,
   rows: [
@@ -34,7 +34,7 @@ const requirementSection = (title: string, item: PaintRequirement): ReportSectio
 const compactRequirementSection = (title: string, item: PaintRequirement): ReportSection => ({
   title,
   rows: [
-    { label: 'Area / coats', value: `${area(item.areaSquareFeet)} · ${n(item.coats, 0)} coat(s)` },
+    { label: 'Area / coats', value: `${area(item.areaSquareFeet)} - ${n(item.coats, 0)} coat(s)` },
     { label: 'Required', value: volume(item.requiredGallons), emphasis: true },
     { label: 'Suggested purchase', value: item.purchase.display },
     { label: 'Estimated leftover', value: volume(item.purchase.leftoverGallons) },
@@ -140,7 +140,7 @@ export function createPaintEstimateReport({
       { label: 'Surface condition', value: surfaceConditionLabels[input.surfaceCondition] },
       {
         label: 'Coverage',
-        value: `${n(input.coverageSquareFeetPerGallon)} ${measurementSystem === 'imperial' ? 'ft²/gal' : 'm²/L'}`,
+        value: `${n(input.coverageSquareFeetPerGallon)} ${measurementSystem === 'imperial' ? 'sq ft/gal' : 'sq m/L'}`,
       },
       { label: 'Allowance', value: `${n(input.allowancePercent)}%` },
     ],
@@ -160,5 +160,6 @@ export function createPaintEstimateReport({
     },
     footerUrl: 'dailyusecalc.com/paint',
     compactLayout: true,
+    adaptivePrimaryResult: true,
   };
 }

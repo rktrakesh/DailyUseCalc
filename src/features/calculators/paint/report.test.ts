@@ -54,9 +54,9 @@ describe('paint report', () => {
       expect.arrayContaining([
         { label: 'Rooms', value: '10' },
         { label: 'Total doors', value: '10' },
-        { label: 'Door size', value: '3 × 6.67 ft' },
+        { label: 'Door size', value: '3 x 6.67 ft' },
         { label: 'Total windows', value: '20' },
-        { label: 'Window size', value: '3 × 4 ft' },
+        { label: 'Window size', value: '3 x 4 ft' },
       ]),
     );
     const html = createEstimateReportHtml(report);
@@ -94,7 +94,7 @@ describe('paint report', () => {
     const input = createDefaultPaintInput();
     input.roomQuantity = 10;
     input.doorOpenings.quantity = 10;
-    input.windowOpenings.quantity = 20;
+    input.windowOpenings.quantity = 15;
     input.includeCeiling = true;
     input.paintDoors = true;
     input.paintTrim = true;
@@ -114,8 +114,10 @@ describe('paint report', () => {
     const bytes = await createEstimatePdfBytes(report);
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBe(1);
+    expect(report.adaptivePrimaryResult).toBe(true);
+    expect(report.primaryResult.value).toBe('3 x 5 gal + 2 x 1 gal + 2 x 1 qt');
     expect(report.additionalDetails).toHaveLength(3);
-    report.primaryResult.value = '12 × 5 gal + 4 × 1 gal + 3 × 1 qt';
+    report.primaryResult.value = '12 x 5 gal + 4 x 1 gal + 3 x 1 qt';
     expect(createEstimateReportHtml(report)).toContain('primary-value--long');
   });
 });

@@ -34,7 +34,7 @@ export function recommendPaintPurchase(requiredGallons: number): PurchaseRecomme
     containers,
     purchasedGallons: best!.volume,
     leftoverGallons: best!.volume - requiredGallons,
-    display: containers.map((x) => `${x.count} × ${x.label}`).join(' + '),
+    display: containers.map((x) => `${x.count} x ${x.label}`).join(' + '),
   };
 }
 function requirement(
