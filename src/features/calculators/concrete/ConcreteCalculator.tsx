@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
   Calculator,
@@ -12,6 +12,11 @@ import {
 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
+import {
+  createCalculatorStartedTracker,
+  trackCalculatorEvent,
+  trackSuccessfulCalculatorCalculation,
+} from '../../../lib/analytics/calculatorAnalytics';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from '../gravel/currencies';
 import {
   adjustedConcreteVolumeConversions,
@@ -72,6 +77,13 @@ export default function ConcreteCalculator() {
   const [issues, setIssues] = useState<ReturnType<typeof validateConcreteInput>>([]);
   const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const started = useRef(createCalculatorStartedTracker());
+  const analyticsParameters = () => ({
+    calculator_id: 'concrete',
+    calculator_name: 'Concrete Calculator',
+    project_type: input.concreteMode,
+    unit_system: system,
+  });
   useEffect(() => {
     const saved = localStorage.getItem(CURRENCY_STORAGE_KEY);
     if (isCurrencyCode(saved)) setInput((current) => ({ ...current, currency: saved }));
@@ -109,6 +121,7 @@ export default function ConcreteCalculator() {
     }
     setSubmitted({ input: structuredClone(input), system });
     setStatus('Estimate updated.');
+    trackSuccessfulCalculatorCalculation(next, analyticsParameters());
   }
   function clearInputs() {
     setInput(createClearedConcreteInput(input.currency));
@@ -116,6 +129,7 @@ export default function ConcreteCalculator() {
     setIssues([]);
     setSystem('imperial');
     setStatus('Calculator cleared.');
+    trackCalculatorEvent('calculator_clear', analyticsParameters());
   }
   function estimateText() {
     if (!calculation || !recommendation || !submitted) return '';
@@ -132,6 +146,7 @@ export default function ConcreteCalculator() {
     try {
       await navigator.clipboard.writeText(estimateText());
       setStatus('Estimate copied.');
+      trackCalculatorEvent('calculator_copy', analyticsParameters());
     } catch {
       setStatus('Copy is unavailable in this browser.');
     }
@@ -141,12 +156,25 @@ export default function ConcreteCalculator() {
       try {
         await navigator.share({ title: 'Concrete estimate', text: estimateText() });
         setStatus('Estimate shared.');
+        trackCalculatorEvent('calculator_share', {
+          ...analyticsParameters(),
+          share_method: 'native',
+        });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
-    await copyEstimate();
+    try {
+      await navigator.clipboard.writeText(estimateText());
+      setStatus('Estimate copied.');
+      trackCalculatorEvent('calculator_share', {
+        ...analyticsParameters(),
+        share_method: 'clipboard_fallback',
+      });
+    } catch {
+      setStatus('Copy is unavailable in this browser.');
+    }
   }
   function reportData() {
     if (!calculation || !recommendation || !submitted) return;
@@ -160,6 +188,7 @@ export default function ConcreteCalculator() {
   function printEstimate() {
     const report = reportData();
     if (!report) return;
+    trackCalculatorEvent('calculator_print', analyticsParameters());
     setStatus(
       printReport(report)
         ? 'Choose a printer or another destination in the print dialog.'
@@ -173,6 +202,7 @@ export default function ConcreteCalculator() {
     try {
       await downloadReportAsPdf(report);
       setStatus('PDF download started.');
+      trackCalculatorEvent('calculator_pdf', analyticsParameters());
     } catch (error) {
       console.error('PDF download failed:', error);
       setStatus('Could not prepare the PDF. Please try again.');
@@ -186,6 +216,9 @@ export default function ConcreteCalculator() {
       <section
         className="rounded-card border border-line bg-panel p-3 shadow-card sm:p-4"
         aria-label="Concrete calculator inputs"
+        onChange={() =>
+          started.current({ calculator_id: 'concrete', calculator_name: 'Concrete Calculator' })
+        }
       >
         <div className="grid grid-cols-2 gap-2.5">
           <SelectField

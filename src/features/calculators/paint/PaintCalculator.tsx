@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type ReactNode,
@@ -10,6 +11,11 @@ import {
 import { Calculator, ChevronDown, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
+import {
+  createCalculatorStartedTracker,
+  trackCalculatorEvent,
+  trackSuccessfulCalculatorCalculation,
+} from '../../../lib/analytics/calculatorAnalytics';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from '../gravel/currencies';
 import {
   calculatePaint,
@@ -54,6 +60,13 @@ export default function PaintCalculator() {
   const [issues, setIssues] = useState<ReturnType<typeof validatePaintInput>>([]);
   const [status, setStatus] = useState('');
   const [pdf, setPdf] = useState(false);
+  const started = useRef(createCalculatorStartedTracker());
+  const analyticsParameters = () => ({
+    calculator_id: 'paint',
+    calculator_name: 'Paint Calculator',
+    project_type: 'room_walls',
+    unit_system: system,
+  });
   useEffect(() => {
     const saved = localStorage.getItem('duc-paint-currency');
     if (isCurrencyCode(saved)) setInput((x) => ({ ...x, currency: saved }));
@@ -85,6 +98,7 @@ export default function PaintCalculator() {
     }
     setSubmitted({ input: structuredClone(input), system });
     setStatus('Estimate updated.');
+    trackSuccessfulCalculatorCalculation(next, analyticsParameters());
   };
   const clear = () => {
     setInput(createClearedPaintInput(input.currency));
@@ -92,6 +106,7 @@ export default function PaintCalculator() {
     setIssues([]);
     setSystem('imperial');
     setStatus('Calculator cleared.');
+    trackCalculatorEvent('calculator_clear', analyticsParameters());
   };
   const report = () =>
     calc && rec && submitted
@@ -104,10 +119,12 @@ export default function PaintCalculator() {
       : undefined;
   const print = () => {
     const data = report();
-    if (data)
+    if (data) {
+      trackCalculatorEvent('calculator_print', analyticsParameters());
       setStatus(
         printReport(data) ? 'Choose a print destination.' : 'Allow pop-ups to print your estimate.',
       );
+    }
   };
   const download = async () => {
     const data = report();
@@ -116,6 +133,7 @@ export default function PaintCalculator() {
     try {
       await downloadReportAsPdf(data);
       setStatus('PDF download started.');
+      trackCalculatorEvent('calculator_pdf', analyticsParameters());
     } catch (error) {
       console.error('Paint PDF download failed:', error);
       setStatus('Could not prepare the PDF.');
@@ -132,6 +150,7 @@ export default function PaintCalculator() {
     try {
       await copyText(createPaintEstimateText(submitted.input, calc));
       setStatus('Estimate copied.');
+      trackCalculatorEvent('calculator_copy', analyticsParameters());
     } catch {
       setStatus('Copy is unavailable in this browser.');
     }
@@ -147,6 +166,10 @@ export default function PaintCalculator() {
           url: PAINT_CALCULATOR_URL,
         });
         setStatus('Estimate shared.');
+        trackCalculatorEvent('calculator_share', {
+          ...analyticsParameters(),
+          share_method: 'native',
+        });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -155,6 +178,10 @@ export default function PaintCalculator() {
     try {
       await copyText(`${shareText}\n${PAINT_CALCULATOR_URL}`);
       setStatus('Share details copied.');
+      trackCalculatorEvent('calculator_share', {
+        ...analyticsParameters(),
+        share_method: 'clipboard_fallback',
+      });
     } catch {
       setStatus('Sharing is unavailable in this browser.');
     }
@@ -166,6 +193,9 @@ export default function PaintCalculator() {
       <section
         className="rounded-card border border-line bg-panel p-3 shadow-card sm:p-4"
         aria-label="Paint calculator inputs"
+        onChange={() =>
+          started.current({ calculator_id: 'paint', calculator_name: 'Paint Calculator' })
+        }
       >
         <div className="grid grid-cols-2 gap-2.5">
           <Select label="Paint area" value="room">

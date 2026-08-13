@@ -90,6 +90,7 @@ const steps = [
         purchase sizes and optional cost.
       </p><a
         href="#user-guide"
+        data-paint-guide-link
         class="mt-2 inline-flex rounded text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-brand/60"
       >
         User Guide
@@ -335,3 +336,15 @@ const steps = [
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { trackCalculatorEvent } from '../../lib/analytics/calculatorAnalytics';
+
+  document.querySelector('[data-paint-guide-link]')?.addEventListener('click', () => {
+    trackCalculatorEvent('calculator_guide', {
+      calculator_id: 'paint',
+      calculator_name: 'Paint Calculator',
+      project_type: 'room_walls',
+    });
+  });
+</script>
