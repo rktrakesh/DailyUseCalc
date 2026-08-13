@@ -1,0 +1,139 @@
+---
+import { ChevronRight, CircleHelp, Lightbulb } from 'lucide-react';
+import AdSlot from '../../components/common/AdSlot.astro';
+import PaintCalculator from '../../features/calculators/paint/PaintCalculator';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+const title = 'Paint Calculator – Walls, Ceilings, Doors & Cost | DailyUseCalc';
+const description =
+  'Estimate wall, ceiling, door, trim, and primer paint in gallons and liters. Deduct openings, compare container sizes, and calculate optional cost.';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Home Improvement', path: '/calculators/#home-improvement' },
+  { name: 'Paint Calculator', path: '/paint/' },
+];
+const faqs = [
+  {
+    question: 'How much paint do I need?',
+    answer:
+      'Measure the room perimeter and wall height, subtract door and window openings, then multiply the paintable area by the number of coats and divide by the paint coverage rate.',
+  },
+  {
+    question: 'How much area does one gallon of paint cover?',
+    answer:
+      'Many architectural coatings list a theoretical range around 250–400 square feet per gallon per coat. Use the coverage printed on your selected product because texture, porosity, color change, and application affect actual yield.',
+  },
+  {
+    question: 'Should doors and windows be subtracted?',
+    answer:
+      'Openings are deducted from wall area. Painting the door itself is a separate optional calculation so its faces are not double-counted.',
+  },
+  {
+    question: 'When should I use primer?',
+    answer:
+      'Primer can help on bare, repaired, porous, stained, or sharply contrasting surfaces. Follow the paint and primer manufacturers’ compatibility and application instructions.',
+  },
+];
+const steps = [
+  [
+    'Measure actual surfaces',
+    'Wall area uses room perimeter × height. Doors and windows are deducted before coats and coverage are applied.',
+  ],
+  [
+    'Keep materials separate',
+    'Ceiling, painted doors, trim, and primer are calculated independently so the breakdown stays understandable.',
+  ],
+  [
+    'Buy practical sizes',
+    'The estimator compares quarts, gallons, and 5-gallon containers while minimizing excess and container count.',
+  ],
+  [
+    'Check the product label',
+    'Actual coverage varies by formulation, surface, color change, tools, texture, and application method.',
+  ],
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/paint/"
+  structuredData={[
+    organizationSchema(),
+    breadcrumbSchema(breadcrumbs),
+    webApplicationSchema({ name: 'Paint Calculator', description, path: '/paint/' }),
+    faqPageSchema(faqs),
+  ]}
+>
+  <div class="site-container py-3 sm:py-4">
+    <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+      {
+        breadcrumbs.map((item, index) => (
+          <>
+            <a class="rounded hover:text-brand" href={item.path}>
+              {item.name}
+            </a>
+            {index < breadcrumbs.length - 1 && <ChevronRight size={13} aria-hidden="true" />}
+          </>
+        ))
+      }
+    </nav><div class="mt-3 max-w-2xl">
+      <h1 class="text-balance text-3xl font-extrabold tracking-[-.05em] text-ink sm:text-4xl">
+        Paint Calculator
+      </h1><p class="mt-1.5 text-sm leading-5 text-ink-soft">
+        Estimate paint for walls, ceilings, openings, doors, trim, and primer—with practical
+        purchase sizes and optional cost.
+      </p>
+    </div><div class="mt-3"><PaintCalculator client:load /></div><AdSlot class="mt-5 min-h-24" />
+  </div>
+  <section class="site-container grid gap-5 py-8 lg:grid-cols-[1.35fr_.65fr]">
+    <article class="rounded-card border border-line bg-panel p-5 shadow-card">
+      <h2 class="text-xl font-extrabold text-ink">How the paint calculator works</h2><div
+        class="mt-4 grid gap-4 sm:grid-cols-2"
+      >
+        {
+          steps.map(([heading, content]) => (
+            <div>
+              <>
+                <h3 class="font-bold text-ink">{heading}</h3>
+                <p class="mt-1 text-sm leading-5 text-ink-soft">{content}</p>
+              </>
+            </div>
+          ))
+        }
+      </div>
+    </article><aside class="rounded-card border border-line bg-panel p-5 shadow-card">
+      <h2 class="flex items-center gap-2 text-lg font-extrabold">
+        <Lightbulb className="text-brand" size={19} />Important guidance
+      </h2><ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-ink-soft">
+        <li>Opening deductions are area-based and do not validate their physical placement.</li><li>
+          Trim uses measured linear length × paintable face width.
+        </li><li>Container availability and pricing vary by product and retailer.</li><li>
+          Verify coverage, preparation, coats, and primer requirements on the label.
+        </li>
+      </ul>
+    </aside>
+  </section>
+  <section class="site-container pb-10">
+    <h2 class="text-xl font-extrabold">Paint calculator questions</h2><div class="mt-3 grid gap-2">
+      {
+        faqs.map((item) => (
+          <details class="rounded-control border border-line bg-panel p-4">
+            <>
+              <summary class="flex cursor-pointer items-center gap-2 font-bold">
+                <CircleHelp className="text-brand" size={17} />
+                {item.question}
+              </summary>
+              <p class="mt-2 text-sm leading-6 text-ink-soft">{item.answer}</p>
+            </>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

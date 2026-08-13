@@ -62,9 +62,10 @@ export const calculatorListings: CalculatorListing[] = [
     id: 'paint',
     name: 'Paint Calculator',
     category: 'Home Improvement',
-    description: 'Gallons · coats · coverage',
+    description: 'Gallons, coats & coverage',
+    href: '/paint/',
     keywords: ['paint', 'wall', 'coverage', 'room'],
-    status: 'coming-soon',
+    status: 'available',
   },
   {
     id: 'tile',
