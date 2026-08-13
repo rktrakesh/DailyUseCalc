@@ -11,7 +11,13 @@ const popularIds = ['gravel', 'concrete', 'paint', 'mulch'];
 const popularCalculators = popularIds.map((id) =>
   calculatorListings.find((calculator) => calculator.id === id)!,
 );
-const popularSearches = ['Gravel', 'Concrete', 'Paint', 'Mortgage', 'Tile'];
+const popularSearches = [
+  { label: 'Gravel', href: '/gravel/' },
+  { label: 'Concrete', href: '/concrete/' },
+  { label: 'Paint', href: '/paint/' },
+  { label: 'Mortgage', href: '/calculators/?q=Mortgage' },
+  { label: 'Tile', href: '/tile/' },
+];
 const trustPoints = [
   { title: 'Accurate calculations', detail: 'Transparent formulas', icon: ClipboardCheck },
   { title: 'Practical guidance', detail: 'Clear next steps', icon: Gem },
@@ -65,11 +71,8 @@ const trustPoints = [
           <span class="font-semibold">Popular searches:</span>
           {
             popularSearches.map((item) => (
-              <a
-                class="min-h-8 content-center text-brand hover:text-brand-strong"
-                href={`/calculators/?q=${encodeURIComponent(item)}`}
-              >
-                {item}
+              <a class="min-h-8 content-center text-brand hover:text-brand-strong" href={item.href}>
+                {item.label}
               </a>
             ))
           }

@@ -1,0 +1,238 @@
+---
+import { ArrowRight, ChevronRight, CircleHelp } from 'lucide-react';
+import AdSlot from '../../components/common/AdSlot.astro';
+import TileCalculator from '../../features/calculators/tile/TileCalculator';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+const title = 'Tile Calculator - Tiles, Boxes, Waste & Cost | DailyUseCalc';
+const description =
+  'Estimate how many tiles and boxes you need for floors, walls, backsplashes, showers, and patios. Add waste, grout spacing, box coverage, and optional material cost.';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Home Improvement', path: '/calculators/#home-improvement' },
+  { name: 'Tile Calculator', path: '/tile/' },
+];
+const faqs = [
+  {
+    question: 'How many tiles do I need?',
+    answer:
+      'Enter the tiled area and tile dimensions. The calculator divides net tiled area by the installed tile module, applies your selected waste once, and rounds the final requirement up to a whole tile.',
+  },
+  {
+    question: 'How much extra tile should I buy?',
+    answer:
+      'Straight layouts often use 5–10%; diagonal layouts commonly use 10–15%; herringbone may need 15–20% or more. You control the waste percentage based on cuts, pattern, breakage, and future repairs.',
+  },
+  {
+    question: 'How do I calculate boxes of tile?',
+    answer:
+      'Enter tiles per box, or select manufacturer coverage and enter the coverage printed on the package. The resulting box count always rounds upward.',
+  },
+  {
+    question: 'Should I use manufacturer box coverage?',
+    answer:
+      'Yes when packaging provides it. Manufacturer coverage overrides calculated box coverage for purchasing, while tile dimensions remain the basis for estimated tile count.',
+  },
+  {
+    question: 'Does grout spacing affect tile count?',
+    answer:
+      'The grout gap is added to tile length and width to form an installed module estimate. Exact placement, edge cuts, and layout are not simulated.',
+  },
+  {
+    question: 'How much waste should I add for diagonal tile?',
+    answer:
+      'A 10–15% planning range is common, but room geometry, tile size, cuts, and layout can require more or less.',
+  },
+  {
+    question: 'How much waste should I add for herringbone?',
+    answer:
+      'Herringbone frequently needs 15–20% or more because of its cutting complexity. Confirm the plan with your installer or supplier.',
+  },
+  {
+    question: 'How do I subtract doors or windows?',
+    answer:
+      'Enter their combined area under Excluded area. The excluded amount must be smaller than the gross project area.',
+  },
+  {
+    question: 'Can I calculate tile from known square footage?',
+    answer:
+      'Yes. Choose Known Area and enter square inches, square feet, square yards, square centimeters, or square meters.',
+  },
+  {
+    question: 'Does the calculator include grout or thinset?',
+    answer:
+      'No. It estimates tile quantity, boxes, and optional tile material cost only. Grout, thinset, underlayment, labor, and other installation materials are excluded.',
+  },
+];
+const guides = [
+  [
+    'Project, measurement, and surface shapes',
+    'Project supplies guidance only. In Dimensions mode, Surface shape describes the area being tiled: rectangle, square, circle, triangle, trapezoid, or ring. Known Area bypasses surface geometry. Quantity multiplies identical tiled areas.',
+  ],
+  [
+    'Surface and tile units',
+    'Use Imperial or Metric surface units. Tile dimensions are required and may be entered in inches or feet, or millimeters or centimeters. Presets only fill editable tile-size fields.',
+  ],
+  [
+    'Grout gap and installed module',
+    'The installed module is tile length plus gap by tile width plus gap. This estimates spacing only; exact tile placement, edge cuts, starting position, pattern orientation, and offcut reuse are not simulated.',
+  ],
+  [
+    'Pattern and waste',
+    'Pattern affects guidance only and never changes waste secretly. Waste applies to the raw tile estimate before one final whole-tile rounding.',
+  ],
+  [
+    'Excluded and irregular areas',
+    'Subtract one combined excluded area for doors, windows, cabinets, or fixtures. Split irregular projects into simple shapes and calculate them separately.',
+  ],
+  [
+    'Boxes and manufacturer coverage',
+    'Enter tiles per box or the manufacturer coverage printed on packaging. Manufacturer coverage overrides calculated box coverage for purchasing; tile dimensions still determine estimated tile count.',
+  ],
+  [
+    'Purchased quantity and leftover',
+    'Boxes always round upward. Tiles-per-box mode shows purchased and extra tiles. Manufacturer mode shows purchased and extra coverage.',
+  ],
+  [
+    'Pricing and cost',
+    'Price per tile uses required tiles; price per box uses boxes; area pricing uses waste-adjusted coverage. No exchange-rate conversion occurs. Costs exclude labor and other installation materials.',
+  ],
+  [
+    'Worked examples',
+    'Imperial: 10 ft x 12 ft with 12 x 12 in tile and 10% waste requires 132 tiles. Metric: 5 m x 4 m with 500 x 500 mm tile and 10% waste requires 88 tiles.',
+  ],
+  [
+    'Limitations',
+    'This calculator estimates material quantity and purchasing needs. It does not simulate exact tile placement, edge cuts, starting position, pattern orientation, or offcut reuse.',
+  ],
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/tile/"
+  structuredData={[
+    organizationSchema(),
+    breadcrumbSchema(breadcrumbs),
+    webApplicationSchema({ name: 'Tile Calculator', description, path: '/tile/' }),
+    faqPageSchema(faqs),
+  ]}
+>
+  <div class="site-container py-3 sm:py-4">
+    <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+      {
+        breadcrumbs.map((x, i) => (
+          <>
+            <a class="rounded hover:text-brand" href={x.path}>
+              {x.name}
+            </a>
+            {i < breadcrumbs.length - 1 && <ChevronRight size={13} aria-hidden="true" />}
+          </>
+        ))
+      }
+    </nav>
+    <div class="mt-3 max-w-2xl">
+      <h1 class="text-balance text-3xl font-extrabold tracking-[-.05em] text-ink sm:text-4xl">
+        Tile Calculator
+      </h1><p class="mt-1.5 text-sm leading-5 text-ink-soft">
+        Estimate tiles, boxes, waste, grout spacing, excluded area, manufacturer coverage, and
+        optional material cost for floors, walls, backsplashes, showers, patios, and accent areas.
+      </p><a
+        href="#user-guide"
+        data-tile-guide
+        class="mt-2 inline-flex rounded text-sm font-semibold text-brand hover:underline"
+        >User Guide</a
+      >
+    </div>
+    <div
+      class="mt-3 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_18rem]"
+    >
+      <div><TileCalculator client:load /><AdSlot class="mt-5 min-h-24 lg:hidden" /></div><aside
+        class="hidden space-y-3 lg:-mt-[5.75rem] lg:block"
+        aria-label="Tile calculator resources"
+      >
+        <AdSlot class="min-h-44 xl:min-h-60" /><section
+          class="rounded-card border border-line bg-panel p-5 shadow-card"
+        >
+          <h2 class="text-base font-extrabold">Related calculators</h2><ul
+            class="mt-4 space-y-3 text-sm font-semibold text-brand"
+          >
+            <li><a href="/paint/">Paint Calculator</a></li><li>
+              <a href="/concrete/">Concrete Calculator</a>
+            </li><li><a href="/gravel/">Gravel Calculator</a></li><li>
+              <a href="/sand/">Sand Calculator</a>
+            </li>
+          </ul>
+        </section><section class="rounded-card border border-line bg-panel p-4 shadow-card">
+          <h2 class="text-sm font-extrabold">Browse by category</h2><a
+            class="mt-2 block text-xs font-semibold text-brand"
+            href="/calculators/#home-improvement">Home Improvement</a
+          ><a class="mt-3 block text-xs font-semibold text-brand" href="/calculators/#construction"
+            >Construction</a
+          >
+        </section>
+      </aside>
+    </div>
+    <section id="user-guide" class="mt-16 scroll-mt-24 border-t border-line pt-12">
+      <p class="text-sm font-bold text-brand">Tile planning guide</p><h2
+        class="mt-1 text-3xl font-extrabold tracking-[-.045em]"
+      >
+        Tile Calculator User Guide
+      </h2><div class="mt-6 grid gap-6 text-sm leading-6 text-ink-soft md:grid-cols-2">
+        {
+          guides.map(([h, c]) => (
+            <section>
+              <>
+                <h3 class="font-extrabold text-ink">{h}</h3>
+                <p class="mt-1">{c}</p>
+              </>
+            </section>
+          ))
+        }
+      </div>
+    </section>
+    <section class="mt-16 border-t border-line pt-12">
+      <h2 class="text-3xl font-extrabold tracking-[-.045em]">Tile calculator questions</h2><div
+        class="mt-7 grid gap-3 lg:grid-cols-2"
+      >
+        {
+          faqs.map((f) => (
+            <details class="rounded-card border border-line bg-panel p-5 shadow-card">
+              <>
+                <summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold marker:content-none">
+                  <CircleHelp className="mt-0.5 shrink-0 text-brand" size={18} aria-hidden="true" />
+                  {f.question}
+                </summary>
+                <p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{f.answer}</p>
+              </>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+    <section class="mt-16 rounded-2xl border border-brand/25 bg-brand-soft p-6">
+      <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <h2 class="text-2xl font-extrabold">Find the next calculator for your project.</h2><a
+          href="/calculators/"
+          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-5 text-sm font-bold text-white"
+          >Browse calculators <ArrowRight size={17} aria-hidden="true" /></a
+        >
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+<script>
+  import { trackCalculatorEvent } from '../../lib/analytics/calculatorAnalytics';
+  document.querySelector('[data-tile-guide]')?.addEventListener('click', () =>
+    trackCalculatorEvent('calculator_guide', {
+      calculator_id: 'tile',
+      calculator_name: 'Tile Calculator',
+    }),
+  );
+</script>
