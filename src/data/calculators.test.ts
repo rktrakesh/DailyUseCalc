@@ -28,9 +28,12 @@ describe('calculator directory registry', () => {
         .filter(({ status }) => status === 'available')
         .map(({ id }) => id)
         .sort(),
-    ).toEqual(['concrete', 'gravel', 'paint']);
+    ).toEqual(['concrete', 'gravel', 'mulch', 'paint']);
     expect(calculatorListings.find(({ id }) => id === 'paint')?.description).toBe(
       'Gallons, coats & coverage',
+    );
+    expect(calculatorListings.find(({ id }) => id === 'mulch')?.description).toBe(
+      'Yards, bags & coverage',
     );
   });
 });
