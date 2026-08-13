@@ -191,8 +191,22 @@ export async function createEstimatePdfBytes(report: EstimateReportData) {
   const page = document.addPage([WIDTH, HEIGHT]);
   const mark = await logo(document);
   if (mark) page.drawImage(mark, { x: MARGIN, y: HEIGHT - 68, ...mark.scaleToFit(32, 32) });
-  page.drawText('DailyUse', { x: MARGIN + 42, y: HEIGHT - 47, font: bold, size: 15, color: ink });
-  page.drawText('Calc', { x: MARGIN + 101, y: HEIGHT - 47, font: bold, size: 15, color: brand });
+  const brandNameX = MARGIN + 42;
+  const brandNameSize = 15;
+  page.drawText('DailyUse', {
+    x: brandNameX,
+    y: HEIGHT - 47,
+    font: bold,
+    size: brandNameSize,
+    color: ink,
+  });
+  page.drawText('Calc', {
+    x: brandNameX + bold.widthOfTextAtSize('DailyUse', brandNameSize) + 1.5,
+    y: HEIGHT - 47,
+    font: bold,
+    size: brandNameSize,
+    color: brand,
+  });
   page.drawText('Smart Calculators for Everyday Projects', {
     x: MARGIN + 42,
     y: HEIGHT - 60,
