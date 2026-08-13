@@ -60,6 +60,15 @@ export const calculatorListings: CalculatorListing[] = [
     status: 'available',
   },
   {
+    id: 'topsoil',
+    name: 'Topsoil Calculator',
+    category: 'Garden',
+    href: '/topsoil/',
+    description: 'Yards, bags, weight & cost',
+    keywords: ['topsoil', 'soil', 'garden', 'lawn', 'yard', 'bags'],
+    status: 'available',
+  },
+  {
     id: 'paint',
     name: 'Paint Calculator',
     category: 'Home Improvement',
@@ -74,14 +83,6 @@ export const calculatorListings: CalculatorListing[] = [
     category: 'Home Improvement',
     description: 'Tiles · adhesive · grout',
     keywords: ['tile', 'floor', 'bathroom', 'kitchen'],
-    status: 'coming-soon',
-  },
-  {
-    id: 'topsoil',
-    name: 'Topsoil Calculator',
-    category: 'Garden',
-    description: 'Yards · weight · cost',
-    keywords: ['topsoil', 'soil', 'lawn', 'garden'],
     status: 'coming-soon',
   },
   ...[
