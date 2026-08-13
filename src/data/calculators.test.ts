@@ -28,7 +28,7 @@ describe('calculator directory registry', () => {
         .filter(({ status }) => status === 'available')
         .map(({ id }) => id)
         .sort(),
-    ).toEqual(['concrete', 'gravel', 'mulch', 'paint']);
+    ).toEqual(['concrete', 'gravel', 'mulch', 'paint', 'topsoil']);
     expect(calculatorListings.find(({ id }) => id === 'paint')?.description).toBe(
       'Gallons, coats & coverage',
     );
