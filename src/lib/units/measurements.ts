@@ -1,4 +1,4 @@
-export type LengthUnit = 'ft' | 'in' | 'yd' | 'm' | 'cm';
+export type LengthUnit = 'ft' | 'in' | 'yd' | 'm' | 'cm' | 'mm';
 export type AreaUnit = 'ft²' | 'yd²' | 'm²' | 'cm²';
 export type VolumeUnit = 'ft³' | 'yd³' | 'm³';
 
@@ -8,6 +8,7 @@ const FEET_PER_UNIT: Record<LengthUnit, number> = {
   yd: 3,
   m: 3.280839895,
   cm: 0.03280839895,
+  mm: 0.003280839895,
 };
 
 export function toFeet(value: number, unit: LengthUnit): number {
