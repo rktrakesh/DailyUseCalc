@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
   Calculator,
@@ -13,6 +13,11 @@ import {
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
+import {
+  createCalculatorStartedTracker,
+  trackCalculatorEvent,
+  trackSuccessfulCalculatorCalculation,
+} from '../../../lib/analytics/calculatorAnalytics';
 import {
   adjustedVolumeConversions,
   calculateGravel,
@@ -93,6 +98,13 @@ export default function GravelCalculator() {
   );
   const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const started = useRef(createCalculatorStartedTracker());
+  const analyticsParameters = () => ({
+    calculator_id: 'gravel',
+    calculator_name: 'Gravel Calculator',
+    project_type: input.projectType,
+    unit_system: measurementSystem,
+  });
 
   useEffect(() => {
     const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
@@ -154,6 +166,7 @@ export default function GravelCalculator() {
     }
     setSubmitted({ input: structuredClone(input), system: measurementSystem });
     setStatus('Estimate updated.');
+    trackSuccessfulCalculatorCalculation(issues, analyticsParameters());
   }
 
   function clearInputs() {
@@ -162,6 +175,7 @@ export default function GravelCalculator() {
     setValidationIssues([]);
     setMeasurementSystem('imperial');
     setStatus('Calculator cleared.');
+    trackCalculatorEvent('calculator_clear', analyticsParameters());
   }
 
   function estimateText() {
@@ -180,6 +194,7 @@ export default function GravelCalculator() {
     try {
       await navigator.clipboard.writeText(estimateText());
       setStatus('Estimate copied.');
+      trackCalculatorEvent('calculator_copy', analyticsParameters());
     } catch {
       setStatus('Copy is unavailable in this browser.');
     }
@@ -190,12 +205,25 @@ export default function GravelCalculator() {
       try {
         await navigator.share({ title: 'Gravel estimate', text: estimateText() });
         setStatus('Estimate shared.');
+        trackCalculatorEvent('calculator_share', {
+          ...analyticsParameters(),
+          share_method: 'native',
+        });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
       }
     }
-    await copyEstimate();
+    try {
+      await navigator.clipboard.writeText(estimateText());
+      setStatus('Estimate copied.');
+      trackCalculatorEvent('calculator_share', {
+        ...analyticsParameters(),
+        share_method: 'clipboard_fallback',
+      });
+    } catch {
+      setStatus('Copy is unavailable in this browser.');
+    }
   }
 
   function reportData() {
@@ -211,6 +239,7 @@ export default function GravelCalculator() {
   function printEstimate() {
     const report = reportData();
     if (!report) return;
+    trackCalculatorEvent('calculator_print', analyticsParameters());
     setStatus(
       printReport(report)
         ? 'Choose a printer or another destination in the print dialog.'
@@ -225,6 +254,7 @@ export default function GravelCalculator() {
     try {
       await downloadReportAsPdf(report);
       setStatus('PDF download started.');
+      trackCalculatorEvent('calculator_pdf', analyticsParameters());
     } catch (error) {
       console.error('PDF download failed:', error);
       setStatus('Could not prepare the PDF. Please try again.');
@@ -238,6 +268,9 @@ export default function GravelCalculator() {
       <section
         className="rounded-card border border-line bg-panel p-3 shadow-card sm:p-4"
         aria-label="Gravel calculator inputs"
+        onChange={() =>
+          started.current({ calculator_id: 'gravel', calculator_name: 'Gravel Calculator' })
+        }
       >
         <div className="grid grid-cols-2 gap-2.5 @2xl/calculator:grid-cols-4">
           <SelectField
