@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type ChangeEvent, type ReactNode, type WheelEvent } from 'react';
 import { Calculator, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
+import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import {
   createCalculatorStartedTracker,
   trackCalculatorEvent,
@@ -178,6 +179,7 @@ export default function MulchCalculator() {
             <Select
               label="Shape"
               value={input.shape}
+              leadingIcon={<ShapeIcon shape={input.shape} />}
               onChange={(v) => update('shape', v as MulchShape)}
             >
               {shapeOptions.map(([v, l]) => (
@@ -421,18 +423,31 @@ function Select({
   value,
   onChange = () => {},
   children,
+  leadingIcon,
 }: {
   label: string;
   value: string;
   onChange?: (v: string) => void;
   children: ReactNode;
+  leadingIcon?: ReactNode;
 }) {
   return (
     <label className="grid gap-1 text-xs font-bold">
       {label}
-      <select className={control()} value={value} onChange={(e) => onChange(e.target.value)}>
-        {children}
-      </select>
+      <span className="relative">
+        {leadingIcon && (
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft">
+            {leadingIcon}
+          </span>
+        )}
+        <select
+          className={`${control()} ${leadingIcon ? 'pl-8' : ''}`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {children}
+        </select>
+      </span>
     </label>
   );
 }

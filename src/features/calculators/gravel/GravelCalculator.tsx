@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Share2,
 } from 'lucide-react';
+import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
@@ -303,6 +304,7 @@ export default function GravelCalculator() {
             label="Shape"
             name="area-shape"
             value={input.areaShape}
+            leadingIcon={<ShapeIcon shape={input.areaShape} />}
             disabled={input.inputMode !== 'dimensions'}
             onChange={(value) =>
               setInput((current) => ({ ...current, areaShape: value as AreaShape }))
@@ -613,6 +615,7 @@ function SelectField({
   value,
   onChange,
   children,
+  leadingIcon,
   disabled = false,
   invalid = false,
 }: {
@@ -621,6 +624,7 @@ function SelectField({
   value: string;
   onChange: (value: string) => void;
   children: ReactNode;
+  leadingIcon?: ReactNode;
   disabled?: boolean;
   invalid?: boolean;
 }) {
@@ -628,9 +632,14 @@ function SelectField({
     <label className="grid min-w-0 gap-1 text-[0.7rem] font-bold text-ink">
       {label}
       <span className="relative">
+        {leadingIcon && (
+          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft">
+            {leadingIcon}
+          </span>
+        )}
         <select
           name={name}
-          className={`${controlClass(invalid)} appearance-none pr-7 disabled:cursor-not-allowed disabled:opacity-55`}
+          className={`${controlClass(invalid)} appearance-none pr-7 ${leadingIcon ? 'pl-8' : ''} disabled:cursor-not-allowed disabled:opacity-55`}
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
