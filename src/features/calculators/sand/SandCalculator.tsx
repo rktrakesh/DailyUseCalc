@@ -15,6 +15,7 @@ import {
   createDefaultSandInput,
   createSandEstimateReport,
   createSandEstimateText,
+  formatSandUnit,
   sandGuidance,
   validateSandInput,
   type Dimension,
@@ -362,7 +363,7 @@ export default function SandCalculator() {
             <NumberField
               label="Bag size"
               value={input.bagSize}
-              unit={input.bagUnit}
+              unit={formatSandUnit(input.bagUnit)}
               error={error('bagSize')}
               onChange={(event) => update('bagSize', optional(event))}
               select={
@@ -378,7 +379,7 @@ export default function SandCalculator() {
                     : ['cu-ft', 'cu-yd', 'liter', 'cu-m']
                   ).map((unit) => (
                     <option key={unit} value={unit}>
-                      {unit}
+                      {formatSandUnit(unit as SandInput['bagUnit'])}
                     </option>
                   ))}
                 </select>
@@ -419,7 +420,7 @@ export default function SandCalculator() {
             <NumberField
               label="Bulk order increment"
               value={input.bulkIncrement}
-              unit={input.bulkUnit}
+              unit={formatSandUnit(input.bulkUnit)}
               error={error('bulkIncrement')}
               onChange={(event) => update('bulkIncrement', optional(event))}
               select={
@@ -435,7 +436,7 @@ export default function SandCalculator() {
                     : ['cu-yd', 'cu-ft', 'cu-m']
                   ).map((unit) => (
                     <option key={unit} value={unit}>
-                      {unit}
+                      {formatSandUnit(unit as SandInput['bulkUnit'])}
                     </option>
                   ))}
                 </select>
@@ -444,7 +445,7 @@ export default function SandCalculator() {
             <NumberField
               label="Bulk unit price"
               value={input.bulkUnitPrice}
-              unit={`${input.currency}/${input.bulkUnit}`}
+              unit={`${input.currency}/${formatSandUnit(input.bulkUnit)}`}
               error={error('bulkUnitPrice')}
               onChange={(event) => update('bulkUnitPrice', optional(event))}
             />
@@ -578,7 +579,8 @@ export default function SandCalculator() {
                   <strong>{calculation.bagsRequired} bags</strong>
                 </p>
                 <p>
-                  {n(calculation.bagLeftoverAmount!)} {submitted.bagUnit} estimated leftover
+                  {n(calculation.bagLeftoverAmount!)} {formatSandUnit(submitted.bagUnit)} estimated
+                  leftover
                 </p>
                 {calculation.bagCost !== undefined && (
                   <p>{formatMoney(calculation.bagCost, submitted.currency)} material cost</p>
@@ -588,11 +590,12 @@ export default function SandCalculator() {
             <ResultGroup title="Bulk sand">
               <p>
                 <strong>
-                  {n(calculation.bulkOrderAmount)} {submitted.bulkUnit}
+                  {n(calculation.bulkOrderAmount)} {formatSandUnit(submitted.bulkUnit)}
                 </strong>
               </p>
               <p>
-                {n(calculation.bulkLeftoverAmount)} {submitted.bulkUnit} estimated leftover
+                {n(calculation.bulkLeftoverAmount)} {formatSandUnit(submitted.bulkUnit)} estimated
+                leftover
               </p>
               {calculation.bulkCost !== undefined && (
                 <p>{formatMoney(calculation.bulkCost, submitted.currency)} material cost</p>

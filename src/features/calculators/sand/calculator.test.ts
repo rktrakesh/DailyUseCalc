@@ -175,6 +175,43 @@ describe('sand calculator', () => {
     expect(r.bulkOrderAmount).toBeCloseTo(r.bulkRequiredAmount);
     expect(r.bulkCost).toBeCloseTo(r.bulkOrderAmount * 42);
   });
+  it('handles a large Known Area without precision or non-compounding drift', () => {
+    const input = createDefaultSandInput();
+    input.measureMode = 'area';
+    input.knownArea = 1_000_000;
+    input.depth = { value: 12, unit: 'in' };
+    input.allowancePercent = 15;
+    input.compactionPercent = 20;
+    const r = calculateSand(input);
+    expect(r.baseCubicFeet).toBe(1_000_000);
+    expect(r.allowanceCubicFeet).toBe(150_000);
+    expect(r.compactionCubicFeet).toBe(200_000);
+    expect(r.requiredCubicFeet).toBe(1_350_000);
+    expect(r.requiredCubicYards).toBe(50_000);
+    expect(r.requiredWeight.pounds).toBe(135_000_000);
+  });
+
+  it('supports zero prices and rejects negative prices and percentages', () => {
+    const input = createDefaultSandInput();
+    input.bagSize = 50;
+    input.pricePerBag = 0;
+    input.bulkUnitPrice = 0;
+    const result = calculateSand(input);
+    expect(result.bagCost).toBe(0);
+    expect(result.bulkCost).toBe(0);
+    input.pricePerBag = -1;
+    input.bulkUnitPrice = -1;
+    input.allowancePercent = -1;
+    input.compactionPercent = 101;
+    expect(validateSandInput(input).map((issue) => issue.field)).toEqual(
+      expect.arrayContaining([
+        'pricePerBag',
+        'bulkUnitPrice',
+        'allowancePercent',
+        'compactionPercent',
+      ]),
+    );
+  });
   it('keeps optionals empty after default and clear', () => {
     for (const input of [createDefaultSandInput(), createClearedSandInput('USD')]) {
       expect(input.bagSize).toBeUndefined();

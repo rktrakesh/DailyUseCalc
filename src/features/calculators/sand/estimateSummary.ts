@@ -3,6 +3,14 @@ import type { SandCalculation, SandInput } from './types';
 const n = (v: number, d = 2) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v);
 export const SAND_URL = 'https://dailyusecalc.com/sand/';
+const sandUnitLabels: Partial<Record<SandInput['bagUnit'] | SandInput['bulkUnit'], string>> = {
+  'cu-ft': 'cu ft',
+  'cu-yd': 'cu yd',
+  'cu-m': 'cu m',
+  liter: 'L',
+};
+export const formatSandUnit = (unit: SandInput['bagUnit'] | SandInput['bulkUnit']) =>
+  sandUnitLabels[unit] ?? unit;
 export function createSandEstimateText(input: SandInput, c: SandCalculation) {
   const metric = input.measurementSystem === 'metric';
   return [
@@ -18,9 +26,9 @@ export function createSandEstimateText(input: SandInput, c: SandCalculation) {
     ...(c.bagsRequired === undefined
       ? []
       : [
-          `Bagged: ${c.bagsRequired} x ${n(input.bagSize!)} ${input.bagUnit}; leftover ${n(c.bagLeftoverAmount!)} ${input.bagUnit}`,
+          `Bagged: ${c.bagsRequired} x ${n(input.bagSize!)} ${formatSandUnit(input.bagUnit)}; leftover ${n(c.bagLeftoverAmount!)} ${formatSandUnit(input.bagUnit)}`,
         ]),
-    `Bulk: ${n(c.bulkOrderAmount)} ${input.bulkUnit}; leftover ${n(c.bulkLeftoverAmount)} ${input.bulkUnit}`,
+    `Bulk: ${n(c.bulkOrderAmount)} ${formatSandUnit(input.bulkUnit)}; leftover ${n(c.bulkLeftoverAmount)} ${formatSandUnit(input.bulkUnit)}`,
     ...(c.bagCost === undefined
       ? []
       : [`Bagged material cost: ${formatMoney(c.bagCost, input.currency)}`]),

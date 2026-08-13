@@ -1,6 +1,7 @@
 import type { EstimateReportData, ReportMetric } from '../../../components/reports/EstimateReport';
 import { createReportFilename } from '../../../lib/reports/reportFilename';
 import { formatMoney } from '../gravel/currencies';
+import { formatSandUnit } from './estimateSummary';
 import { sandGuidance } from './recommendations';
 import type { SandCalculation, SandInput } from './types';
 const n = (v: number, d = 2) =>
@@ -89,11 +90,17 @@ export function createSandEstimateReport(
       : [
           {
             label: 'Bag recommendation',
-            value: `${c.bagsRequired} x ${n(input.bagSize!)} ${input.bagUnit} bags`,
+            value: `${c.bagsRequired} x ${n(input.bagSize!)} ${formatSandUnit(input.bagUnit)} bags`,
             emphasis: true,
           },
-          { label: 'Purchased amount', value: `${n(c.bagPurchasedAmount!)} ${input.bagUnit}` },
-          { label: 'Estimated leftover', value: `${n(c.bagLeftoverAmount!)} ${input.bagUnit}` },
+          {
+            label: 'Purchased amount',
+            value: `${n(c.bagPurchasedAmount!)} ${formatSandUnit(input.bagUnit)}`,
+          },
+          {
+            label: 'Estimated leftover',
+            value: `${n(c.bagLeftoverAmount!)} ${formatSandUnit(input.bagUnit)}`,
+          },
           ...(c.bagCost === undefined
             ? []
             : [
@@ -113,7 +120,7 @@ export function createSandEstimateReport(
     primaryResult: {
       label: 'REQUIRED SAND',
       value: metric ? `${n(c.requiredCubicMeters)} cu m` : `${n(c.requiredCubicYards)} cu yd`,
-      supportingText: 'Volume including selected extras',
+      supportingText: 'Volume including allowance and compaction',
       confirmation:
         input.bagSize !== undefined || input.bulkIncrement !== undefined
           ? 'Configured purchase quantities round upward.'
@@ -204,10 +211,13 @@ export function createSandEstimateReport(
         rows: [
           {
             label: input.bulkIncrement ? 'Suggested order' : 'Exact required quantity',
-            value: `${n(c.bulkOrderAmount)} ${input.bulkUnit}`,
+            value: `${n(c.bulkOrderAmount)} ${formatSandUnit(input.bulkUnit)}`,
             emphasis: true,
           },
-          { label: 'Estimated leftover', value: `${n(c.bulkLeftoverAmount)} ${input.bulkUnit}` },
+          {
+            label: 'Estimated leftover',
+            value: `${n(c.bulkLeftoverAmount)} ${formatSandUnit(input.bulkUnit)}`,
+          },
           ...(c.bulkCost === undefined
             ? []
             : [

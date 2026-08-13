@@ -13,6 +13,7 @@ describe('sand report', () => {
     const report = createSandEstimateReport(input, c, new Date(2026, 0, 2));
     const json = JSON.stringify(report);
     expect(json).toContain('ESTIMATED WEIGHT');
+    expect(report.primaryResult.supportingText).toBe('Volume including allowance and compaction');
     expect(json).not.toContain('BAGGED SAND');
     expect(json).not.toContain('MATERIAL COST COMPARISON');
     expect(report.primaryResult.confirmation).toContain('no purchase increment');
@@ -31,6 +32,8 @@ describe('sand report', () => {
     const report = createSandEstimateReport(input, c);
     const json = JSON.stringify(report);
     expect(json).toContain('BAGGED SAND');
+    expect(json).toContain('cu yd');
+    expect(json).not.toContain('cu-yd');
     expect(json).toContain('MATERIAL COST COMPARISON');
     expect(json).toContain('supplier');
     expect(createSandEstimateText(input, c)).toContain('https://dailyusecalc.com/sand/');
