@@ -28,6 +28,9 @@ describe('calculator directory registry', () => {
         .filter(({ status }) => status === 'available')
         .map(({ id }) => id)
         .sort(),
-    ).toEqual(['concrete', 'gravel']);
+    ).toEqual(['concrete', 'gravel', 'paint']);
+    expect(calculatorListings.find(({ id }) => id === 'paint')?.description).toBe(
+      'Gallons, coats & coverage',
+    );
   });
 });

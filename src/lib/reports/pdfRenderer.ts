@@ -35,6 +35,29 @@ function wrap(value: string, font: PDFFont, size: number, width: number) {
   return lines;
 }
 
+function wrapPrimaryValue(value: string, font: PDFFont, size: number, width: number) {
+  const purchases = value
+    .split(' + ')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (purchases.length < 2) return wrap(value, font, size, width);
+
+  const lines: string[] = [];
+  let current = '';
+  for (const purchase of purchases) {
+    const candidate = current ? `${current} + ${purchase}` : purchase;
+    if (!current || font.widthOfTextAtSize(candidate, size) <= width) current = candidate;
+    else {
+      lines.push(current);
+      current = `+ ${purchase}`;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.some((line) => font.widthOfTextAtSize(line, size) > width)
+    ? wrap(value, font, size, width)
+    : lines;
+}
+
 function text(
   page: PDFPage,
   lines: string[],
@@ -51,16 +74,33 @@ function text(
   return lines.length * height;
 }
 
-function heading(cursor: Cursor, title: string, bold: PDFFont) {
-  cursor.page.drawText(title, { x: cursor.x, y: cursor.y, font: bold, size: 10, color: brand });
-  cursor.y -= 14;
+function heading(cursor: Cursor, title: string, bold: PDFFont, compact = false) {
+  cursor.page.drawText(title, {
+    x: cursor.x,
+    y: cursor.y,
+    font: bold,
+    size: compact ? 9.5 : 10,
+    color: brand,
+  });
+  cursor.y -= compact ? 12 : 14;
 }
 
-function rows(cursor: Cursor, metrics: ReportMetric[], regular: PDFFont, bold: PDFFont) {
+function rows(
+  cursor: Cursor,
+  metrics: ReportMetric[],
+  regular: PDFFont,
+  bold: PDFFont,
+  compact = false,
+) {
+  const fontSize = compact ? 8 : 8.5;
+  const lineHeight = compact ? 9.5 : 11;
   for (const metric of metrics) {
-    const labels = wrap(metric.label, regular, 8.5, cursor.width * 0.52);
-    const values = wrap(metric.value, bold, 8.5, cursor.width * 0.42);
-    const height = Math.max(18, Math.max(labels.length, values.length) * 11 + 8);
+    const labels = wrap(metric.label, regular, fontSize, cursor.width * 0.52);
+    const values = wrap(metric.value, bold, fontSize, cursor.width * 0.42);
+    const height = Math.max(
+      compact ? 15 : 18,
+      Math.max(labels.length, values.length) * lineHeight + (compact ? 5.5 : 8),
+    );
     cursor.page.drawLine({
       start: { x: cursor.x, y: cursor.y + 4 },
       end: { x: cursor.x + cursor.width, y: cursor.y + 4 },
@@ -73,15 +113,15 @@ function rows(cursor: Cursor, metrics: ReportMetric[], regular: PDFFont, bold: P
       cursor.x + 8,
       cursor.y - 7,
       regular,
-      8.5,
+      fontSize,
       metric.emphasis ? brand : ink,
     );
     values.forEach((value, index) =>
       cursor.page.drawText(value, {
-        x: cursor.x + cursor.width - 8 - bold.widthOfTextAtSize(value, 8.5),
-        y: cursor.y - 7 - index * 11,
+        x: cursor.x + cursor.width - 8 - bold.widthOfTextAtSize(value, fontSize),
+        y: cursor.y - 7 - index * lineHeight,
         font: bold,
-        size: 8.5,
+        size: fontSize,
         color: metric.emphasis ? brand : ink,
       }),
     );
@@ -93,20 +133,28 @@ function rows(cursor: Cursor, metrics: ReportMetric[], regular: PDFFont, bold: P
     thickness: 0.6,
     color: line,
   });
-  cursor.y -= 12;
+  cursor.y -= compact ? 8 : 12;
 }
 
-function paragraph(cursor: Cursor, title: string, value: string, regular: PDFFont, bold: PDFFont) {
-  heading(cursor, title, bold);
+function paragraph(
+  cursor: Cursor,
+  title: string,
+  value: string,
+  regular: PDFFont,
+  bold: PDFFont,
+  compact = false,
+) {
+  const fontSize = compact ? 8 : 8.5;
+  heading(cursor, title, bold, compact);
   cursor.y -= text(
     cursor.page,
-    wrap(value, regular, 8.5, cursor.width),
+    wrap(value, regular, fontSize, cursor.width),
     cursor.x,
     cursor.y,
     regular,
-    8.5,
+    fontSize,
   );
-  cursor.y -= 12;
+  cursor.y -= compact ? 9 : 12;
 }
 
 async function logo(document: PDFDocument) {
@@ -131,14 +179,15 @@ function download(bytes: Uint8Array, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** Renders shared report data as a selectable-text US Letter PDF. */
-export async function downloadEstimatePdf(report: EstimateReportData) {
+/** Builds the shared selectable-text report PDF without triggering a browser download. */
+export async function createEstimatePdfBytes(report: EstimateReportData) {
   const document = await PDFDocument.create();
   document.setTitle(report.documentTitle);
   document.setAuthor('DailyUseCalc');
   document.setSubject(report.reportTitle);
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
+  const compact = report.compactLayout === true;
   const page = document.addPage([WIDTH, HEIGHT]);
   const mark = await logo(document);
   if (mark) page.drawImage(mark, { x: MARGIN, y: HEIGHT - 68, ...mark.scaleToFit(32, 32) });
@@ -197,11 +246,22 @@ export async function downloadEstimatePdf(report: EstimateReportData) {
       color: brand,
     });
   y -= 18;
+  const primaryWidth = COLUMN - 24;
+  let primarySize =
+    report.primaryResult.value.length > 34 ? 16 : report.primaryResult.value.length > 20 ? 20 : 26;
+  let primaryLines = wrapPrimaryValue(report.primaryResult.value, bold, primarySize, primaryWidth);
+  while (primaryLines.length > 2 && primarySize > 13) {
+    primarySize -= 1;
+    primaryLines = wrapPrimaryValue(report.primaryResult.value, bold, primarySize, primaryWidth);
+  }
+  const primaryExtraHeight = report.adaptivePrimaryResult
+    ? Math.max(0, primaryLines.length - 1) * primarySize * 1.35
+    : 0;
   page.drawRectangle({
     x: MARGIN,
-    y: y - 92,
+    y: y - 92 - primaryExtraHeight,
     width: COLUMN,
-    height: 92,
+    height: 92 + primaryExtraHeight,
     color: softBrand,
     borderColor: brand,
     borderWidth: 0.8,
@@ -213,40 +273,35 @@ export async function downloadEstimatePdf(report: EstimateReportData) {
     size: 9,
     color: brand,
   });
-  page.drawText(report.primaryResult.value, {
-    x: MARGIN + 12,
-    y: y - 51,
-    font: bold,
-    size: 26,
-    color: brand,
-  });
+  const primaryStartY = primaryLines.length > 1 ? y - 42 : y - 51;
+  text(page, primaryLines, MARGIN + 12, primaryStartY, bold, primarySize, brand);
   page.drawText(report.primaryResult.supportingText, {
     x: MARGIN + 12,
-    y: y - 70,
+    y: y - 70 - primaryExtraHeight,
     font: regular,
     size: 8.5,
     color: ink,
   });
   page.drawText(report.primaryResult.confirmation, {
     x: MARGIN + 12,
-    y: y - 83,
+    y: y - 83 - primaryExtraHeight,
     font: regular,
     size: 7.3,
     color: soft,
   });
 
   const summary: Cursor = { page, x: MARGIN + COLUMN + GAP, width: COLUMN, y };
-  heading(summary, 'PROJECT SUMMARY', bold);
-  rows(summary, report.summary, regular, bold);
-  const left: Cursor = { page, x: MARGIN, width: COLUMN, y: y - 108 };
+  heading(summary, 'PROJECT SUMMARY', bold, compact);
+  rows(summary, report.summary, regular, bold, compact);
+  const left: Cursor = { page, x: MARGIN, width: COLUMN, y: y - 108 - primaryExtraHeight };
   for (const section of report.leftSections ?? report.sections.slice(0, 2)) {
-    heading(left, section.title, bold);
-    rows(left, section.rows, regular, bold);
+    heading(left, section.title, bold, compact);
+    rows(left, section.rows, regular, bold, compact);
   }
   const right: Cursor = { page, x: MARGIN + COLUMN + GAP, width: COLUMN, y: summary.y - 2 };
   for (const section of report.rightSections ?? report.sections.slice(2)) {
-    heading(right, section.title, bold);
-    rows(right, section.rows, regular, bold);
+    heading(right, section.title, bold, compact);
+    rows(right, section.rows, regular, bold, compact);
   }
   for (const section of report.customSections ?? [])
     paragraph(
@@ -257,16 +312,39 @@ export async function downloadEstimatePdf(report: EstimateReportData) {
         '',
       regular,
       bold,
+      compact,
     );
   if (report.additionalDetails?.length) {
-    heading(right, 'PURCHASING DETAILS', bold);
-    rows(right, report.additionalDetails, regular, bold);
+    heading(right, 'PURCHASING DETAILS', bold, compact);
+    rows(right, report.additionalDetails, regular, bold, compact);
   }
-  for (const item of report.guidance ?? [])
-    paragraph(left, `GUIDANCE - ${item.label.toUpperCase()}`, item.value, regular, bold);
-  if (report.warnings?.length)
-    paragraph(left, 'WARNINGS', report.warnings.join(' '), regular, bold);
-  paragraph(left, report.notice.title, report.notice.content, regular, bold);
+  if (compact) {
+    if (report.guidance?.length)
+      paragraph(
+        left,
+        'GUIDANCE',
+        report.guidance.map((item) => `${item.label}: ${item.value}`).join(' '),
+        regular,
+        bold,
+        true,
+      );
+    if (report.warnings?.length)
+      paragraph(left, 'WARNINGS', report.warnings.join(' '), regular, bold, true);
+    paragraph(
+      report.additionalDetails?.length ? left : right,
+      report.notice.title,
+      report.notice.content,
+      regular,
+      bold,
+      true,
+    );
+  } else {
+    for (const item of report.guidance ?? [])
+      paragraph(left, `GUIDANCE - ${item.label.toUpperCase()}`, item.value, regular, bold);
+    if (report.warnings?.length)
+      paragraph(left, 'WARNINGS', report.warnings.join(' '), regular, bold);
+    paragraph(left, report.notice.title, report.notice.content, regular, bold);
+  }
   const footerY = Math.max(34, Math.min(left.y, right.y) - 3);
   page.drawLine({
     start: { x: MARGIN, y: footerY },
@@ -289,5 +367,10 @@ export async function downloadEstimatePdf(report: EstimateReportData) {
     size: 8,
     color: ink,
   });
-  download(await document.save(), createPdfFilename(report.documentTitle));
+  return document.save();
+}
+
+/** Renders and downloads the shared report as a selectable-text PDF. */
+export async function downloadEstimatePdf(report: EstimateReportData) {
+  download(await createEstimatePdfBytes(report), createPdfFilename(report.documentTitle));
 }

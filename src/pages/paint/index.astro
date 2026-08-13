@@ -1,0 +1,337 @@
+---
+import { ChevronRight, CircleHelp, Lightbulb } from 'lucide-react';
+import AdSlot from '../../components/common/AdSlot.astro';
+import PaintCalculator from '../../features/calculators/paint/PaintCalculator';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+const title = 'Paint Calculator - Walls, Ceilings, Doors & Cost | DailyUseCalc';
+const description =
+  'Estimate wall, ceiling, door, trim, and primer paint in gallons and liters. Deduct openings, compare container sizes, and calculate optional cost.';
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Home Improvement', path: '/calculators/#home-improvement' },
+  { name: 'Paint Calculator', path: '/paint/' },
+];
+const faqs = [
+  {
+    question: 'How much paint do I need?',
+    answer:
+      'Measure the room perimeter and wall height, subtract door and window openings, then multiply the paintable area by the number of coats and divide by the paint coverage rate.',
+  },
+  {
+    question: 'How much area does one gallon of paint cover?',
+    answer:
+      'Many architectural coatings list a theoretical range around 250-400 square feet per gallon per coat. Use the coverage printed on your selected product because texture, porosity, color change, and application affect actual yield.',
+  },
+  {
+    question: 'Should doors and windows be subtracted?',
+    answer:
+      'Openings are deducted from wall area. Painting the door itself is a separate optional calculation so its faces are not double-counted.',
+  },
+  {
+    question: 'When should I use primer?',
+    answer:
+      "Primer can help on bare, repaired, porous, stained, or sharply contrasting surfaces. Follow the paint and primer manufacturers' compatibility and application instructions.",
+  },
+];
+const steps = [
+  [
+    'Measure actual surfaces',
+    'Wall area uses room perimeter x height. Doors and windows are deducted before coats and coverage are applied.',
+  ],
+  [
+    'Keep materials separate',
+    'Ceiling, painted doors, trim, and primer are calculated independently so the breakdown stays understandable.',
+  ],
+  [
+    'Buy practical sizes',
+    'The estimator compares quarts, gallons, and 5-gallon containers while minimizing excess and container count.',
+  ],
+  [
+    'Check the product label',
+    'Actual coverage varies by formulation, surface, color change, tools, texture, and application method.',
+  ],
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/paint/"
+  structuredData={[
+    organizationSchema(),
+    breadcrumbSchema(breadcrumbs),
+    webApplicationSchema({ name: 'Paint Calculator', description, path: '/paint/' }),
+    faqPageSchema(faqs),
+  ]}
+>
+  <div class="site-container py-3 sm:py-4">
+    <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+      {
+        breadcrumbs.map((item, index) => (
+          <>
+            <a class="rounded hover:text-brand" href={item.path}>
+              {item.name}
+            </a>
+            {index < breadcrumbs.length - 1 && <ChevronRight size={13} aria-hidden="true" />}
+          </>
+        ))
+      }
+    </nav><div class="mt-3 max-w-2xl">
+      <h1 class="text-balance text-3xl font-extrabold tracking-[-.05em] text-ink sm:text-4xl">
+        Paint Calculator
+      </h1><p class="mt-1.5 text-sm leading-5 text-ink-soft">
+        Estimate paint for walls, ceilings, openings, doors, trim, and primer, with practical
+        purchase sizes and optional cost.
+      </p><a
+        href="#user-guide"
+        class="mt-2 inline-flex rounded text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-brand/60"
+      >
+        User Guide
+      </a>
+    </div><div class="mt-3"><PaintCalculator client:load /></div><AdSlot class="mt-5 min-h-24" />
+  </div>
+  <section class="site-container grid gap-5 py-8 lg:grid-cols-[1.35fr_.65fr]">
+    <article class="rounded-card border border-line bg-panel p-5 shadow-card">
+      <h2 class="text-xl font-extrabold text-ink">How the paint calculator works</h2><div
+        class="mt-4 grid gap-4 sm:grid-cols-2"
+      >
+        {
+          steps.map(([heading, content]) => (
+            <div>
+              <>
+                <h3 class="font-bold text-ink">{heading}</h3>
+                <p class="mt-1 text-sm leading-5 text-ink-soft">{content}</p>
+              </>
+            </div>
+          ))
+        }
+      </div>
+    </article><aside class="rounded-card border border-line bg-panel p-5 shadow-card">
+      <h2 class="flex items-center gap-2 text-lg font-extrabold">
+        <Lightbulb className="text-brand" size={19} />Important guidance
+      </h2><ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-ink-soft">
+        <li>Opening deductions are area-based and do not validate their physical placement.</li><li>
+          Trim uses measured linear length x paintable face width.
+        </li><li>Container availability and pricing vary by product and retailer.</li><li>
+          Verify coverage, preparation, coats, and primer requirements on the label.
+        </li>
+      </ul>
+    </aside>
+  </section>
+  <section
+    id="user-guide"
+    class="site-container scroll-mt-24 pb-8"
+    aria-labelledby="user-guide-title"
+  >
+    <article class="max-w-4xl">
+      <h2 id="user-guide-title" class="text-xl font-extrabold text-ink sm:text-2xl">
+        Paint Calculator User Guide
+      </h2>
+      <p class="mt-2 text-sm leading-6 text-ink-soft">
+        Use this guide to choose realistic inputs, understand what the estimate includes, and see
+        how each field affects your purchase recommendation. The calculator is an estimate: always
+        confirm product coverage and application instructions on the selected paint label.
+      </p>
+      <div class="mt-7 space-y-8 text-sm leading-6 text-ink-soft">
+        <section aria-labelledby="guide-project">
+          <h3 id="guide-project" class="text-lg font-extrabold text-ink">
+            Understanding Your Project
+          </h3>
+          <div class="mt-3 grid gap-5 md:grid-cols-2">
+            <div>
+              <h4 class="font-bold text-ink">Room / Walls</h4>
+              <p class="mt-1">
+                Enter inside room length, room width, and wall height. Quantity means identical
+                rooms using those dimensions. A 12 ft x 10 ft room with 8 ft walls and Quantity 5
+                means 5 rooms with that geometry. Quantity scales wall geometry and, when enabled,
+                ceiling area.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Total Doors & Windows</h4>
+              <p class="mt-1">
+                Total doors and Total windows are project totals, not per-room values. A 10-room
+                project with 10 doors and 15 windows has exactly 10 doors and 15 windows across the
+                whole project. Their areas are deducted because those parts of the wall normally do
+                not need wall paint.
+              </p>
+              <p class="mt-1">
+                Door opening area is quantity x width x height; window opening area uses the same
+                calculation. Those project totals are deducted from gross wall area.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Include Ceiling</h4>
+              <p class="mt-1">
+                Enable Include ceiling when ceilings are part of the job. Ceiling area is room
+                length x room width x room quantity. It receives a separate paint requirement and
+                purchase recommendation because it is calculated independently from wall paint.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="guide-paint">
+          <h3 id="guide-paint" class="text-lg font-extrabold text-ink">
+            Understanding Paint Inputs
+          </h3>
+          <div class="mt-3 grid gap-5 md:grid-cols-2">
+            <div>
+              <h4 class="font-bold text-ink">Coats</h4><p class="mt-1">
+                A coat is 1 complete application layer. One coat is 1 layer; 2 coats are 2 layers.
+                Two coats commonly require about twice the theoretical paint volume before
+                allowance, but the right count depends on the product, existing and new colors,
+                substrate, primer, and manufacturer instructions.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Coverage</h4><p class="mt-1">
+                Coverage of 400 sq ft/gal means 1 gallon is expected to cover about 400 square feet
+                for 1 coat under that product's stated conditions. Check the paint can, product
+                label, technical data sheet, or manufacturer website. Texture, porosity, application
+                method, formulation, and substrate condition can all change coverage.
+              </p><p class="mt-1">
+                Coverage stays editable so the calculator does not hide a universal assumption.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Surface Condition</h4><p class="mt-1">
+                Choose Previously painted / smooth, New drywall, Porous / rough, or Textured
+                surface. This choice provides practical guidance only; it does not apply a hidden
+                multiplier or silently change the formula.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Extra Allowance</h4><p class="mt-1">
+                Allowance adds material for minor waste, roller or brush loss, touch-ups, small
+                measurement differences, and future matching. If the base requirement is 10 gal and
+                allowance is 10%, the estimated requirement becomes 11 gal. An allowance is
+                optional, not mandatory.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="guide-optional">
+          <h3 id="guide-optional" class="text-lg font-extrabold text-ink">
+            Optional Surfaces & Materials
+          </h3>
+          <div class="mt-3 grid gap-5 md:grid-cols-2">
+            <div>
+              <h4 class="font-bold text-ink">Painted Doors</h4><p class="mt-1">
+                Total doors subtracts door openings from wall area. Paint doors estimates paint for
+                the door surfaces you plan to coat. These quantities are independent. Enter
+                paint-door quantity, width, height, sides painted, and door coats. Choose 1 side or
+                both sides based on the work.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Trim / Baseboards</h4><p class="mt-1">
+                Enter measured trim length, paintable trim width, and trim coats. The calculator
+                treats trim as a rectangular paintable surface: length x width. Deeply decorative or
+                complex trim may use more paint than this simplified area suggests.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Primer</h4><p class="mt-1">
+                Primer is estimated separately because its coverage and coat count can differ from
+                finish paint. Enter primer coats and coverage for the selected product. Verify
+                primer compatibility and coverage with the selected finish paint and substrate.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="guide-buying">
+          <h3 id="guide-buying" class="text-lg font-extrabold text-ink">Buying Paint</h3>
+          <div class="mt-3 grid gap-5 md:grid-cols-2">
+            <div>
+              <h4 class="font-bold text-ink">Paint Pricing</h4><p class="mt-1">
+                Pricing is optional. Quart price, 1 gal price, 5 gal price, and Primer / gal affect
+                estimated cost only; they never change calculated paint quantity or the purchase
+                recommendation.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink">Purchase Sizes & Leftover</h4><p class="mt-1">
+                The practical finish-paint recommendation uses 5-gallon, 1-gallon, and 1-quart
+                containers to buy enough paint while avoiding unnecessary excess according to the
+                established optimizer. Container availability varies by product and retailer.
+              </p><p class="mt-1">
+                Estimated leftover = purchased volume - required volume. For example, 17.27 gal
+                required and 17.50 gal purchased leaves about 0.23 gal for understanding
+                over-purchase and possible touch-ups.
+              </p>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="guide-units">
+          <h3 id="guide-units" class="text-lg font-extrabold text-ink">Imperial & Metric</h3><p
+            class="mt-2"
+          >
+            Imperial uses ft, in, sq ft, gal, and qt. Metric uses m, cm, sq m, and L. Switching
+            systems preserves the physical project while changing displayed units, so opening
+            quantities remain unitless project totals.
+          </p>
+        </section>
+        <section aria-labelledby="guide-formula">
+          <h3 id="guide-formula" class="text-lg font-extrabold text-ink">
+            How the Wall Calculation Works
+          </h3><p class="mt-2">
+            For rectangular rooms, gross wall area is 2 x (room length + room width) x wall height x
+            room quantity. Net wall area is gross wall area - total door-opening area - total
+            window-opening area. Base paint requirement = net wall area x coats / coverage, then the
+            selected allowance is applied.
+          </p>
+        </section>
+        <section aria-labelledby="guide-example">
+          <h3 id="guide-example" class="text-lg font-extrabold text-ink">Worked Example</h3>
+          <p class="mt-2">
+            This is an example, not a universal recommendation. For 10 rooms measuring 12 ft x 10 ft
+            with 8 ft walls, 10 total doors at 3 ft x 6.67 ft, 15 total windows at 3 ft x 4 ft, 2
+            coats, 400 sq ft/gal coverage, and 10% allowance:
+          </p>
+          <ul class="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+            <li>Gross walls: 3,520 sq ft</li><li>Door openings: 200.1 sq ft</li><li>
+              Window openings: 180 sq ft
+            </li><li>Net walls: 3,139.9 sq ft</li><li>Base paint: about 15.70 gal</li><li>
+              Allowance: about 1.57 gal
+            </li><li>Required: about 17.27 gal</li><li>
+              Suggested purchase: 3 x 5 gal + 2 x 1 gal + 2 x 1 qt
+            </li><li>Purchased: 17.50 gal</li><li>Estimated leftover: about 0.23 gal</li>
+          </ul>
+        </section>
+        <section aria-labelledby="guide-limitations">
+          <h3 id="guide-limitations" class="text-lg font-extrabold text-ink">
+            Important Limitations
+          </h3><p class="mt-2">
+            The result is an estimate. Real paint use can vary with wall texture, porosity,
+            application method, paint formulation, color change, substrate, primer, coats, waste,
+            and manufacturer specifications. Verify actual product coverage and application
+            instructions before purchasing.
+          </p>
+        </section>
+      </div>
+    </article>
+  </section>
+  <section class="site-container pb-10">
+    <h2 class="text-xl font-extrabold">Paint calculator questions</h2><div class="mt-3 grid gap-2">
+      {
+        faqs.map((item) => (
+          <details class="rounded-control border border-line bg-panel p-4">
+            <>
+              <summary class="flex cursor-pointer items-center gap-2 font-bold">
+                <CircleHelp className="text-brand" size={17} />
+                {item.question}
+              </summary>
+              <p class="mt-2 text-sm leading-6 text-ink-soft">{item.answer}</p>
+            </>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
