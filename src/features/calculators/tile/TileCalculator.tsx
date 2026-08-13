@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type ReactNode, type WheelEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Calculator, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import {
@@ -7,6 +7,7 @@ import {
   trackSuccessfulCalculatorCalculation,
 } from '../../../lib/analytics/calculatorAnalytics';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { currencies, formatMoney, isCurrencyCode } from '../gravel/currencies';
 import {
   calculateTile,
@@ -27,14 +28,6 @@ const num = (e: ChangeEvent<HTMLInputElement>) =>
     e.target.value === '' ? Number.NaN : e.target.valueAsNumber,
   opt = (e: ChangeEvent<HTMLInputElement>) =>
     e.target.value === '' ? undefined : e.target.valueAsNumber;
-const wheel = (e: WheelEvent<HTMLInputElement>) => {
-  const el = e.currentTarget,
-    ro = el.readOnly;
-  el.readOnly = true;
-  requestAnimationFrame(() => {
-    el.readOnly = ro;
-  });
-};
 const ctl = (bad = false) =>
   `h-11 w-full rounded-control border bg-panel px-2.5 text-sm text-ink outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30 sm:h-9 ${bad ? 'border-danger' : 'border-line'}`;
 const n = (v: number, d = 2) =>
@@ -218,7 +211,7 @@ export default function TileCalculator() {
           inputMode="decimal"
           value={Number.isNaN(d.value) ? '' : d.value}
           onChange={(e) => update(field, { ...d, value: num(e) } as never)}
-          onWheel={wheel}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={!!error(String(field))}
           className={ctl(!!error(String(field)))}
         />
@@ -338,7 +331,7 @@ export default function TileCalculator() {
               step="1"
               value={input.quantity}
               onChange={(e) => update('quantity', num(e))}
-              onWheel={wheel}
+              onWheel={preserveNumberInputOnWheel}
               className={ctl(!!error('quantity'))}
             />
           </Field>
@@ -352,7 +345,7 @@ export default function TileCalculator() {
               inputMode="decimal"
               value={Number.isNaN(input.tileLength) ? '' : input.tileLength}
               onChange={(e) => update('tileLength', num(e))}
-              onWheel={wheel}
+              onWheel={preserveNumberInputOnWheel}
               className={ctl(!!error('tileLength'))}
             />
           </Field>
@@ -363,7 +356,7 @@ export default function TileCalculator() {
               inputMode="decimal"
               value={Number.isNaN(input.tileWidth) ? '' : input.tileWidth}
               onChange={(e) => update('tileWidth', num(e))}
-              onWheel={wheel}
+              onWheel={preserveNumberInputOnWheel}
               className={ctl(!!error('tileWidth'))}
             />
           </Field>
@@ -392,7 +385,7 @@ export default function TileCalculator() {
                 inputMode="decimal"
                 value={input.groutGap}
                 onChange={(e) => update('groutGap', num(e))}
-                onWheel={wheel}
+                onWheel={preserveNumberInputOnWheel}
                 className={ctl(!!error('groutGap'))}
               />
               <span className="grid place-items-center rounded-control border border-line bg-panel-muted text-xs">
@@ -469,7 +462,7 @@ export default function TileCalculator() {
               inputMode="decimal"
               value={input.wastePercent}
               onChange={(e) => update('wastePercent', num(e))}
-              onWheel={wheel}
+              onWheel={preserveNumberInputOnWheel}
               className={ctl(!!error('wastePercent'))}
             />
           </Field>
@@ -519,7 +512,7 @@ export default function TileCalculator() {
                   inputMode="numeric"
                   value={input.tilesPerBox ?? ''}
                   onChange={(e) => update('tilesPerBox', opt(e))}
-                  onWheel={wheel}
+                  onWheel={preserveNumberInputOnWheel}
                   className={ctl(!!error('tilesPerBox'))}
                 />
               </Field>
@@ -564,7 +557,7 @@ export default function TileCalculator() {
                 inputMode="decimal"
                 value={input.price ?? ''}
                 onChange={(e) => update('price', opt(e))}
-                onWheel={wheel}
+                onWheel={preserveNumberInputOnWheel}
                 className={ctl(!!error('price'))}
               />
             </Field>
@@ -674,7 +667,7 @@ function UnitNumber({
         inputMode="decimal"
         value={value === undefined || Number.isNaN(value) ? '' : value}
         onChange={(e) => onValue(opt(e))}
-        onWheel={wheel}
+        onWheel={preserveNumberInputOnWheel}
         className={ctl(error)}
         aria-invalid={error}
       />
