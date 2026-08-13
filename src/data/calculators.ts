@@ -54,9 +54,10 @@ export const calculatorListings: CalculatorListing[] = [
     id: 'mulch',
     name: 'Mulch Calculator',
     category: 'Garden',
-    description: 'Yards · bags · coverage',
+    href: '/mulch/',
+    description: 'Yards, bags & coverage',
     keywords: ['mulch', 'landscaping', 'garden', 'yard'],
-    status: 'coming-soon',
+    status: 'available',
   },
   {
     id: 'paint',
