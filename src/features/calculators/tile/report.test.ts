@@ -13,6 +13,7 @@ describe('tile report', () => {
     expect(r.primaryResult.value).toBe('132 tiles');
     expect(html).toContain('TILE PROJECT ESTIMATE');
     expect(html).toContain('Estimated tiles required');
+    expect(html).toContain('Surface shape');
     expect(html).not.toContain('NaN');
   });
   it('includes purchasing, pricing, exclusions, and override wording conditionally', () => {
@@ -42,5 +43,13 @@ describe('tile report', () => {
     const text = JSON.stringify(createTileEstimateReport(i, calculateTile(i)));
     expect(text).toContain('20 sq m');
     expect(text).toContain('88 tiles');
+  });
+  it('omits surface geometry wording for Known Area', () => {
+    const i = createDefaultTileInput();
+    i.measureMode = 'area';
+    i.tileLength = 12;
+    i.tileWidth = 12;
+    const report = JSON.stringify(createTileEstimateReport(i, calculateTile(i)));
+    expect(report).not.toContain('Surface shape');
   });
 });

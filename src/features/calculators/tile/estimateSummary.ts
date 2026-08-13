@@ -25,12 +25,24 @@ export const patternLabel = (p: TileInput['pattern']) =>
     herringbone: 'Herringbone',
     custom: 'Custom / Other',
   })[p];
+const surfaceShapeLabel = (shape: TileInput['shape']) =>
+  ({
+    rectangle: 'Rectangle',
+    square: 'Square',
+    circle: 'Circle',
+    triangle: 'Triangle',
+    trapezoid: 'Trapezoid',
+    ring: 'Ring / Donut',
+  })[shape];
 export function createTileEstimateText(input: TileInput, c: TileCalculation) {
   const metric = input.measurementSystem === 'metric',
     au = metric ? 'sq-m' : 'sq-ft';
   return [
     'DailyUseCalc Tile Estimate',
     `Project: ${projectLabel(input.projectType)}`,
+    ...(input.measureMode === 'dimensions'
+      ? [`Surface shape: ${surfaceShapeLabel(input.shape)}`]
+      : []),
     `Net tiled area: ${n(squareFeetToArea(c.netAreaSquareFeet, au))} ${areaLabel(au)}`,
     `Tile size: ${n(input.tileLength)} x ${n(input.tileWidth)} ${input.tileUnit}`,
     `Grout gap: ${n(input.groutGap, 3)} ${input.groutUnit}`,

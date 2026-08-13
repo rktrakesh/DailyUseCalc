@@ -11,35 +11,35 @@ function geometry(i: TileInput): ReportMetric[] {
     return [{ label: 'Known area', value: `${n(i.knownArea)} ${areaLabel(i.areaUnit)}` }];
   if (i.shape === 'rectangle')
     return [
-      { label: 'Shape', value: 'Rectangle' },
+      { label: 'Surface shape', value: 'Rectangle' },
       { label: 'Length', value: dim(i.length) },
       { label: 'Width', value: dim(i.width) },
     ];
   if (i.shape === 'square')
     return [
-      { label: 'Shape', value: 'Square' },
+      { label: 'Surface shape', value: 'Square' },
       { label: 'Side', value: dim(i.side) },
     ];
   if (i.shape === 'circle')
     return [
-      { label: 'Shape', value: 'Circle' },
+      { label: 'Surface shape', value: 'Circle' },
       { label: 'Diameter', value: dim(i.diameter) },
     ];
   if (i.shape === 'triangle')
     return [
-      { label: 'Shape', value: 'Triangle' },
+      { label: 'Surface shape', value: 'Triangle' },
       { label: 'Base', value: dim(i.base) },
       { label: 'Perpendicular height', value: dim(i.perpendicularHeight) },
     ];
   if (i.shape === 'trapezoid')
     return [
-      { label: 'Shape', value: 'Trapezoid' },
+      { label: 'Surface shape', value: 'Trapezoid' },
       { label: 'Parallel side A', value: dim(i.sideA) },
       { label: 'Parallel side B', value: dim(i.sideB) },
       { label: 'Perpendicular height', value: dim(i.perpendicularHeight) },
     ];
   return [
-    { label: 'Shape', value: 'Ring / Donut' },
+    { label: 'Surface shape', value: 'Ring / Donut' },
     { label: 'Outer diameter', value: dim(i.outerDiameter) },
     { label: 'Inner diameter', value: dim(i.innerDiameter) },
   ];

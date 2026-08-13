@@ -295,25 +295,27 @@ export default function TileCalculator() {
               ['area', 'Known Area'],
             ]}
           />
-          <label className="grid min-w-0 gap-1 text-xs font-bold">
-            Shape
-            <span className="relative">
-              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft">
-                <ShapeIcon shape={input.shape} />
+          {input.measureMode === 'dimensions' && (
+            <label className="grid min-w-0 gap-1 text-xs font-bold">
+              Surface shape
+              <span className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft">
+                  <ShapeIcon shape={input.shape} />
+                </span>
+                <select
+                  value={input.shape}
+                  onChange={(e) => update('shape', e.target.value as TileShape)}
+                  className={`${ctl()} pl-8`}
+                >
+                  {shapes.map(([v, l]) => (
+                    <option value={v} key={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
               </span>
-              <select
-                value={input.shape}
-                onChange={(e) => update('shape', e.target.value as TileShape)}
-                className={`${ctl()} pl-8`}
-              >
-                {shapes.map(([v, l]) => (
-                  <option value={v} key={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </span>
-          </label>
+            </label>
+          )}
           <Select
             label="Units"
             value={input.measurementSystem}
