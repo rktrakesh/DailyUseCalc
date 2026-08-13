@@ -1,7 +1,7 @@
 ---
 import { ArrowRight, ChevronRight, CircleHelp } from 'lucide-react';
 import AdSlot from '../../components/common/AdSlot.astro';
-import TopsoilCalculator from '../../features/calculators/topsoil/TopsoilCalculator';
+import SandCalculator from '../../features/calculators/sand/SandCalculator';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
   breadcrumbSchema,
@@ -9,64 +9,64 @@ import {
   organizationSchema,
   webApplicationSchema,
 } from '../../lib/seo/schema';
-const title = 'Topsoil Calculator - Cubic Yards, Bags & Cost | DailyUseCalc';
+const title = 'Sand Calculator - Cubic Yards, Tons, Bags & Cost | DailyUseCalc';
 const description =
-  'Calculate topsoil in cubic yards, cubic feet, cubic meters, liters, bags, and bulk orders. Estimate optional supplier weight and material cost.';
+  'Calculate sand in cubic yards, cubic feet, cubic meters, tons, kilograms, and bags. Estimate paver, sandbox, landscaping, bulk orders, and optional material cost.';
 const breadcrumbs = [
   { name: 'Home', path: '/' },
-  { name: 'Landscaping', path: '/calculators/#garden' },
-  { name: 'Topsoil Calculator', path: '/topsoil/' },
+  { name: 'Construction', path: '/calculators/#construction' },
+  { name: 'Sand Calculator', path: '/sand/' },
 ];
 const faqs = [
   {
-    question: 'How much topsoil do I need?',
+    question: 'How much sand do I need?',
     answer:
-      'Measure the area, enter the intended depth and quantity of identical areas, then add any allowance. The calculator converts the resulting volume into cubic yards, cubic feet, cubic meters, liters, bags, and bulk quantities.',
+      'Measure the area, enter depth and quantity, then select allowance and any extra for compaction. The calculator converts required volume into cubic yards, cubic feet, cubic meters, liters, weight, bags, and bulk quantities.',
   },
   {
-    question: 'How do I calculate cubic yards of topsoil?',
+    question: 'How do I calculate cubic yards of sand?',
     answer:
-      'Multiply total area by depth in consistent units to get volume, then divide cubic feet by 27. This calculator performs the unit conversions and applies only the allowance you select.',
+      'Multiply total area by depth in consistent units, then divide cubic feet by 27. Allowance and compaction extras are each calculated from base volume and added without compounding.',
   },
   {
-    question: 'How deep should topsoil be?',
+    question: 'How many tons are in a cubic yard of sand?',
     answer:
-      'Depth depends on the project, existing soil, finished grade, drainage, and planting needs. Enter the depth appropriate for your site; the calculator does not silently choose one.',
+      'Weight varies with moisture, grading, and compaction. Using the calculator planning density of 2,700 pounds per cubic yard, one cubic yard is about 1.35 US short tons; use supplier density when available.',
   },
   {
-    question: 'How many bags of topsoil do I need?',
+    question: 'How many bags of sand do I need?',
     answer:
-      'Enter the bag volume printed on the product. The required volume is divided by bag volume and rounded up because partial retail bags cannot be purchased.',
+      'Choose whether the bag is sold by weight or volume and enter its labeled size. The calculator divides the required weight or volume by that size and rounds up to a whole bag.',
   },
   {
-    question: 'How much area does one cubic yard of topsoil cover?',
+    question: 'How much area does one cubic yard of sand cover?',
     answer:
       'Coverage depends on depth. One cubic yard covers about 324 square feet at 1 inch, 162 square feet at 2 inches, 108 square feet at 3 inches, or 81 square feet at 4 inches.',
   },
   {
-    question: 'Does topsoil weight vary?',
+    question: 'Does sand weight vary?',
     answer:
-      'Yes. Moisture, composition, organic matter, and compaction can materially change topsoil weight.',
+      'Yes. Moisture, grading, compaction, and supplier material can materially change sand density and loaded weight.',
   },
   {
-    question: "Why doesn't the calculator assume one topsoil weight?",
+    question: 'How much sand do I need for pavers?',
     answer:
-      'There is no reliable universal density. Weight is shown only when you enter a density or weight per volume supplied for the material.',
+      'Enter the bedding area and specified compacted depth, then select any explicit allowance or compaction extra. Bedding sand and polymeric joint sand require different calculations; this tool estimates bedding or fill sand, not joint-sand coverage.',
   },
   {
-    question: 'Should I buy bags or bulk topsoil?',
+    question: 'Should I buy bags or bulk sand?',
     answer:
       'Compare quantities, material prices, delivery, supplier minimums, access, and handling. The calculator presents material costs neutrally and does not assume delivery or fees.',
   },
   {
-    question: 'How much extra topsoil should I order?',
+    question: 'Should I add extra for compaction?',
     answer:
-      'Allowance may help cover measurement uncertainty, uneven grading, handling loss, or settling. The appropriate amount depends on the site and supplier, so choose it explicitly.',
+      'Only add a compaction percentage when it is appropriate for the material and installation method. The calculator never selects it automatically, and it adds the percentage to base volume without compounding allowance.',
   },
   {
-    question: 'Can I use the calculator for raised beds?',
+    question: 'Can I use supplier density?',
     answer:
-      'Yes. Enter the bed dimensions, quantity of identical beds, and actual fill depth. Split irregular projects into simple shapes and calculate them separately.',
+      'Yes. Enter supplier density in the available unit and it overrides the transparent planning density for weight only. It never changes area or volume.',
   },
 ];
 const guides = [
@@ -79,16 +79,16 @@ const guides = [
     'Quantity multiplies the area of identical spaces before depth is applied. Enter the actual planned depth. Switching Imperial and Metric preserves the physical measurements.',
   ],
   [
-    'Soil type and allowance',
-    'Soil type provides context only and never changes volume or weight. Extra allowance is transparent and may help with measurement uncertainty, uneven grading, handling loss, or settling.',
+    'Sand type, allowance, and compaction',
+    'Sand type and project provide guidance only. Allowance and compaction are explicit percentages of base volume, added independently without hidden or compounded multipliers.',
   ],
   [
     'Bagged and bulk purchasing',
-    'Bag counts use bag volume and round upward. Bulk quantity uses the exact requirement unless you provide a supplier order increment; then it rounds upward to that increment. Leftover is purchased volume minus required volume.',
+    'Bags may be entered by weight or volume and always round up to whole bags. Bulk may be ordered by volume or weight and stays exact unless you provide an increment.',
   ],
   [
     'Supplier density and weight',
-    'Topsoil weight varies with moisture, composition, organic matter, and compaction, so DailyUseCalc assumes no universal density. No density means no weight result. With supplier density, required weight equals required volume x density, and ordered weight uses the rounded bulk order. Confirm loaded weight and vehicle or trailer payload before hauling.',
+    'The calculator uses a transparent 2,700 lb/cu yd planning density. Supplier density overrides it for weight only. Moisture, grading, and compaction affect actual loaded weight, so confirm supplier figures and payload limits.',
   ],
   [
     'Pricing and comparison',
@@ -96,15 +96,15 @@ const guides = [
   ],
   [
     'Coverage reference',
-    'Coverage per cubic yard equals 27 cubic feet divided by depth in feet. It uses physical depth and excludes allowance; it is a reference, not a reverse calculator.',
+    'Coverage is unit volume divided by physical depth. It excludes allowance and compaction because those extras do not change the physical coverage relationship.',
   ],
   [
     'Worked example',
-    'A 20 ft x 10 ft bed is 200 sq ft. At 4 in deep it has about 66.67 cu ft, or 2.47 cu yd, before allowance. A 5% allowance brings it to 2.59 cu yd; a 0.25-cu-yd increment rounds to 2.75 cu yd. One cu yd covers about 81 sq ft at 4 in. At a supplier-provided 2,200 lb/cu yd density, required weight is about 5,704 lb and ordered weight is 6,050 lb.',
+    'Imperial: 20 ft x 10 ft at 3 in is 50 cu ft or 1.85 cu yd before extras, about 2.50 US tons at the planning density. Metric: 5 m x 4 m at 50 mm is 1 cu m and covers 20 sq m per cubic meter.',
   ],
   [
     'Limitations',
-    'This is a planning estimate. Grade, compaction, moisture, soil composition, installation, supplier quantities, and measurement accuracy can change the final order.',
+    'This is a planning estimate. Moisture, grading, compaction, installation, supplier quantities, and measurement accuracy can change the final order.',
   ],
 ];
 ---
@@ -112,11 +112,11 @@ const guides = [
 <BaseLayout
   title={title}
   description={description}
-  canonicalPath="/topsoil/"
+  canonicalPath="/sand/"
   structuredData={[
     organizationSchema(),
     breadcrumbSchema(breadcrumbs),
-    webApplicationSchema({ name: 'Topsoil Calculator', description, path: '/topsoil/' }),
+    webApplicationSchema({ name: 'Sand Calculator', description, path: '/sand/' }),
     faqPageSchema(faqs),
   ]}
 >
@@ -135,13 +135,14 @@ const guides = [
     </nav>
     <div class="mt-3 max-w-2xl">
       <h1 class="text-balance text-3xl font-extrabold tracking-[-.05em] text-ink sm:text-4xl">
-        Topsoil Calculator
+        Sand Calculator
       </h1><p class="mt-1.5 text-sm leading-5 text-ink-soft">
-        Calculate topsoil volume in cubic yards, cubic feet, cubic meters, liters, bags, and bulk
-        quantities for gardens, lawns, raised beds, and landscaping.
+        Calculate how much sand you need in cubic yards, cubic feet, cubic meters, tons, kilograms,
+        bags, and bulk quantities for pavers, sandboxes, landscaping, leveling, pool bases, and
+        more.
       </p><a
         href="#user-guide"
-        data-topsoil-guide
+        data-sand-guide
         class="mt-2 inline-flex rounded text-sm font-semibold text-brand hover:underline"
         >User Guide</a
       >
@@ -149,9 +150,9 @@ const guides = [
     <div
       class="mt-3 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_18rem]"
     >
-      <div><TopsoilCalculator client:load /><AdSlot class="mt-5 min-h-24 lg:hidden" /></div><aside
+      <div><SandCalculator client:load /><AdSlot class="mt-5 min-h-24 lg:hidden" /></div><aside
         class="hidden space-y-3 lg:-mt-[5.75rem] lg:block"
-        aria-label="Topsoil calculator resources"
+        aria-label="Sand calculator resources"
       >
         <AdSlot class="min-h-44 xl:min-h-60" /><section
           class="rounded-card border border-line bg-panel p-5 shadow-card"
@@ -159,27 +160,27 @@ const guides = [
           <h2 class="text-base font-extrabold">Related calculators</h2><ul
             class="mt-4 space-y-3 text-sm font-semibold text-brand"
           >
-            <li><a href="/mulch/">Mulch Calculator</a></li><li>
-              <a href="/gravel/">Gravel Calculator</a>
-            </li><li><a href="/concrete/">Concrete Calculator</a></li><li>
-              <a href="/sand/">Sand Calculator</a>
+            <li><a href="/gravel/">Gravel Calculator</a></li><li>
+              <a href="/concrete/">Concrete Calculator</a>
+            </li><li><a href="/mulch/">Mulch Calculator</a></li><li>
+              <a href="/topsoil/">Topsoil Calculator</a>
             </li>
           </ul>
         </section><section class="rounded-card border border-line bg-panel p-4 shadow-card">
           <h2 class="text-sm font-extrabold">Browse by category</h2><a
             class="mt-2 block text-xs font-semibold text-brand"
-            href="/calculators/#garden">Garden & Landscaping</a
-          ><a class="mt-3 block text-xs font-semibold text-brand" href="/calculators/#construction"
-            >Construction</a
+            href="/calculators/#construction">Construction</a
+          ><a class="mt-3 block text-xs font-semibold text-brand" href="/calculators/#garden"
+            >Garden & Landscaping</a
           >
         </section>
       </aside>
     </div>
     <section id="user-guide" class="mt-16 scroll-mt-24 border-t border-line pt-12">
-      <p class="text-sm font-bold text-brand">Topsoil planning guide</p><h2
+      <p class="text-sm font-bold text-brand">Sand planning guide</p><h2
         class="mt-1 text-3xl font-extrabold tracking-[-.045em]"
       >
-        Topsoil Calculator User Guide
+        Sand Calculator User Guide
       </h2><div class="mt-6 grid gap-6 text-sm leading-6 text-ink-soft md:grid-cols-2">
         {
           guides.map(([heading, content]) => (
@@ -194,7 +195,7 @@ const guides = [
       </div>
     </section>
     <section class="mt-16 border-t border-line pt-12">
-      <h2 class="text-3xl font-extrabold tracking-[-.045em]">Topsoil calculator questions</h2><div
+      <h2 class="text-3xl font-extrabold tracking-[-.045em]">Sand calculator questions</h2><div
         class="mt-7 grid gap-3 lg:grid-cols-2"
       >
         {
@@ -225,10 +226,10 @@ const guides = [
 </BaseLayout>
 <script>
   import { trackCalculatorEvent } from '../../lib/analytics/calculatorAnalytics';
-  document.querySelector('[data-topsoil-guide]')?.addEventListener('click', () =>
+  document.querySelector('[data-sand-guide]')?.addEventListener('click', () =>
     trackCalculatorEvent('calculator_guide', {
-      calculator_id: 'topsoil',
-      calculator_name: 'Topsoil Calculator',
+      calculator_id: 'sand',
+      calculator_name: 'Sand Calculator',
     }),
   );
 </script>

@@ -69,6 +69,15 @@ export const calculatorListings: CalculatorListing[] = [
     status: 'available',
   },
   {
+    id: 'sand',
+    name: 'Sand Calculator',
+    category: 'Construction',
+    href: '/sand/',
+    description: 'Volume, tons, bags & cost',
+    keywords: ['sand', 'pavers', 'sandbox', 'tons', 'bags', 'bulk'],
+    status: 'available',
+  },
+  {
     id: 'paint',
     name: 'Paint Calculator',
     category: 'Home Improvement',
@@ -86,13 +95,6 @@ export const calculatorListings: CalculatorListing[] = [
     status: 'coming-soon',
   },
   ...[
-    [
-      'sand',
-      'Sand Calculator',
-      'Construction',
-      'Volume · weight · cost',
-      ['sand', 'concrete', 'base'],
-    ],
     [
       'rebar',
       'Rebar Calculator',
