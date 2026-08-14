@@ -11,6 +11,7 @@ import {
   Share2,
 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import {
   createCalculatorStartedTracker,
@@ -584,7 +585,7 @@ function NumberField({
           step={step}
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -628,7 +629,7 @@ function DimensionField({
           step="any"
           value={Number.isFinite(input.value) ? input.value : ''}
           onChange={(event) => onChange({ ...input, value: numberFromEvent(event) })}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -686,7 +687,7 @@ function OptionalNumberField({
           value={value ?? ''}
           placeholder="Optional"
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -740,7 +741,7 @@ function OptionalNumberWithUnitField({
           value={value === undefined ? '' : Number(value.toPrecision(10))}
           placeholder={required ? 'Required' : 'Optional'}
           onChange={(event) => onValueChange(optionalNumberFromEvent(event))}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
           required={required}

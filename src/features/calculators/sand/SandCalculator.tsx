@@ -1,6 +1,7 @@
-import { useId, useRef, useState, type ChangeEvent, type ReactNode, type WheelEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Calculator, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import {
   createCalculatorStartedTracker,
   trackCalculatorEvent,
@@ -27,14 +28,6 @@ const number = (event: ChangeEvent<HTMLInputElement>) =>
   event.target.value === '' ? Number.NaN : event.target.valueAsNumber;
 const optional = (event: ChangeEvent<HTMLInputElement>) =>
   event.target.value === '' ? undefined : event.target.valueAsNumber;
-const wheel = (event: WheelEvent<HTMLInputElement>) => {
-  const input = event.currentTarget,
-    readOnly = input.readOnly;
-  input.readOnly = true;
-  requestAnimationFrame(() => {
-    input.readOnly = readOnly;
-  });
-};
 const control = (invalid = false) =>
   `h-11 w-full rounded-control border bg-panel px-2.5 text-sm text-ink outline-none focus:border-brand sm:h-9 ${invalid ? 'border-danger' : 'border-line'}`;
 const n = (value: number, digits = 2) =>
@@ -735,7 +728,7 @@ function NumberField({
           step={step}
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
-          onWheel={wheel}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
           className="h-11 min-w-0 bg-transparent px-2.5 text-sm text-ink outline-none sm:h-9"

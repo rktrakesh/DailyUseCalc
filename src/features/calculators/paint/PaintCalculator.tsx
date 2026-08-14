@@ -6,10 +6,10 @@ import {
   useState,
   type ChangeEvent,
   type ReactNode,
-  type WheelEvent,
 } from 'react';
 import { Calculator, ChevronDown, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import {
   createCalculatorStartedTracker,
@@ -39,14 +39,6 @@ import { createPaintEstimateReport } from './paintReport';
 const num = (e: ChangeEvent<HTMLInputElement>) =>
   Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : Number.NaN;
 const optional = (e: ChangeEvent<HTMLInputElement>) => (e.target.value === '' ? undefined : num(e));
-const preserveNumberOnWheel = (event: WheelEvent<HTMLInputElement>) => {
-  const field = event.currentTarget;
-  const wasReadOnly = field.readOnly;
-  field.readOnly = true;
-  requestAnimationFrame(() => {
-    field.readOnly = wasReadOnly;
-  });
-};
 const fmt = (v: number, d = 2) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v);
 const control = (bad = false) =>
@@ -649,7 +641,7 @@ function NumberField({
         <input
           type="number"
           inputMode="decimal"
-          onWheel={preserveNumberOnWheel}
+          onWheel={preserveNumberInputOnWheel}
           min={min}
           max={max}
           step={step ?? 'any'}
@@ -701,7 +693,7 @@ function Dimension({
           type="number"
           inputMode="decimal"
           step="any"
-          onWheel={preserveNumberOnWheel}
+          onWheel={preserveNumberInputOnWheel}
           value={Number.isFinite(value.value) ? value.value : ''}
           onChange={(event) => onChange({ ...value, value: num(event) })}
           aria-invalid={Boolean(error)}

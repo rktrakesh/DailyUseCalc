@@ -11,6 +11,7 @@ import {
   Share2,
 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
@@ -702,7 +703,7 @@ function NumberField({
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -752,7 +753,7 @@ function OptionalNumberField({
           value={value ?? ''}
           placeholder="Optional"
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -803,7 +804,7 @@ function UnitNumberField({
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={(event) => onValueChange(numberFromEvent(event))}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
