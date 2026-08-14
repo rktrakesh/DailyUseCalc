@@ -11,6 +11,7 @@ import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel'
 import { currencies, formatMoney, isCurrencyCode } from '../gravel/currencies';
 import {
   calculateTile,
+  convertTileMeasurementSystem,
   createClearedTileInput,
   createDefaultTileInput,
   createTileEstimateReport,
@@ -154,53 +155,7 @@ export default function TileCalculator() {
   const metric = input.measurementSystem === 'metric';
   const switchSystem = (next: TileInput['measurementSystem']) => {
     if (next === input.measurementSystem) return;
-    const toMetric = next === 'metric';
-    const lengthFactor = toMetric ? 0.3048 : 3.280839895;
-    const areaFactor = toMetric ? 0.09290304 : 10.7639104167;
-    const tileFactor = toMetric ? 25.4 : 1 / 25.4;
-    const convertedValue = (value: number, factor: number) =>
-      Number.isFinite(value) ? Number((value * factor).toFixed(6)) : value;
-    const convertDimension = (d: Dimension): Dimension => ({
-      value: convertedValue(d.value, lengthFactor),
-      unit: toMetric ? 'm' : 'ft',
-    });
-    const dimensions = [
-      'length',
-      'width',
-      'side',
-      'diameter',
-      'base',
-      'perpendicularHeight',
-      'sideA',
-      'sideB',
-      'outerDiameter',
-      'innerDiameter',
-    ] as const;
-    setInput((current) => {
-      const converted = { ...current };
-      for (const field of dimensions) converted[field] = convertDimension(current[field]);
-      return {
-        ...converted,
-        measurementSystem: next,
-        knownArea: convertedValue(current.knownArea, areaFactor),
-        areaUnit: toMetric ? 'sq-m' : 'sq-ft',
-        tileLength: convertedValue(current.tileLength, tileFactor),
-        tileWidth: convertedValue(current.tileWidth, tileFactor),
-        tileUnit: toMetric ? 'mm' : 'in',
-        groutGap: convertedValue(current.groutGap, tileFactor),
-        groutUnit: toMetric ? 'mm' : 'in',
-        excludedArea:
-          current.excludedArea === undefined
-            ? undefined
-            : convertedValue(current.excludedArea, areaFactor),
-        excludedAreaUnit: toMetric ? 'sq-m' : 'sq-ft',
-        manufacturerCoverage:
-          current.manufacturerCoverage === undefined
-            ? undefined
-            : convertedValue(current.manufacturerCoverage, areaFactor),
-        manufacturerCoverageUnit: toMetric ? 'sq-m' : 'sq-ft',
-      };
-    });
+    setInput((current) => convertTileMeasurementSystem(current, next));
   };
   const dim = (field: keyof TileInput, label: string, d: Dimension) => (
     <Field label={label} error={error(String(field))}>
