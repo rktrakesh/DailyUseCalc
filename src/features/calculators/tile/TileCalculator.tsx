@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Calculator, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import {
   createCalculatorStartedTracker,
   trackCalculatorEvent,
@@ -80,7 +81,7 @@ export default function TileCalculator() {
   const calc = () => {
     const x = validateTileInput(input);
     setIssues(x);
-    if (x.length) {
+    if (invalidateSubmittedResultOnValidationFailure(x, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),

@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Calculator, Copy, Download, Printer, RotateCcw, Share2 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import {
   createCalculatorStartedTracker,
@@ -70,7 +71,7 @@ export default function TopsoilCalculator() {
   const calculate = () => {
     const next = validateTopsoilInput(input);
     setIssues(next);
-    if (next.length) {
+    if (invalidateSubmittedResultOnValidationFailure(next, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),

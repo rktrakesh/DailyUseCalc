@@ -11,6 +11,7 @@ import {
   Share2,
 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
@@ -159,7 +160,7 @@ export default function GravelCalculator() {
   function calculateEstimate() {
     const issues = validateGravelInput(input);
     setValidationIssues(issues);
-    if (issues.length) {
+    if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),

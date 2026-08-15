@@ -11,6 +11,7 @@ import {
   Share2,
 } from 'lucide-react';
 import type { LengthUnit } from '../../../lib/units/measurements';
+import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import {
@@ -113,7 +114,7 @@ export default function ConcreteCalculator() {
   function calculateEstimate() {
     const next = validateConcreteInput(input);
     setIssues(next);
-    if (next.length) {
+    if (invalidateSubmittedResultOnValidationFailure(next, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
