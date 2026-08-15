@@ -4,4 +4,5 @@ export * from './formDefaults';
 export * from './formUnits';
 export * from './validation';
 export * from './estimateSummary';
+export * from './resultPresentation';
 export * from './tileReport';

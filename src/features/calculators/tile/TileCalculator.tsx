@@ -19,6 +19,7 @@ import {
   createTileEstimateText,
   projectLabel,
   patternLabel,
+  createTilePurchasingMetrics,
   squareFeetToArea,
   validateTileInput,
   type AreaUnit,
@@ -668,6 +669,7 @@ function Result({
   pdf: boolean;
 }) {
   const metric = input.measurementSystem === 'metric';
+  const purchasingMetrics = createTilePurchasingMetrics(input, result);
   return (
     <section
       className="rounded-card border border-brand/30 bg-brand-soft p-3 shadow-card sm:p-4"
@@ -687,9 +689,9 @@ function Result({
         />
         <Metric label="Base estimate" value={`${n(result.rawTiles)} tiles`} />
         <Metric label="Waste allowance" value={`${input.wastePercent}%`} />
-        {result.boxesRequired !== undefined && (
-          <Metric label="Boxes required" value={String(result.boxesRequired)} />
-        )}{' '}
+        {purchasingMetrics.map((item) => (
+          <Metric key={item.label} label={item.label} value={item.value} />
+        ))}
         {result.estimatedCost !== undefined && (
           <Metric
             label="Estimated material cost"
