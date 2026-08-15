@@ -3,7 +3,15 @@ import { ArrowRight, ChevronRight, CircleHelp, Lightbulb } from 'lucide-react';
 import AdSlot from '../../components/common/AdSlot.astro';
 import GravelCalculator from '../../features/calculators/gravel/GravelCalculator';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { breadcrumbSchema, organizationSchema } from '../../lib/seo/schema';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+
+const description =
+  'Calculate gravel in cubic yards, tons, bags, and cost. Enter dimensions, depth, and allowance for driveways, paths, and landscaping.';
 
 const faqs = [
   {
@@ -34,12 +42,17 @@ const breadcrumbItems = [
   { name: 'Gravel Calculator', path: '/gravel/' },
 ];
 
-const structuredData = [organizationSchema(), breadcrumbSchema(breadcrumbItems)];
+const structuredData = [
+  organizationSchema(),
+  breadcrumbSchema(breadcrumbItems),
+  webApplicationSchema({ name: 'Gravel Calculator', description, path: '/gravel/' }),
+  faqPageSchema(faqs),
+];
 ---
 
 <BaseLayout
   title="Gravel Calculator – Cubic Yards, Tons & Bags | DailyUseCalc"
-  description="Calculate gravel in cubic yards, tons, bags, and cost. Enter dimensions, depth, and allowance for driveways, paths, and landscaping."
+  description={description}
   canonicalPath="/gravel/"
   structuredData={structuredData}
 >
