@@ -10,6 +10,7 @@ import {
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { currencies, formatMoney, isCurrencyCode } from '../gravel/currencies';
+import { createValidationAssociation } from './validationAccessibility';
 import {
   calculateTile,
   convertTileMeasurementSystem,
@@ -35,6 +36,8 @@ const ctl = (bad = false) =>
   `h-11 w-full rounded-control border bg-panel px-2.5 text-sm text-ink outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30 sm:h-9 ${bad ? 'border-danger' : 'border-line'}`;
 const n = (v: number, d = 2) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v);
+const controlId = (field: string) =>
+  `tile-${field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
 const projects = [
   ['floor', 'Floor'],
   ['wall', 'Wall'],
@@ -160,42 +163,47 @@ export default function TileCalculator() {
     setInput((current) => convertTileMeasurementSystem(current, next));
   };
   const dim = (field: keyof TileInput, label: string, d: Dimension) => (
-    <Field label={label} error={error(String(field))}>
-      <div className="grid grid-cols-[1fr_4.5rem] gap-1">
-        <input
-          name={String(field)}
-          type="number"
-          inputMode="decimal"
-          value={Number.isNaN(d.value) ? '' : d.value}
-          onChange={(e) => update(field, { ...d, value: num(e) } as never)}
-          onWheel={preserveNumberInputOnWheel}
-          aria-invalid={!!error(String(field))}
-          className={ctl(!!error(String(field)))}
-        />
-        <select
-          aria-label={`${label} unit`}
-          value={d.unit}
-          onChange={(e) => update(field, { ...d, unit: e.target.value } as never)}
-          className={ctl()}
-        >
-          {(metric ? ['mm', 'cm', 'm'] : ['in', 'ft', 'yd']).map((u) => (
-            <option key={u}>{u}</option>
-          ))}
-        </select>
-      </div>
+    <Field id={controlId(String(field))} label={label} error={error(String(field))}>
+      {(controlProps) => (
+        <div className="grid grid-cols-[1fr_4.5rem] gap-1">
+          <input
+            {...controlProps}
+            name={String(field)}
+            type="number"
+            inputMode="decimal"
+            value={Number.isNaN(d.value) ? '' : d.value}
+            onChange={(e) => update(field, { ...d, value: num(e) } as never)}
+            onWheel={preserveNumberInputOnWheel}
+            className={ctl(!!error(String(field)))}
+          />
+          <select
+            aria-label={`${label} unit`}
+            value={d.unit}
+            onChange={(e) => update(field, { ...d, unit: e.target.value } as never)}
+            className={ctl()}
+          >
+            {(metric ? ['mm', 'cm', 'm'] : ['in', 'ft', 'yd']).map((u) => (
+              <option key={u}>{u}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </Field>
   );
   const geometry =
     input.measureMode === 'area' ? (
-      <Field label="Known area" error={error('knownArea')}>
-        <UnitNumber
-          value={input.knownArea}
-          onValue={(v) => update('knownArea', v ?? Number.NaN)}
-          unit={input.areaUnit}
-          onUnit={(v) => update('areaUnit', v as AreaUnit)}
-          units={areaUnits(metric)}
-          error={!!error('knownArea')}
-        />
+      <Field id="tile-known-area" label="Known area" error={error('knownArea')}>
+        {(controlProps) => (
+          <UnitNumber
+            controlProps={controlProps}
+            value={input.knownArea}
+            onValue={(v) => update('knownArea', v ?? Number.NaN)}
+            unit={input.areaUnit}
+            onUnit={(v) => update('areaUnit', v as AreaUnit)}
+            units={areaUnits(metric)}
+            error={!!error('knownArea')}
+          />
+        )}
       </Field>
     ) : input.shape === 'rectangle' ? (
       <>
@@ -279,43 +287,52 @@ export default function TileCalculator() {
         <h2 className="mt-3 text-xs font-extrabold uppercase text-brand">Measurements</h2>
         <div className="mt-2 grid gap-2.5 sm:grid-cols-2 @2xl/calculator:grid-cols-3">
           {geometry}
-          <Field label="Quantity (identical areas)" error={error('quantity')}>
-            <input
-              name="quantity"
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              value={input.quantity}
-              onChange={(e) => update('quantity', num(e))}
-              onWheel={preserveNumberInputOnWheel}
-              className={ctl(!!error('quantity'))}
-            />
+          <Field id="tile-quantity" label="Quantity (identical areas)" error={error('quantity')}>
+            {(controlProps) => (
+              <input
+                {...controlProps}
+                name="quantity"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                value={input.quantity}
+                onChange={(e) => update('quantity', num(e))}
+                onWheel={preserveNumberInputOnWheel}
+                className={ctl(!!error('quantity'))}
+              />
+            )}
           </Field>
         </div>
         <h2 className="mt-3 text-xs font-extrabold uppercase text-brand">Tile & layout</h2>
         <div className="mt-2 grid grid-cols-2 gap-2.5 @2xl/calculator:grid-cols-4">
-          <Field label="Tile length" error={error('tileLength')}>
-            <input
-              name="tileLength"
-              type="number"
-              inputMode="decimal"
-              value={Number.isNaN(input.tileLength) ? '' : input.tileLength}
-              onChange={(e) => update('tileLength', num(e))}
-              onWheel={preserveNumberInputOnWheel}
-              className={ctl(!!error('tileLength'))}
-            />
+          <Field id="tile-tile-length" label="Tile length" error={error('tileLength')}>
+            {(controlProps) => (
+              <input
+                {...controlProps}
+                name="tileLength"
+                type="number"
+                inputMode="decimal"
+                value={Number.isNaN(input.tileLength) ? '' : input.tileLength}
+                onChange={(e) => update('tileLength', num(e))}
+                onWheel={preserveNumberInputOnWheel}
+                className={ctl(!!error('tileLength'))}
+              />
+            )}
           </Field>
-          <Field label="Tile width" error={error('tileWidth')}>
-            <input
-              name="tileWidth"
-              type="number"
-              inputMode="decimal"
-              value={Number.isNaN(input.tileWidth) ? '' : input.tileWidth}
-              onChange={(e) => update('tileWidth', num(e))}
-              onWheel={preserveNumberInputOnWheel}
-              className={ctl(!!error('tileWidth'))}
-            />
+          <Field id="tile-tile-width" label="Tile width" error={error('tileWidth')}>
+            {(controlProps) => (
+              <input
+                {...controlProps}
+                name="tileWidth"
+                type="number"
+                inputMode="decimal"
+                value={Number.isNaN(input.tileWidth) ? '' : input.tileWidth}
+                onChange={(e) => update('tileWidth', num(e))}
+                onWheel={preserveNumberInputOnWheel}
+                className={ctl(!!error('tileWidth'))}
+              />
+            )}
           </Field>
           <Select
             label="Tile unit"
@@ -333,22 +350,25 @@ export default function TileCalculator() {
                   ]) as readonly (readonly [string, string])[]
             }
           />
-          <Field label="Grout gap">
-            <div className="grid grid-cols-[1fr_4.5rem] gap-1">
-              <input
-                name="groutGap"
-                type="number"
-                min="0"
-                inputMode="decimal"
-                value={input.groutGap}
-                onChange={(e) => update('groutGap', num(e))}
-                onWheel={preserveNumberInputOnWheel}
-                className={ctl(!!error('groutGap'))}
-              />
-              <span className="grid place-items-center rounded-control border border-line bg-panel-muted text-xs">
-                {input.groutUnit}
-              </span>
-            </div>
+          <Field id="tile-grout-gap" label="Grout gap" error={error('groutGap')}>
+            {(controlProps) => (
+              <div className="grid grid-cols-[1fr_4.5rem] gap-1">
+                <input
+                  {...controlProps}
+                  name="groutGap"
+                  type="number"
+                  min="0"
+                  inputMode="decimal"
+                  value={input.groutGap}
+                  onChange={(e) => update('groutGap', num(e))}
+                  onWheel={preserveNumberInputOnWheel}
+                  className={ctl(!!error('groutGap'))}
+                />
+                <span className="grid place-items-center rounded-control border border-line bg-panel-muted text-xs">
+                  {input.groutUnit}
+                </span>
+              </div>
+            )}
           </Field>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Tile size presets">
@@ -410,18 +430,21 @@ export default function TileCalculator() {
             onChange={(v) => update('pattern', v as TileInput['pattern'])}
             options={patterns}
           />
-          <Field label="Waste allowance (%)" error={error('wastePercent')}>
-            <input
-              name="wastePercent"
-              type="number"
-              min="0"
-              max="100"
-              inputMode="decimal"
-              value={input.wastePercent}
-              onChange={(e) => update('wastePercent', num(e))}
-              onWheel={preserveNumberInputOnWheel}
-              className={ctl(!!error('wastePercent'))}
-            />
+          <Field id="tile-waste-percent" label="Waste allowance (%)" error={error('wastePercent')}>
+            {(controlProps) => (
+              <input
+                {...controlProps}
+                name="wastePercent"
+                type="number"
+                min="0"
+                max="100"
+                inputMode="decimal"
+                value={input.wastePercent}
+                onChange={(e) => update('wastePercent', num(e))}
+                onWheel={preserveNumberInputOnWheel}
+                className={ctl(!!error('wastePercent'))}
+              />
+            )}
           </Field>
         </div>
         <p className="mt-1 text-xs text-ink-soft">
@@ -437,15 +460,22 @@ export default function TileCalculator() {
         </p>
         <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
           <Optional title="Excluded area (optional)">
-            <Field label="Total excluded area" error={error('excludedArea')}>
-              <UnitNumber
-                value={input.excludedArea}
-                onValue={(v) => update('excludedArea', v)}
-                unit={input.excludedAreaUnit}
-                onUnit={(v) => update('excludedAreaUnit', v as AreaUnit)}
-                units={areaUnits(metric)}
-                error={!!error('excludedArea')}
-              />
+            <Field
+              id="tile-excluded-area"
+              label="Total excluded area"
+              error={error('excludedArea')}
+            >
+              {(controlProps) => (
+                <UnitNumber
+                  controlProps={controlProps}
+                  value={input.excludedArea}
+                  onValue={(v) => update('excludedArea', v)}
+                  unit={input.excludedAreaUnit}
+                  onUnit={(v) => update('excludedAreaUnit', v as AreaUnit)}
+                  units={areaUnits(metric)}
+                  error={!!error('excludedArea')}
+                />
+              )}
             </Field>
             <p className="text-xs text-ink-soft">
               Windows, doors, cabinets, fixtures, or other areas that will not be tiled.
@@ -462,28 +492,38 @@ export default function TileCalculator() {
               ]}
             />
             {input.boxMode === 'tiles' ? (
-              <Field label="Tiles per box" error={error('tilesPerBox')}>
-                <input
-                  name="tilesPerBox"
-                  type="number"
-                  inputMode="numeric"
-                  value={input.tilesPerBox ?? ''}
-                  onChange={(e) => update('tilesPerBox', opt(e))}
-                  onWheel={preserveNumberInputOnWheel}
-                  className={ctl(!!error('tilesPerBox'))}
-                />
+              <Field id="tile-tiles-per-box" label="Tiles per box" error={error('tilesPerBox')}>
+                {(controlProps) => (
+                  <input
+                    {...controlProps}
+                    name="tilesPerBox"
+                    type="number"
+                    inputMode="numeric"
+                    value={input.tilesPerBox ?? ''}
+                    onChange={(e) => update('tilesPerBox', opt(e))}
+                    onWheel={preserveNumberInputOnWheel}
+                    className={ctl(!!error('tilesPerBox'))}
+                  />
+                )}
               </Field>
             ) : (
               <>
-                <Field label="Manufacturer box coverage" error={error('manufacturerCoverage')}>
-                  <UnitNumber
-                    value={input.manufacturerCoverage}
-                    onValue={(v) => update('manufacturerCoverage', v)}
-                    unit={input.manufacturerCoverageUnit}
-                    onUnit={(v) => update('manufacturerCoverageUnit', v as AreaUnit)}
-                    units={areaUnits(metric)}
-                    error={!!error('manufacturerCoverage')}
-                  />
+                <Field
+                  id="tile-manufacturer-coverage"
+                  label="Manufacturer box coverage"
+                  error={error('manufacturerCoverage')}
+                >
+                  {(controlProps) => (
+                    <UnitNumber
+                      controlProps={controlProps}
+                      value={input.manufacturerCoverage}
+                      onValue={(v) => update('manufacturerCoverage', v)}
+                      unit={input.manufacturerCoverageUnit}
+                      onUnit={(v) => update('manufacturerCoverageUnit', v as AreaUnit)}
+                      units={areaUnits(metric)}
+                      error={!!error('manufacturerCoverage')}
+                    />
+                  )}
                 </Field>
                 <p className="text-xs font-semibold text-brand">
                   Manufacturer coverage overrides calculated box coverage for purchasing.
@@ -494,6 +534,8 @@ export default function TileCalculator() {
           <Optional title="Pricing (optional)">
             <Select
               label="Price basis"
+              id="tile-price-basis"
+              error={error('priceBasis')}
               value={input.priceBasis}
               onChange={(v) => update('priceBasis', v as TileInput['priceBasis'])}
               options={
@@ -507,16 +549,19 @@ export default function TileCalculator() {
                 ] as [string, string][]
               }
             />
-            <Field label="Price" error={error('price')}>
-              <input
-                name="price"
-                type="number"
-                inputMode="decimal"
-                value={input.price ?? ''}
-                onChange={(e) => update('price', opt(e))}
-                onWheel={preserveNumberInputOnWheel}
-                className={ctl(!!error('price'))}
-              />
+            <Field id="tile-price" label="Price" error={error('price')}>
+              {(controlProps) => (
+                <input
+                  {...controlProps}
+                  name="price"
+                  type="number"
+                  inputMode="decimal"
+                  value={input.price ?? ''}
+                  onChange={(e) => update('price', opt(e))}
+                  onWheel={preserveNumberInputOnWheel}
+                  className={ctl(!!error('price'))}
+                />
+              )}
             </Field>
             <Select
               label="Currency"
@@ -564,34 +609,62 @@ export default function TileCalculator() {
     </div>
   );
 }
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+interface ValidationControlProps {
+  id: string;
+  'aria-invalid': boolean;
+  'aria-describedby'?: string;
+}
+
+function Field({
+  id,
+  label,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  children: (props: ValidationControlProps) => ReactNode;
+}) {
+  const association = createValidationAssociation(id, error);
   return (
-    <label className="grid min-w-0 gap-1 text-xs font-bold">
-      {label}
-      {children}
-      {error && <span className="font-medium text-danger">{error}</span>}
-    </label>
+    <div className="grid min-w-0 gap-1 text-xs font-bold">
+      <label htmlFor={id}>{label}</label>
+      {children(association.control)}
+      {error && (
+        <span id={association.error!.id} className="font-medium text-danger">
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
 function Select({
+  id,
   label,
   value,
   onChange,
   options,
+  error,
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: readonly (readonly [string, string])[];
+  error?: string;
 }) {
+  const selectId = id ?? `tile-${label.toLowerCase().replaceAll(' ', '-')}`;
+  const association = createValidationAssociation(selectId, error);
   return (
-    <label className="grid min-w-0 gap-1 text-xs font-bold">
-      {label}
+    <div className="grid min-w-0 gap-1 text-xs font-bold">
+      <label htmlFor={selectId}>{label}</label>
       <select
+        {...association.control}
         name={label.toLowerCase().replaceAll(' ', '-')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={ctl()}
+        className={ctl(Boolean(error))}
       >
         {options.map(([v, l]) => (
           <option value={v} key={v}>
@@ -599,10 +672,16 @@ function Select({
           </option>
         ))}
       </select>
-    </label>
+      {error && (
+        <span id={association.error!.id} className="font-medium text-danger">
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
 function UnitNumber({
+  controlProps,
   value,
   onValue,
   unit,
@@ -610,6 +689,7 @@ function UnitNumber({
   units,
   error,
 }: {
+  controlProps: ValidationControlProps;
   value: number | undefined;
   onValue: (v: number | undefined) => void;
   unit: string;
@@ -620,13 +700,13 @@ function UnitNumber({
   return (
     <div className="grid grid-cols-[1fr_5rem] gap-1">
       <input
+        {...controlProps}
         type="number"
         inputMode="decimal"
         value={value === undefined || Number.isNaN(value) ? '' : value}
         onChange={(e) => onValue(opt(e))}
         onWheel={preserveNumberInputOnWheel}
         className={ctl(error)}
-        aria-invalid={error}
       />
       <select
         aria-label="Area unit"
