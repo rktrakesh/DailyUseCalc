@@ -4,6 +4,27 @@ import { createClearedSandInput, createDefaultSandInput } from './formDefaults';
 import { convertSandMeasurementSystem } from './formUnits';
 import { validateSandInput } from './validation';
 
+it('rejects sand purchasing counts above the supported quotient', () => {
+  const input = createDefaultSandInput();
+  input.bagSize = 1e-9;
+  expect(validateSandInput(input)).toContainEqual(expect.objectContaining({ field: 'bagSize' }));
+
+  const tinyIncrement = createDefaultSandInput();
+  tinyIncrement.measureMode = 'area';
+  tinyIncrement.knownArea = 1e-99;
+  tinyIncrement.depth = { value: 12, unit: 'in' };
+  tinyIncrement.allowancePercent = 0;
+  tinyIncrement.compactionPercent = 0;
+  tinyIncrement.bulkIncrement = 1e-101;
+  expect(validateSandInput(tinyIncrement)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const valid = createDefaultSandInput();
+  expect(validateSandInput(valid)).toEqual([]);
+  expect(() => calculateSand(valid)).not.toThrow();
+});
+
 describe('sand calculator', () => {
   it('matches truth case A', () => {
     const input = createDefaultSandInput();
@@ -41,6 +62,20 @@ describe('sand calculator', () => {
     expect(r.bagPurchasedAmount).toBe(5040);
     expect(r.bagLeftoverAmount).toBeCloseTo(40);
   });
+  it('distinguishes bag-count floating noise from genuine excess', () => {
+    const input = createDefaultSandInput();
+    input.length.value = 4;
+    input.width.value = 1;
+    input.depth.value = 3;
+    input.allowancePercent = 10;
+    input.compactionPercent = 10;
+    input.bagBasis = 'weight';
+    input.bagUnit = 'lb';
+    input.bagSize = 60;
+    expect(calculateSand(input).bagsRequired).toBe(2);
+    input.length.value = 4.0004;
+    expect(calculateSand(input).bagsRequired).toBe(3);
+  });
   it('rounds volume bulk and preserves required versus ordered weight', () => {
     const input = createDefaultSandInput();
     input.allowancePercent = 0;
@@ -50,6 +85,22 @@ describe('sand calculator', () => {
     expect(r.bulkLeftoverAmount).toBeCloseTo(0.14814815);
     expect(r.requiredWeight.pounds).toBeCloseTo(5000);
     expect(r.orderedWeight?.pounds).toBeCloseTo(5400);
+  });
+  it('does not over-order a realistic noisy increment and rounds genuine excess upward', () => {
+    const input = createDefaultSandInput();
+    input.length.value = 4;
+    input.width.value = 1;
+    input.depth.value = 3;
+    input.allowancePercent = 10;
+    input.compactionPercent = 10;
+    input.bulkBasis = 'volume';
+    input.bulkUnit = 'cu-ft';
+    input.bulkIncrement = 0.1;
+    const noiseBoundary = calculateSand(input);
+    expect(noiseBoundary.requiredCubicFeet).toBe(1.2000000000000002);
+    expect(noiseBoundary.bulkOrderAmount).toBe(1.2);
+    input.length.value = 4.0004;
+    expect(calculateSand(input).bulkOrderAmount).toBe(1.3);
   });
   it('rounds weight bulk', () => {
     const input = createDefaultSandInput();

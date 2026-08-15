@@ -1,4 +1,6 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import { SQUARE_FEET_PER_SQUARE_METER, US_GALLON_LITERS } from './constants';
 import type { DimensionInput, PaintInput, PaintValidationIssue } from './types';
 const MAX_DIMENSION_FT = 100000,
   MAX_QUANTITY = 10000,
@@ -133,6 +135,62 @@ export function validatePaintInput(input: PaintInput): PaintValidationIssue[] {
         field: 'openings',
         message: 'Door and window openings must be smaller than the total gross wall area.',
       });
+    else if (
+      !issues.some((issue) =>
+        ['coats', 'coverageSquareFeetPerGallon', 'allowancePercent'].includes(String(issue.field)),
+      )
+    ) {
+      const coverage =
+        input.measurementSystem === 'metric'
+          ? input.coverageSquareFeetPerGallon * SQUARE_FEET_PER_SQUARE_METER * US_GALLON_LITERS
+          : input.coverageSquareFeetPerGallon;
+      const requiredWallGallons =
+        (((gross - openings) * input.coats) / coverage) * (1 + input.allowancePercent / 100);
+      const unsupportedFinishPurchase = !isSupportedPurchaseQuotient(requiredWallGallons, 0.25);
+      const roomLength = toFeet(input.length.value, input.length.unit);
+      const roomWidth = toFeet(input.width.value, input.width.unit);
+      const ceilingArea = input.includeCeiling ? roomLength * roomWidth * input.roomQuantity : 0;
+      const paintedDoorArea = input.paintDoors
+        ? input.paintedDoorQuantity *
+          toFeet(input.paintedDoorWidth.value, input.paintedDoorWidth.unit) *
+          toFeet(input.paintedDoorHeight.value, input.paintedDoorHeight.unit) *
+          input.paintedDoorSides
+        : 0;
+      const trimArea = input.paintTrim
+        ? toFeet(input.trimLength.value, input.trimLength.unit) *
+          toFeet(input.trimWidth.value, input.trimWidth.unit)
+        : 0;
+      const allowanceMultiplier = 1 + input.allowancePercent / 100;
+      const unsupportedOptionalFinishPurchase = [
+        input.includeCeiling ? (ceilingArea * input.coats * allowanceMultiplier) / coverage : 0,
+        input.paintDoors
+          ? (paintedDoorArea * input.paintedDoorCoats * allowanceMultiplier) / coverage
+          : 0,
+        input.paintTrim ? (trimArea * input.trimCoats * allowanceMultiplier) / coverage : 0,
+      ].some((requiredGallons) => !isSupportedPurchaseQuotient(requiredGallons, 0.25));
+      if (unsupportedFinishPurchase || unsupportedOptionalFinishPurchase)
+        issues.push({
+          field: 'coverageSquareFeetPerGallon',
+          message: 'This project produces too many purchasing units for a reliable estimate.',
+        });
+      if (input.usePrimer && Number.isFinite(input.primerCoverageSquareFeetPerGallon)) {
+        const primerCoverage =
+          input.measurementSystem === 'metric'
+            ? input.primerCoverageSquareFeetPerGallon *
+              SQUARE_FEET_PER_SQUARE_METER *
+              US_GALLON_LITERS
+            : input.primerCoverageSquareFeetPerGallon;
+        const requiredPrimerGallons =
+          (((gross - openings + ceilingArea + paintedDoorArea + trimArea) * input.primerCoats) /
+            primerCoverage) *
+          allowanceMultiplier;
+        if (!isSupportedPurchaseQuotient(requiredPrimerGallons, 1))
+          issues.push({
+            field: 'primerCoverageSquareFeetPerGallon',
+            message: 'This project produces too many purchasing units for a reliable estimate.',
+          });
+      }
+    }
   }
   return issues;
 }

@@ -11,6 +11,19 @@ import {
 } from '.';
 import type { ConcreteInput, ConcreteMode } from './types';
 
+it('rejects concrete purchasing counts above the supported quotient', () => {
+  const input = createDefaultConcreteInput();
+  input.length.value = 10_000;
+  input.width.value = 1_000;
+  input.thickness = { value: 1, unit: 'ft' };
+  expect(validateConcreteInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'quantity' }),
+  );
+  const valid = createDefaultConcreteInput();
+  expect(validateConcreteInput(valid)).toEqual([]);
+  expect(() => calculateConcrete(valid)).not.toThrow();
+});
+
 const base = createDefaultConcreteInput();
 const expectedVolume = {
   slab: 20 * 10 * (4 / 12),

@@ -56,7 +56,9 @@ export function createTileEstimateText(input: TileInput, c: TileCalculation) {
     ...(input.boxMode === 'coverage' && input.manufacturerCoverage !== undefined
       ? [
           `Manufacturer coverage: ${n(input.manufacturerCoverage)} ${areaLabel(input.manufacturerCoverageUnit)}/box`,
-          `Purchased coverage: ${n(squareFeetToArea(c.purchasedCoverageSquareFeet!, input.manufacturerCoverageUnit))} ${areaLabel(input.manufacturerCoverageUnit)}`,
+          `Purchasing coverage required: ${n(squareFeetToArea(c.wasteAdjustedCoverageSquareFeet, au))} ${areaLabel(au)}`,
+          `Purchased coverage: ${n(squareFeetToArea(c.purchasedCoverageSquareFeet!, au))} ${areaLabel(au)}`,
+          `Extra purchased coverage: ${n(squareFeetToArea(c.extraPurchasedCoverageSquareFeet!, au))} ${areaLabel(au)}`,
         ]
       : []),
     ...(c.estimatedCost === undefined

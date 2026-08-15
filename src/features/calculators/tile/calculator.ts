@@ -1,4 +1,5 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { normalizeNumericalLeftover, requiredWholeUnits } from '../../../lib/calculators/rounding';
 import type { AreaUnit, TileCalculation, TileInput, TileSizeUnit } from './types';
 
 export const SQUARE_FEET_PER_SQUARE_METER = 10.7639104167;
@@ -14,14 +15,14 @@ export const areaToSquareFeet = (value: number, unit: AreaUnit) =>
 export const squareFeetToArea = (value: number, unit: AreaUnit) =>
   value / areaToSquareFeet(1, unit);
 
-function tileLengthToFeet(value: number, unit: TileSizeUnit) {
+export function tileLengthToFeet(value: number, unit: TileSizeUnit) {
   if (unit === 'in') return value / 12;
   if (unit === 'ft') return value;
   if (unit === 'mm') return value / 304.8;
   return value / 30.48;
 }
 
-function areaPerItem(input: TileInput) {
+export function tileAreaPerItemSquareFeet(input: TileInput) {
   if (input.measureMode === 'area') return areaToSquareFeet(input.knownArea, input.areaUnit);
   const feet = (d: TileInput['length']) => toFeet(d.value, d.unit);
   if (input.shape === 'square') return feet(input.side) ** 2;
@@ -35,7 +36,7 @@ function areaPerItem(input: TileInput) {
 }
 
 export function calculateTile(input: TileInput): TileCalculation {
-  const areaPerItemSquareFeet = areaPerItem(input);
+  const areaPerItemSquareFeet = tileAreaPerItemSquareFeet(input);
   const grossAreaSquareFeet = areaPerItemSquareFeet * input.quantity;
   const excludedAreaSquareFeet =
     input.excludedArea === undefined
@@ -49,7 +50,7 @@ export function calculateTile(input: TileInput): TileCalculation {
   const moduleAreaSquareFeet = (tileLengthFeet + gapFeet) * (tileWidthFeet + gapFeet);
   const rawTiles = netAreaSquareFeet / moduleAreaSquareFeet;
   const wasteAdjustedTiles = rawTiles * (1 + input.wastePercent / 100);
-  const requiredTiles = Math.ceil(wasteAdjustedTiles - 1e-10);
+  const requiredTiles = requiredWholeUnits(wasteAdjustedTiles, 1);
   const wasteAdjustedCoverageSquareFeet = netAreaSquareFeet * (1 + input.wastePercent / 100);
   let boxesRequired: number | undefined;
   let purchasedTiles: number | undefined;
@@ -58,12 +59,15 @@ export function calculateTile(input: TileInput): TileCalculation {
   let extraPurchasedCoverageSquareFeet: number | undefined;
   if (input.boxMode === 'coverage' && input.manufacturerCoverage !== undefined) {
     const coverage = areaToSquareFeet(input.manufacturerCoverage, input.manufacturerCoverageUnit);
-    boxesRequired = Math.ceil(wasteAdjustedCoverageSquareFeet / coverage - 1e-10);
+    boxesRequired = requiredWholeUnits(wasteAdjustedCoverageSquareFeet, coverage);
     purchasedCoverageSquareFeet = boxesRequired * coverage;
-    extraPurchasedCoverageSquareFeet =
-      purchasedCoverageSquareFeet - wasteAdjustedCoverageSquareFeet;
+    extraPurchasedCoverageSquareFeet = normalizeNumericalLeftover(
+      purchasedCoverageSquareFeet,
+      wasteAdjustedCoverageSquareFeet,
+      coverage,
+    );
   } else if (input.tilesPerBox !== undefined) {
-    boxesRequired = Math.ceil(requiredTiles / input.tilesPerBox);
+    boxesRequired = requiredWholeUnits(requiredTiles, input.tilesPerBox);
     purchasedTiles = boxesRequired * input.tilesPerBox;
     extraTiles = purchasedTiles - requiredTiles;
     purchasedCoverageSquareFeet = purchasedTiles * tileFaceAreaSquareFeet;

@@ -1,4 +1,9 @@
 import { toFeet } from '../../../lib/units/measurements';
+import {
+  isSupportedPurchaseQuotient,
+  normalizeNumericalLeftover,
+  requiredWholeUnits,
+} from '../../../lib/calculators/rounding';
 import { PAINT_CONTAINERS, SQUARE_FEET_PER_SQUARE_METER, US_GALLON_LITERS } from './constants';
 import type {
   PaintCalculation,
@@ -10,30 +15,23 @@ import type {
 export function recommendPaintPurchase(requiredGallons: number): PurchaseRecommendation {
   if (requiredGallons <= 0)
     return { containers: [], purchasedGallons: 0, leftoverGallons: 0, display: 'None' };
-  let best: { counts: number[]; volume: number; count: number } | undefined;
-  const maxFive = Math.ceil(requiredGallons / 5) + 1;
-  for (let five = 0; five <= maxFive; five++)
-    for (let one = 0; one <= 5; one++)
-      for (let quart = 0; quart <= 4; quart++) {
-        const counts = [five, one, quart];
-        const volume = five * 5 + one + quart * 0.25;
-        if (volume + 1e-10 < requiredGallons) continue;
-        const count = five + one + quart;
-        if (
-          !best ||
-          volume < best.volume - 1e-10 ||
-          (Math.abs(volume - best.volume) < 1e-10 && count < best.count)
-        )
-          best = { counts, volume, count };
-      }
+  if (!isSupportedPurchaseQuotient(requiredGallons, 0.25))
+    throw new RangeError('Paint container quantity exceeds the supported numerical domain.');
+  const requiredQuarts = requiredWholeUnits(requiredGallons, 0.25);
+  const fiveGallonCount = Math.floor(requiredQuarts / 20);
+  const remainingQuarts = requiredQuarts % 20;
+  const oneGallonCount = Math.floor(remainingQuarts / 4);
+  const quartCount = remainingQuarts % 4;
+  const counts = [fiveGallonCount, oneGallonCount, quartCount];
+  const purchasedGallons = requiredQuarts * 0.25;
   const containers = PAINT_CONTAINERS.map((item, index) => ({
     ...item,
-    count: best!.counts[index],
+    count: counts[index],
   })).filter((x) => x.count > 0);
   return {
     containers,
-    purchasedGallons: best!.volume,
-    leftoverGallons: best!.volume - requiredGallons,
+    purchasedGallons,
+    leftoverGallons: normalizeNumericalLeftover(purchasedGallons, requiredGallons, 0.25),
     display: containers.map((x) => `${x.count} x ${x.label}`).join(' + '),
   };
 }
@@ -139,7 +137,7 @@ export function calculatePaint(input: PaintInput): PaintCalculation {
     : undefined;
   const estimatedPrimerCost =
     primer && input.primerPricePerGallon !== undefined
-      ? Math.ceil(primer.requiredGallons) * input.primerPricePerGallon
+      ? requiredWholeUnits(primer.requiredGallons, 1) * input.primerPricePerGallon
       : undefined;
   return {
     grossWallAreaSquareFeet,

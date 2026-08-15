@@ -4,6 +4,28 @@ import { createClearedTopsoilInput, createDefaultTopsoilInput } from './formDefa
 import { convertTopsoilMeasurementSystem } from './formUnits';
 import { validateTopsoilInput } from './validation';
 
+it('rejects topsoil purchasing counts above the supported quotient', () => {
+  const input = createDefaultTopsoilInput();
+  input.bulkIncrement = 1e-9;
+  expect(validateTopsoilInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const tinyIncrement = createDefaultTopsoilInput();
+  tinyIncrement.measureMode = 'area';
+  tinyIncrement.knownArea = 1e-99;
+  tinyIncrement.depth = { value: 12, unit: 'in' };
+  tinyIncrement.allowancePercent = 0;
+  tinyIncrement.bulkIncrement = 1e-101;
+  expect(validateTopsoilInput(tinyIncrement)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const valid = createDefaultTopsoilInput();
+  expect(validateTopsoilInput(valid)).toEqual([]);
+  expect(() => calculateTopsoil(valid)).not.toThrow();
+});
+
 describe('topsoil calculation', () => {
   it('keeps purchasing and density optional in new and cleared forms', () => {
     for (const input of [createDefaultTopsoilInput(), createClearedTopsoilInput('USD')]) {
@@ -121,6 +143,23 @@ describe('topsoil calculation', () => {
     input.bulkIncrement = undefined;
     const exact = calculateTopsoil(input);
     expect(exact.bulkOrderCubicYards).toBeCloseTo(exact.requiredCubicYards);
+  });
+
+  it('distinguishes purchasing noise from genuine excess', () => {
+    const input = createDefaultTopsoilInput();
+    input.measureMode = 'area';
+    input.knownArea = 1;
+    input.depth.value = 12;
+    input.allowancePercent = 0;
+    input.bagVolume = 1;
+    input.bulkIncrement = 0.1;
+    expect(calculateTopsoil(input).bagsRequired).toBe(1);
+    input.knownArea = 1.0001;
+    expect(calculateTopsoil(input).bagsRequired).toBe(2);
+    input.knownArea = 27 * (0.3 + Number.EPSILON);
+    expect(calculateTopsoil(input).bulkOrderCubicYards).toBe(0.3);
+    input.knownArea = 27 * 0.3001;
+    expect(calculateTopsoil(input).bulkOrderCubicYards).toBe(0.4);
   });
 
   it('supports absent, individual, both, and zero prices', () => {

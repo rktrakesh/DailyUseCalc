@@ -11,6 +11,8 @@ import {
   Share2,
 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
+import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
+import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
 import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
@@ -158,7 +160,7 @@ export default function GravelCalculator() {
   function calculateEstimate() {
     const issues = validateGravelInput(input);
     setValidationIssues(issues);
-    if (issues.length) {
+    if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
@@ -702,7 +704,7 @@ function NumberField({
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -752,7 +754,7 @@ function OptionalNumberField({
           value={value ?? ''}
           placeholder="Optional"
           onChange={onChange}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -803,7 +805,7 @@ function UnitNumberField({
           step="any"
           value={Number.isFinite(value) ? value : ''}
           onChange={(event) => onValueChange(numberFromEvent(event))}
-          onWheel={(event) => event.currentTarget.blur()}
+          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />

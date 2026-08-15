@@ -1,4 +1,9 @@
 import { toFeet } from '../../../lib/units/measurements';
+import {
+  normalizeNumericalLeftover,
+  requiredWholeUnits,
+  roundUpToIncrement,
+} from '../../../lib/calculators/rounding';
 import type { MulchCalculation, MulchInput } from './types';
 
 const LITERS_PER_CUBIC_FOOT = 28.316846592;
@@ -41,13 +46,12 @@ export function calculateMulch(input: MulchInput): MulchCalculation {
         ? input.bagVolume / LITERS_PER_CUBIC_FOOT
         : input.bagVolume;
   const bagsRequired = bagVolumeCubicFeet
-    ? Math.ceil(requiredCubicFeet / bagVolumeCubicFeet)
+    ? requiredWholeUnits(requiredCubicFeet, bagVolumeCubicFeet)
     : undefined;
   const purchasedBagCubicFeet =
     bagsRequired === undefined ? undefined : bagsRequired * bagVolumeCubicFeet!;
   const bulkOrderCubicYards = input.bulkIncrementCubicYards
-    ? Math.ceil((requiredCubicYards - 1e-12) / input.bulkIncrementCubicYards) *
-      input.bulkIncrementCubicYards
+    ? roundUpToIncrement(requiredCubicYards, input.bulkIncrementCubicYards)
     : requiredCubicYards;
   return {
     areaSquareFeet,
@@ -61,13 +65,19 @@ export function calculateMulch(input: MulchInput): MulchCalculation {
     bagsRequired,
     purchasedBagCubicFeet,
     bagLeftoverCubicFeet:
-      purchasedBagCubicFeet === undefined ? undefined : purchasedBagCubicFeet - requiredCubicFeet,
+      purchasedBagCubicFeet === undefined
+        ? undefined
+        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet, bagVolumeCubicFeet!),
     bagCost:
       bagsRequired !== undefined && input.pricePerBag !== undefined
         ? bagsRequired * input.pricePerBag
         : undefined,
     bulkOrderCubicYards,
-    bulkLeftoverCubicYards: bulkOrderCubicYards - requiredCubicYards,
+    bulkLeftoverCubicYards: normalizeNumericalLeftover(
+      bulkOrderCubicYards,
+      requiredCubicYards,
+      input.bulkIncrementCubicYards ?? 1,
+    ),
     bulkCost:
       input.bulkPricePerCubicYard === undefined
         ? undefined

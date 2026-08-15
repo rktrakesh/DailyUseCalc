@@ -1,4 +1,6 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import { calculateTopsoil, CUBIC_METERS_PER_CUBIC_YARD, LITERS_PER_CUBIC_FOOT } from './calculator';
 import type { TopsoilInput, ValidationIssue } from './types';
 
 const positive = (value: number) => Number.isFinite(value) && value > 0;
@@ -55,5 +57,38 @@ export function validateTopsoilInput(input: TopsoilInput): ValidationIssue[] {
   for (const field of ['pricePerBag', 'bulkUnitPrice'] as const)
     if (input[field] !== undefined && (!Number.isFinite(input[field]) || input[field]! < 0))
       issues.push({ field, message: 'Price cannot be negative.' });
+  if (!issues.length) {
+    const result = calculateTopsoil({
+      ...input,
+      bagVolume: undefined,
+      bulkIncrement: undefined,
+      supplierDensity: undefined,
+    });
+    const bagVolumeCubicFeet =
+      input.bagVolume === undefined
+        ? undefined
+        : input.bagVolumeUnit === 'liter'
+          ? input.bagVolume / LITERS_PER_CUBIC_FOOT
+          : input.bagVolume;
+    const incrementCubicYards =
+      input.bulkIncrement === undefined
+        ? undefined
+        : input.bulkIncrementUnit === 'cu-m'
+          ? input.bulkIncrement / CUBIC_METERS_PER_CUBIC_YARD
+          : input.bulkIncrement;
+    if (
+      bagVolumeCubicFeet !== undefined &&
+      !isSupportedPurchaseQuotient(result.requiredCubicFeet, bagVolumeCubicFeet)
+    )
+      issues.push({ field: 'bagVolume', message: 'Use a larger bag size for this project.' });
+    if (
+      incrementCubicYards !== undefined &&
+      !isSupportedPurchaseQuotient(result.requiredCubicYards, incrementCubicYards)
+    )
+      issues.push({
+        field: 'bulkIncrement',
+        message: 'Use a larger purchasing increment for this project.',
+      });
+  }
   return issues;
 }

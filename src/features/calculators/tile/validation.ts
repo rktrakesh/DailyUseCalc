@@ -1,5 +1,6 @@
 import { toFeet } from '../../../lib/units/measurements';
-import { areaToSquareFeet, calculateTile } from './calculator';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import { areaToSquareFeet, tileAreaPerItemSquareFeet, tileLengthToFeet } from './calculator';
 import type { TileInput, ValidationIssue } from './types';
 
 const positive = (v: number) => Number.isFinite(v) && v > 0;
@@ -64,7 +65,7 @@ export function validateTileInput(input: TileInput): ValidationIssue[] {
     ].includes(String(issue.field)),
   )
     ? undefined
-    : calculateTile({ ...input, tileLength: 1, tileWidth: 1 }).grossAreaSquareFeet;
+    : tileAreaPerItemSquareFeet(input) * input.quantity;
   if (
     input.excludedArea !== undefined &&
     (!positive(input.excludedArea) ||
@@ -97,5 +98,34 @@ export function validateTileInput(input: TileInput): ValidationIssue[] {
       field: 'priceBasis',
       message: 'Configure box purchasing before using per-box pricing.',
     });
+  if (!issues.length) {
+    const excluded =
+      input.excludedArea === undefined
+        ? 0
+        : areaToSquareFeet(input.excludedArea, input.excludedAreaUnit);
+    const netArea = gross! - excluded;
+    const gapFeet = input.groutUnit === 'in' ? input.groutGap / 12 : input.groutGap / 304.8;
+    const moduleArea =
+      (tileLengthToFeet(input.tileLength, input.tileUnit) + gapFeet) *
+      (tileLengthToFeet(input.tileWidth, input.tileUnit) + gapFeet);
+    const wasteAdjustedTiles = (netArea / moduleArea) * (1 + input.wastePercent / 100);
+    if (!isSupportedPurchaseQuotient(wasteAdjustedTiles, 1))
+      issues.push({
+        field: 'tileLength',
+        message: 'This project produces too many purchasing units for a reliable estimate.',
+      });
+    if (
+      input.boxMode === 'coverage' &&
+      input.manufacturerCoverage !== undefined &&
+      !isSupportedPurchaseQuotient(
+        netArea * (1 + input.wastePercent / 100),
+        areaToSquareFeet(input.manufacturerCoverage, input.manufacturerCoverageUnit),
+      )
+    )
+      issues.push({
+        field: 'manufacturerCoverage',
+        message: 'Use a larger manufacturer coverage value for this project.',
+      });
+  }
   return issues;
 }

@@ -4,6 +4,19 @@ import { createDefaultPaintInput } from './formDefaults';
 import { convertPaintMeasurementSystem } from './formUnits';
 import { validatePaintInput } from './validation';
 
+it('rejects paint purchasing counts above the supported quotient', () => {
+  const input = createDefaultPaintInput();
+  input.coverageSquareFeetPerGallon = 0.00001;
+  expect(validatePaintInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'coverageSquareFeetPerGallon' }),
+  );
+  expect(() => recommendPaintPurchase(2_500_000.25)).toThrow(RangeError);
+  expect(recommendPaintPurchase(2_500_000).purchasedGallons).toBe(2_500_000);
+  const valid = createDefaultPaintInput();
+  expect(validatePaintInput(valid)).toEqual([]);
+  expect(() => calculatePaint(valid)).not.toThrow();
+});
+
 describe('paint calculation', () => {
   it('calculates a simple four-wall room with two coats and allowance', () => {
     const result = calculatePaint(createDefaultPaintInput());
@@ -194,6 +207,11 @@ describe('paint calculation', () => {
     expect(recommendPaintPurchase(2.32).display).toBe('2 x 1 gal + 2 x 1 qt');
     expect(recommendPaintPurchase(7).display).toBe('1 x 5 gal + 2 x 1 gal');
     expect(recommendPaintPurchase(0.1).display).toBe('1 x 1 qt');
+  });
+  it('treats machine noise at a container boundary differently from genuine excess', () => {
+    expect(recommendPaintPurchase(1.0000000000000002).purchasedGallons).toBe(1);
+    expect(recommendPaintPurchase(1.0000000000000002).leftoverGallons).toBe(0);
+    expect(recommendPaintPurchase(1.0001).purchasedGallons).toBe(1.25);
   });
   it.each([
     [0.25, 0.25, 1],

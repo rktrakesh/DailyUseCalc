@@ -84,7 +84,7 @@ export function calculateGravel(input: GravelInput): GravelCalculation {
         ? bagCount * input.bagPrice + (input.deliveryFee ?? 0)
         : undefined;
   const truckLoads = input.truckCapacityCubicYards
-    ? Math.ceil(recommendedOrder / input.truckCapacityCubicYards)
+    ? requiredWholeUnits(recommendedOrder, input.truckCapacityCubicYards)
     : undefined;
 
   return {

@@ -1,4 +1,9 @@
 import { toFeet } from '../../../lib/units/measurements';
+import {
+  normalizeNumericalLeftover,
+  requiredWholeUnits,
+  roundUpToIncrement,
+} from '../../../lib/calculators/rounding';
 import type { TopsoilCalculation, TopsoilInput, WeightConversions } from './types';
 
 export const LITERS_PER_CUBIC_FOOT = 28.316846592;
@@ -58,7 +63,7 @@ export function calculateTopsoil(input: TopsoilInput): TopsoilCalculation {
         ? input.bagVolume / LITERS_PER_CUBIC_FOOT
         : input.bagVolume;
   const bagsRequired = bagVolumeCubicFeet
-    ? Math.ceil((requiredCubicFeet - 1e-7) / bagVolumeCubicFeet)
+    ? requiredWholeUnits(requiredCubicFeet, bagVolumeCubicFeet)
     : undefined;
   const purchasedBagCubicFeet =
     bagsRequired === undefined ? undefined : bagsRequired * bagVolumeCubicFeet!;
@@ -69,7 +74,7 @@ export function calculateTopsoil(input: TopsoilInput): TopsoilCalculation {
         ? input.bulkIncrement / CUBIC_METERS_PER_CUBIC_YARD
         : input.bulkIncrement;
   const bulkOrderCubicYards = incrementCubicYards
-    ? Math.ceil((requiredCubicYards - 1e-12) / incrementCubicYards) * incrementCubicYards
+    ? roundUpToIncrement(requiredCubicYards, incrementCubicYards)
     : requiredCubicYards;
   const densityPoundsPerCubicYard =
     input.supplierDensity === undefined
@@ -94,14 +99,18 @@ export function calculateTopsoil(input: TopsoilInput): TopsoilCalculation {
     bagLeftoverCubicFeet:
       purchasedBagCubicFeet === undefined
         ? undefined
-        : Math.max(0, purchasedBagCubicFeet - requiredCubicFeet),
+        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet, bagVolumeCubicFeet!),
     bagCost:
       bagsRequired !== undefined && input.pricePerBag !== undefined
         ? bagsRequired * input.pricePerBag
         : undefined,
     bulkOrderCubicYards,
     bulkOrderCubicMeters: bulkOrderCubicYards * CUBIC_METERS_PER_CUBIC_YARD,
-    bulkLeftoverCubicYards: Math.max(0, bulkOrderCubicYards - requiredCubicYards),
+    bulkLeftoverCubicYards: normalizeNumericalLeftover(
+      bulkOrderCubicYards,
+      requiredCubicYards,
+      incrementCubicYards ?? 1,
+    ),
     bulkCost:
       input.bulkUnitPrice === undefined
         ? undefined

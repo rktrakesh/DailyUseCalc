@@ -8,12 +8,22 @@ describe('preserveNumberInputOnWheel', () => {
     const scrollBy = vi.fn();
     vi.stubGlobal('window', { scrollBy });
     const preventDefault = vi.fn();
-    const input = { readOnly: false, value: '12' };
+    const input = { blur: vi.fn(), readOnly: false, value: '12' };
 
-    preserveNumberInputOnWheel({ deltaX: 0, deltaY: 120, preventDefault });
+    preserveNumberInputOnWheel({
+      currentTarget: input,
+      deltaX: 0,
+      deltaY: 120,
+      preventDefault,
+    });
 
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(scrollBy).toHaveBeenCalledWith({ left: 0, top: 120, behavior: 'auto' });
-    expect(input).toEqual({ readOnly: false, value: '12' });
+    expect(input.blur).not.toHaveBeenCalled();
+    expect(input.readOnly).toBe(false);
+    expect(input.value).toBe('12');
+
+    input.value = '15';
+    expect(input.value).toBe('15');
   });
 });

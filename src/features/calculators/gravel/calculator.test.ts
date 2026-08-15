@@ -11,6 +11,31 @@ import { createClearedGravelInput, createDefaultGravelInput } from './formDefaul
 import { convertLength } from '../../../lib/units/measurements';
 import type { GravelInput } from './types';
 
+it('rejects purchasing configurations above the supported quotient', () => {
+  const input = createDefaultGravelInput();
+  input.bagSizeCubicFeet = 1e-9;
+  expect(validateGravelInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'bagSizeCubicFeet' }),
+  );
+});
+
+it('keeps Gravel validation aligned with shared rounding at the truck-load ceiling', () => {
+  const input = createDefaultGravelInput();
+  input.inputMode = 'volume';
+  input.knownVolume = { value: 1 + 0.1 + 0.1, unit: 'yd³' };
+  input.allowancePercent = 0;
+  input.bagSizeCubicFeet = undefined;
+  input.truckCapacityCubicYards = 1.2 / 10_000_000;
+  expect(validateGravelInput(input)).toEqual([]);
+  expect(() => calculateGravel(input)).not.toThrow();
+  expect(calculateGravel(input).truckLoads).toBe(10_000_000);
+
+  input.truckCapacityCubicYards = 1.2 / 10_000_001;
+  expect(validateGravelInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'truckCapacityCubicYards' }),
+  );
+});
+
 const baseInput: GravelInput = {
   inputMode: 'dimensions',
   areaShape: 'rectangle',
@@ -232,6 +257,16 @@ describe('gravel calculation', () => {
 
   it('uses one truck load when the recommended order exactly matches capacity', () => {
     expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 3.3 }).truckLoads).toBe(1);
+  });
+
+  it('distinguishes truck-capacity floating noise from genuine excess', () => {
+    expect(
+      calculateGravel({
+        ...baseInput,
+        truckCapacityCubicYards: 3.3 / (1 + Number.EPSILON),
+      }).truckLoads,
+    ).toBe(1);
+    expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 3.299 }).truckLoads).toBe(2);
   });
 
   it('supports fractional and very small valid dimensions', () => {
