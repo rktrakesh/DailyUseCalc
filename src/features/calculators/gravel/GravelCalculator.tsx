@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
-  Calculator,
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
   Copy,
   Download,
+  Info,
+  PackageOpen,
   Printer,
   RotateCcw,
   Share2,
+  Weight,
 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
-import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import {
@@ -27,7 +29,13 @@ import {
   recommendGravel,
   validateGravelInput,
 } from './index';
+import { DEFAULT_ADVANCED_OPTIONS_EXPANDED, hasAdvancedOptionIssue } from './advancedOptions';
 import { createGravelEstimateReport } from './gravelReport';
+import { gravelTypeGuidance } from './formGuidance';
+import { gravelAnalyticsParameters, gravelSubmittedAnalyticsParameters } from './analytics';
+import { copyTextToClipboard, restartCopyFeedbackTimer } from './copyFeedback';
+import { convertGravelMeasurementSystem } from './unitSystem';
+import { gravelResultAnnouncement } from './resultAnnouncement';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
 import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
 import type {
@@ -90,6 +98,9 @@ function selectLabel<T extends string>(options: Array<{ value: T; label: string 
 }
 
 export default function GravelCalculator() {
+  const [advancedOptionsExpanded, setAdvancedOptionsExpanded] = useState(
+    DEFAULT_ADVANCED_OPTIONS_EXPANDED,
+  );
   const [input, setInput] = useState<GravelFormInput>(createDefaultGravelInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
   const [submitted, setSubmitted] = useState<{
@@ -101,13 +112,12 @@ export default function GravelCalculator() {
   );
   const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyFeedbackTimeout = useRef<number | undefined>(undefined);
   const started = useRef(createCalculatorStartedTracker());
-  const analyticsParameters = () => ({
-    calculator_id: 'gravel',
-    calculator_name: 'Gravel Calculator',
-    project_type: input.projectType,
-    unit_system: measurementSystem,
-  });
+  const analyticsParameters = () => gravelAnalyticsParameters(input, measurementSystem);
+  const submittedAnalyticsParameters = () =>
+    submitted ? gravelSubmittedAnalyticsParameters(submitted) : analyticsParameters();
 
   useEffect(() => {
     const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
@@ -115,6 +125,14 @@ export default function GravelCalculator() {
       setInput((current) => ({ ...current, currency: savedCurrency }));
     }
   }, []);
+
+  useEffect(
+    () => () => {
+      if (copyFeedbackTimeout.current !== undefined)
+        window.clearTimeout(copyFeedbackTimeout.current);
+    },
+    [],
+  );
 
   const calculation = useMemo(
     () => (submitted ? calculateGravel(submitted.input) : undefined),
@@ -130,38 +148,30 @@ export default function GravelCalculator() {
   function updateSystem(nextSystem: MeasurementSystem) {
     if (nextSystem === measurementSystem) return;
     setInput((current) => {
-      const metric = nextSystem === 'metric';
       return {
         ...current,
-        length: converted(current.length.value, current.length.unit, metric ? 'm' : 'ft', 3),
-        width: converted(current.width.value, current.width.unit, metric ? 'm' : 'ft', 3),
-        diameter: converted(current.diameter.value, current.diameter.unit, metric ? 'm' : 'ft', 3),
-        depth: converted(current.depth.value, current.depth.unit, metric ? 'cm' : 'in', 2),
+        ...convertGravelMeasurementSystem(current, nextSystem),
       };
     });
     setMeasurementSystem(nextSystem);
     setValidationIssues([]);
   }
 
-  function converted(
-    value: number,
-    from: GravelInput['length']['unit'],
-    to: 'm' | 'ft' | 'cm' | 'in',
-    digits: number,
-  ) {
-    return {
-      value: Number.isFinite(value)
-        ? Number(convertLength(value, from, to).toFixed(digits))
-        : value,
-      unit: to,
-    };
+  function resetCopiedFeedback() {
+    if (copyFeedbackTimeout.current !== undefined) {
+      window.clearTimeout(copyFeedbackTimeout.current);
+      copyFeedbackTimeout.current = undefined;
+    }
+    setCopied(false);
   }
 
   function calculateEstimate() {
+    resetCopiedFeedback();
     const issues = validateGravelInput(input);
     setValidationIssues(issues);
     if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
+      if (hasAdvancedOptionIssue(issues)) setAdvancedOptionsExpanded(true);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
       );
@@ -173,10 +183,12 @@ export default function GravelCalculator() {
   }
 
   function clearInputs() {
+    resetCopiedFeedback();
     setInput(createClearedGravelInput(input.currency));
     setSubmitted(undefined);
     setValidationIssues([]);
     setMeasurementSystem('imperial');
+    setAdvancedOptionsExpanded(DEFAULT_ADVANCED_OPTIONS_EXPANDED);
     setStatus('Calculator cleared.');
     trackCalculatorEvent('calculator_clear', analyticsParameters());
   }
@@ -194,13 +206,21 @@ export default function GravelCalculator() {
   }
 
   async function copyEstimate() {
-    try {
-      await navigator.clipboard.writeText(estimateText());
-      setStatus('Estimate copied.');
-      trackCalculatorEvent('calculator_copy', analyticsParameters());
-    } catch {
+    const success = await copyTextToClipboard(
+      (text) => navigator.clipboard.writeText(text),
+      estimateText(),
+    );
+    if (!success) {
       setStatus('Copy is unavailable in this browser.');
+      return;
     }
+    setCopied(true);
+    setStatus('Estimate copied.');
+    copyFeedbackTimeout.current = restartCopyFeedbackTimer(copyFeedbackTimeout.current, () => {
+      copyFeedbackTimeout.current = undefined;
+      setCopied(false);
+    });
+    trackCalculatorEvent('calculator_copy', submittedAnalyticsParameters());
   }
 
   async function shareEstimate() {
@@ -209,7 +229,7 @@ export default function GravelCalculator() {
         await navigator.share({ title: 'Gravel estimate', text: estimateText() });
         setStatus('Estimate shared.');
         trackCalculatorEvent('calculator_share', {
-          ...analyticsParameters(),
+          ...submittedAnalyticsParameters(),
           share_method: 'native',
         });
         return;
@@ -221,7 +241,7 @@ export default function GravelCalculator() {
       await navigator.clipboard.writeText(estimateText());
       setStatus('Estimate copied.');
       trackCalculatorEvent('calculator_share', {
-        ...analyticsParameters(),
+        ...submittedAnalyticsParameters(),
         share_method: 'clipboard_fallback',
       });
     } catch {
@@ -242,7 +262,7 @@ export default function GravelCalculator() {
   function printEstimate() {
     const report = reportData();
     if (!report) return;
-    trackCalculatorEvent('calculator_print', analyticsParameters());
+    trackCalculatorEvent('calculator_print', submittedAnalyticsParameters());
     setStatus(
       printReport(report)
         ? 'Choose a printer or another destination in the print dialog.'
@@ -257,7 +277,7 @@ export default function GravelCalculator() {
     try {
       await downloadReportAsPdf(report);
       setStatus('PDF download started.');
-      trackCalculatorEvent('calculator_pdf', analyticsParameters());
+      trackCalculatorEvent('calculator_pdf', submittedAnalyticsParameters());
     } catch (error) {
       console.error('PDF download failed:', error);
       setStatus('Could not prepare the PDF. Please try again.');
@@ -325,7 +345,6 @@ export default function GravelCalculator() {
             <option value="metric">Metric</option>
           </SelectField>
         </div>
-
         <fieldset className="mt-3">
           <legend className="sr-only">Measurements</legend>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -436,11 +455,12 @@ export default function GravelCalculator() {
           </div>
         </fieldset>
 
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_8rem] gap-2.5">
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
           <SelectField
             label="Gravel type"
             name="gravel-type"
             value={input.gravelType}
+            helperText={gravelTypeGuidance(input.projectType, input.gravelType)}
             onChange={(value) =>
               setInput((current) => ({ ...current, gravelType: value as GravelType }))
             }
@@ -451,25 +471,7 @@ export default function GravelCalculator() {
               </option>
             ))}
           </SelectField>
-          <SelectField
-            label="Extra allowance"
-            name="allowance"
-            value={String(input.allowancePercent)}
-            onChange={(value) =>
-              setInput((current) => ({ ...current, allowancePercent: Number(value) }))
-            }
-            invalid={Boolean(errorFor('allowancePercent'))}
-          >
-            {[0, 5, 10, 15, 20].map((value) => (
-              <option key={value} value={value}>
-                {value}%
-              </option>
-            ))}
-          </SelectField>
-        </div>
-
-        {input.gravelType === 'custom' && (
-          <div className="mt-3 max-w-64">
+          {input.gravelType === 'custom' && (
             <NumberField
               id="custom-density"
               label="Custom density"
@@ -483,103 +485,168 @@ export default function GravelCalculator() {
                 }))
               }
             />
-          </div>
-        )}
+          )}
+        </div>
+        <div className="mt-3 rounded-control border border-line bg-surface p-1">
+          <button
+            type="button"
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-control px-3 text-left text-ink transition-colors hover:bg-panel-muted focus-visible:outline-2 focus-visible:outline-brand/70 focus-visible:outline-offset-2"
+            aria-expanded={advancedOptionsExpanded}
+            aria-controls="gravel-advanced-options"
+            onClick={() => setAdvancedOptionsExpanded((expanded) => !expanded)}
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold">Advanced options (optional)</span>
+              <span className="mt-0.5 block text-[0.68rem] font-medium leading-4 text-ink-soft">
+                Add allowance, pricing, bags, delivery, or truck details when needed.
+              </span>
+            </span>
+            <ChevronDown
+              className={`shrink-0 text-ink-soft transition-transform motion-reduce:transition-none ${advancedOptionsExpanded ? 'rotate-180' : ''}`}
+              size={17}
+              aria-hidden="true"
+            />
+          </button>
 
-        <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
-          <OptionalGroup title="Price (optional)">
-            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-              <select
-                aria-label="Currency"
-                className={controlClass()}
-                value={input.currency}
-                onChange={(event) => {
-                  const currency = event.target.value as CurrencyCode;
-                  setInput((current) => ({ ...current, currency }));
-                  localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
-                }}
+          <div
+            id="gravel-advanced-options"
+            className="border-t border-line px-2 pb-2 pt-3"
+            hidden={!advancedOptionsExpanded}
+          >
+            <div className="max-w-64">
+              <SelectField
+                label="Extra allowance"
+                name="allowance"
+                value={String(input.allowancePercent)}
+                helperText="Adds extra material for uneven ground, compaction, and waste."
+                onChange={(value) =>
+                  setInput((current) => ({ ...current, allowancePercent: Number(value) }))
+                }
+                invalid={Boolean(errorFor('allowancePercent'))}
               >
-                {currencies.map(([code, symbol]) => (
-                  <option key={code} value={code}>
-                    {code} ({symbol})
+                {[0, 5, 10, 15, 20].map((value) => (
+                  <option key={value} value={value}>
+                    {value}%
                   </option>
                 ))}
-              </select>
-              <OptionalNumberField
-                id="price"
-                label="Price per cubic yard"
-                hideLabel
-                value={input.pricePerCubicYard}
-                unit="per yd³"
-                error={errorFor('pricePerCubicYard')}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    pricePerCubicYard: optionalNumberFromEvent(event),
-                  }))
-                }
-              />
+              </SelectField>
             </div>
-            <OptionalNumberField
-              id="delivery-fee"
-              label="Delivery fee"
-              value={input.deliveryFee}
-              unit={input.currency}
-              error={errorFor('deliveryFee')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, deliveryFee: optionalNumberFromEvent(event) }))
-              }
-            />
-          </OptionalGroup>
-          <OptionalGroup title="Bag size (optional)">
-            <OptionalNumberField
-              id="bag-size"
-              label="Bag volume"
-              value={input.bagSizeCubicFeet}
-              unit="ft³ / bag"
-              error={errorFor('bagSizeCubicFeet')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  bagSizeCubicFeet: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-            <OptionalNumberField
-              id="bag-price"
-              label="Price per bag"
-              value={input.bagPrice}
-              unit={input.currency}
-              error={errorFor('bagPrice')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, bagPrice: optionalNumberFromEvent(event) }))
-              }
-            />
-          </OptionalGroup>
-          <OptionalGroup title="Truck capacity (optional)">
-            <OptionalNumberField
-              id="truck-capacity"
-              label="Capacity"
-              value={input.truckCapacityCubicYards}
-              unit="yd³ / truck"
-              error={errorFor('truckCapacityCubicYards')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  truckCapacityCubicYards: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-          </OptionalGroup>
-        </div>
 
+            <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
+              <OptionalGroup
+                title="Material pricing"
+                reveal={Boolean(errorFor('pricePerCubicYard') || errorFor('deliveryFee'))}
+              >
+                <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+                  <select
+                    aria-label="Currency"
+                    className={controlClass()}
+                    value={input.currency}
+                    onChange={(event) => {
+                      const currency = event.target.value as CurrencyCode;
+                      setInput((current) => ({ ...current, currency }));
+                      localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+                    }}
+                  >
+                    {currencies.map(([code, symbol]) => (
+                      <option key={code} value={code}>
+                        {code} ({symbol})
+                      </option>
+                    ))}
+                  </select>
+                  <OptionalNumberField
+                    id="price"
+                    label="Price per cubic yard"
+                    hideLabel
+                    value={input.pricePerCubicYard}
+                    placeholder="e.g. 45"
+                    unit="per yd³"
+                    error={errorFor('pricePerCubicYard')}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        pricePerCubicYard: optionalNumberFromEvent(event),
+                      }))
+                    }
+                  />
+                </div>
+                <OptionalNumberField
+                  id="delivery-fee"
+                  label="Delivery fee"
+                  value={input.deliveryFee}
+                  placeholder="e.g. 75"
+                  unit={input.currency}
+                  error={errorFor('deliveryFee')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      deliveryFee: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+              <OptionalGroup
+                title="Buying gravel in bags?"
+                reveal={Boolean(errorFor('bagSizeCubicFeet') || errorFor('bagPrice'))}
+              >
+                <OptionalNumberField
+                  id="bag-size"
+                  label="Bag volume"
+                  value={input.bagSizeCubicFeet}
+                  placeholder="e.g. 0.5"
+                  unit="ft³ / bag"
+                  error={errorFor('bagSizeCubicFeet')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagSizeCubicFeet: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+                <OptionalNumberField
+                  id="bag-price"
+                  label="Price per bag"
+                  value={input.bagPrice}
+                  placeholder="e.g. 6.50"
+                  unit={input.currency}
+                  error={errorFor('bagPrice')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagPrice: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+              <OptionalGroup
+                title="Bulk delivery"
+                reveal={Boolean(errorFor('truckCapacityCubicYards'))}
+              >
+                <OptionalNumberField
+                  id="truck-capacity"
+                  label="Capacity"
+                  value={input.truckCapacityCubicYards}
+                  placeholder="e.g. 10"
+                  unit="yd³ / truck"
+                  error={errorFor('truckCapacityCubicYards')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      truckCapacityCubicYards: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+            </div>
+          </div>
+        </div>
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.42fr)] gap-2">
           <button
             type="button"
             onClick={calculateEstimate}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-bold text-white transition-colors hover:bg-brand-strong sm:min-h-10"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-brand px-2 text-xs font-bold text-white transition-colors hover:bg-brand-strong sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
           >
-            Calculate <Calculator size={16} aria-hidden="true" />
+            Calculate Gravel Needed <ArrowRight size={16} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -605,6 +672,7 @@ export default function GravelCalculator() {
           onDownload={downloadEstimate}
           onShare={shareEstimate}
           isPreparingPdf={isPreparingPdf}
+          copied={copied}
         />
       )}
     </div>
@@ -618,6 +686,7 @@ function SelectField({
   onChange,
   children,
   leadingIcon,
+  helperText,
   disabled = false,
   invalid = false,
 }: {
@@ -627,6 +696,7 @@ function SelectField({
   onChange: (value: string) => void;
   children: ReactNode;
   leadingIcon?: ReactNode;
+  helperText?: string;
   disabled?: boolean;
   invalid?: boolean;
 }) {
@@ -644,6 +714,8 @@ function SelectField({
           className={`${controlClass(invalid)} appearance-none pr-7 ${leadingIcon ? 'pl-8' : ''} disabled:cursor-not-allowed disabled:opacity-55`}
           value={value}
           disabled={disabled}
+          aria-describedby={helperText ? `${name}-help` : undefined}
+          aria-invalid={invalid}
           onChange={(event) => onChange(event.target.value)}
         >
           {children}
@@ -654,22 +726,35 @@ function SelectField({
           aria-hidden="true"
         />
       </span>
+      {helperText && (
+        <span id={`${name}-help`} className="text-[0.66rem] font-medium leading-4 text-ink-soft">
+          {helperText}
+        </span>
+      )}
     </label>
   );
 }
 
-function OptionalGroup({ title, children }: { title: string; children: ReactNode }) {
+function OptionalGroup({
+  title,
+  children,
+  reveal = false,
+}: {
+  title: string;
+  children: ReactNode;
+  reveal?: boolean;
+}) {
   return (
-    <details className="group self-start rounded-control border border-line bg-surface">
-      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
+    <details className="group self-start rounded-control bg-panel" open={reveal || undefined}>
+      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-control px-3 text-xs font-bold text-ink marker:content-none hover:bg-panel-muted focus-visible:outline-2 focus-visible:outline-brand/70 focus-visible:outline-offset-1">
         {title}
         <ChevronDown
-          className="transition-transform group-open:rotate-180"
+          className="transition-transform group-open:rotate-180 motion-reduce:transition-none"
           size={15}
           aria-hidden="true"
         />
       </summary>
-      <div className="grid gap-2 border-t border-line p-2.5">{children}</div>
+      <div className="grid gap-2 border-t border-line/70 p-2.5">{children}</div>
     </details>
   );
 }
@@ -680,6 +765,7 @@ function NumberField({
   value,
   unit,
   error,
+  helperText,
   onChange,
 }: {
   id: string;
@@ -687,6 +773,7 @@ function NumberField({
   value: number;
   unit: string;
   error?: string;
+  helperText?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
@@ -706,12 +793,21 @@ function NumberField({
           onChange={onChange}
           onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={
+            [helperText ? `${id}-help` : undefined, error ? `${id}-error` : undefined]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.68rem] font-semibold text-ink-soft">
           {unit}
         </span>
       </span>
+      {helperText && (
+        <span id={`${id}-help`} className="text-[0.66rem] font-medium leading-4 text-ink-soft">
+          {helperText}
+        </span>
+      )}
       {error && (
         <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
           {error}
@@ -728,6 +824,7 @@ function OptionalNumberField({
   unit,
   error,
   onChange,
+  placeholder = 'Optional',
   hideLabel = false,
 }: {
   id: string;
@@ -736,6 +833,7 @@ function OptionalNumberField({
   unit: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
   hideLabel?: boolean;
 }) {
   return (
@@ -752,7 +850,7 @@ function OptionalNumberField({
           min="0"
           step="any"
           value={value ?? ''}
-          placeholder="Optional"
+          placeholder={placeholder}
           onChange={onChange}
           onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
@@ -841,6 +939,7 @@ function ResultPanel({
   onDownload,
   onShare,
   isPreparingPdf,
+  copied,
 }: {
   calculation: ReturnType<typeof calculateGravel>;
   recommendation: ReturnType<typeof recommendGravel>;
@@ -851,6 +950,7 @@ function ResultPanel({
   onDownload: () => void;
   onShare: () => void;
   isPreparingPdf: boolean;
+  copied: boolean;
 }) {
   const areaApplicable = input.inputMode !== 'volume';
   const gravelLabel = selectLabel(gravelOptions, input.gravelType);
@@ -885,8 +985,10 @@ function ResultPanel({
     <section
       className="rounded-card border border-brand/25 bg-brand-soft/55 p-3 shadow-card sm:p-4"
       aria-labelledby="gravel-results-heading"
-      aria-live="polite"
     >
+      <p className="sr-only" aria-live="polite">
+        {gravelResultAnnouncement(calculation.recommendedOrderCubicYards)}
+      </p>
       <div className="flex items-center gap-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-brand">
         <CheckCircle2 size={14} aria-hidden="true" /> Your gravel estimate
       </div>
@@ -897,37 +999,17 @@ function ResultPanel({
         {formatOrder(calculation.recommendedOrderCubicYards)} <span className="text-xl">yd³</span>
       </h2>
       <p className="text-xs text-ink-soft">Suggested order quantity</p>
-      <div
-        className={`mt-3 grid divide-y divide-line overflow-hidden rounded-control border border-line bg-panel ${areaApplicable ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-2 sm:divide-x sm:divide-y-0'}`}
-      >
-        <ResultColumn
-          title="Volume"
-          values={[
-            `${formatNumber(adjustedVolume.cubicYards)} yd³`,
-            `${formatNumber(adjustedVolume.cubicFeet)} ft³`,
-            `${formatNumber(adjustedVolume.cubicMeters)} m³`,
-            `${formatNumber(adjustedVolume.liters, 0)} L`,
-          ]}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <ResultMetric
+          icon={<PackageOpen size={17} aria-hidden="true" />}
+          label="Calculated need"
+          value={`${formatNumber(calculation.volumeCubicYards)} yd³`}
         />
-        <ResultColumn
-          title="Estimated weight"
-          values={[
-            `${formatNumber(calculation.estimatedWeightTons)} short tons`,
-            `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
-            `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
-            `${formatNumber(calculation.estimatedWeightKilograms / 1000)} metric tons`,
-          ]}
+        <ResultMetric
+          icon={<Weight size={17} aria-hidden="true" />}
+          label="Approximate weight"
+          value={`${formatNumber(calculation.estimatedWeightTons)} short tons`}
         />
-        {areaApplicable && (
-          <ResultColumn
-            title="Area"
-            values={[
-              `${formatNumber(calculation.surfaceAreaSquareFeet)} ft²`,
-              `${formatNumber(calculation.surfaceAreaSquareFeet / 9)} yd²`,
-              `${formatNumber(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`,
-            ]}
-          />
-        )}
       </div>
       <p className="mt-2 text-[0.68rem] leading-4 text-ink-soft tabular-nums">
         Measured: {formatNumber(calculation.volumeCubicYards)} yd³ · Extra: +
@@ -960,8 +1042,63 @@ function ResultPanel({
           {warning}
         </div>
       ))}
+      <div className="mt-2 rounded-control border border-brand/20 bg-panel/70 p-2.5">
+        <div className="flex items-center gap-1.5 text-[0.62rem] font-extrabold uppercase tracking-[0.06em] text-brand">
+          <Info size={14} aria-hidden="true" /> Planning guidance
+        </div>
+        <p className="mt-1.5 text-[0.68rem] leading-4 text-ink-soft">
+          {recommendation.materialGuidance}
+        </p>
+        {input.inputMode !== 'volume' && (
+          <p className="mt-1 text-[0.68rem] leading-4 text-ink-soft">
+            {recommendation.depthGuidance}
+          </p>
+        )}
+      </div>
+      <div
+        className={`mt-2 grid divide-y divide-line overflow-hidden rounded-control border border-line bg-panel ${areaApplicable ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-2 sm:divide-x sm:divide-y-0'}`}
+      >
+        <ResultColumn
+          title="Volume"
+          values={[
+            `${formatNumber(adjustedVolume.cubicYards)} yd³`,
+            `${formatNumber(adjustedVolume.cubicFeet)} ft³`,
+            `${formatNumber(adjustedVolume.cubicMeters)} m³`,
+            `${formatNumber(adjustedVolume.liters, 0)} L`,
+          ]}
+        />
+        <ResultColumn
+          title="Estimated weight"
+          values={[
+            `${formatNumber(calculation.estimatedWeightTons)} short tons`,
+            `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
+            `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
+            `${formatNumber(calculation.estimatedWeightKilograms / 1000)} metric tons`,
+          ]}
+        />
+        {areaApplicable && (
+          <ResultColumn
+            title="Area"
+            values={[
+              `${formatNumber(calculation.surfaceAreaSquareFeet)} ft²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet / 9)} yd²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`,
+            ]}
+          />
+        )}
+      </div>
       <div className="mt-3 grid grid-cols-4 gap-1.5">
-        <ActionButton label="Copy" icon={<Copy size={13} aria-hidden="true" />} onClick={onCopy} />
+        <ActionButton
+          label={copied ? 'Copied' : 'Copy'}
+          icon={
+            copied ? (
+              <CheckCircle2 size={13} aria-hidden="true" />
+            ) : (
+              <Copy size={13} aria-hidden="true" />
+            )
+          }
+          onClick={onCopy}
+        />
         <ActionButton
           label="Print"
           icon={<Printer size={13} aria-hidden="true" />}
@@ -980,6 +1117,22 @@ function ResultPanel({
         />
       </div>
     </section>
+  );
+}
+
+function ResultMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-control border border-line bg-panel p-2.5">
+      <div className="flex items-center gap-1.5 text-brand">
+        {icon}
+        <p className="text-[0.6rem] font-extrabold uppercase tracking-[0.06em] text-ink-soft">
+          {label}
+        </p>
+      </div>
+      <p className="mt-1 break-words text-base font-extrabold tracking-tight text-ink tabular-nums sm:text-lg">
+        {value}
+      </p>
+    </div>
   );
 }
 
