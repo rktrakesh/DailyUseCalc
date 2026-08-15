@@ -6,9 +6,12 @@ import {
   ChevronDown,
   Copy,
   Download,
+  Info,
+  PackageOpen,
   Printer,
   RotateCcw,
   Share2,
+  Weight,
 } from 'lucide-react';
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
@@ -27,6 +30,7 @@ import {
   recommendGravel,
   validateGravelInput,
 } from './index';
+import { DEFAULT_ADVANCED_OPTIONS_EXPANDED, hasAdvancedOptionIssue } from './advancedOptions';
 import { createGravelEstimateReport } from './gravelReport';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
 import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
@@ -90,6 +94,9 @@ function selectLabel<T extends string>(options: Array<{ value: T; label: string 
 }
 
 export default function GravelCalculator() {
+  const [advancedOptionsExpanded, setAdvancedOptionsExpanded] = useState(
+    DEFAULT_ADVANCED_OPTIONS_EXPANDED,
+  );
   const [input, setInput] = useState<GravelFormInput>(createDefaultGravelInput);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>('imperial');
   const [submitted, setSubmitted] = useState<{
@@ -162,6 +169,7 @@ export default function GravelCalculator() {
     setValidationIssues(issues);
     if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
       setStatus('Fix the highlighted fields, then calculate again.');
+      if (hasAdvancedOptionIssue(issues)) setAdvancedOptionsExpanded(true);
       requestAnimationFrame(() =>
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
       );
@@ -177,6 +185,7 @@ export default function GravelCalculator() {
     setSubmitted(undefined);
     setValidationIssues([]);
     setMeasurementSystem('imperial');
+    setAdvancedOptionsExpanded(DEFAULT_ADVANCED_OPTIONS_EXPANDED);
     setStatus('Calculator cleared.');
     trackCalculatorEvent('calculator_clear', analyticsParameters());
   }
@@ -436,7 +445,7 @@ export default function GravelCalculator() {
           </div>
         </fieldset>
 
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_8rem] gap-2.5">
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
           <SelectField
             label="Gravel type"
             name="gravel-type"
@@ -451,25 +460,7 @@ export default function GravelCalculator() {
               </option>
             ))}
           </SelectField>
-          <SelectField
-            label="Extra allowance"
-            name="allowance"
-            value={String(input.allowancePercent)}
-            onChange={(value) =>
-              setInput((current) => ({ ...current, allowancePercent: Number(value) }))
-            }
-            invalid={Boolean(errorFor('allowancePercent'))}
-          >
-            {[0, 5, 10, 15, 20].map((value) => (
-              <option key={value} value={value}>
-                {value}%
-              </option>
-            ))}
-          </SelectField>
-        </div>
-
-        {input.gravelType === 'custom' && (
-          <div className="mt-3 max-w-64">
+          {input.gravelType === 'custom' && (
             <NumberField
               id="custom-density"
               label="Custom density"
@@ -483,94 +474,155 @@ export default function GravelCalculator() {
                 }))
               }
             />
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
-          <OptionalGroup title="Price (optional)">
-            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
-              <select
-                aria-label="Currency"
-                className={controlClass()}
-                value={input.currency}
-                onChange={(event) => {
-                  const currency = event.target.value as CurrencyCode;
-                  setInput((current) => ({ ...current, currency }));
-                  localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
-                }}
+        <div className="mt-3 rounded-control border border-line bg-surface p-1 shadow-sm">
+          <button
+            type="button"
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-control px-3 text-left text-ink transition-colors hover:bg-panel-muted focus-visible:outline-2 focus-visible:outline-brand/70 focus-visible:outline-offset-2"
+            aria-expanded={advancedOptionsExpanded}
+            aria-controls="gravel-advanced-options"
+            onClick={() => setAdvancedOptionsExpanded((expanded) => !expanded)}
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-extrabold">Advanced options (optional)</span>
+              <span className="mt-0.5 block text-[0.68rem] font-medium leading-4 text-ink-soft">
+                Add allowance, pricing, bags, delivery, or truck details when needed.
+              </span>
+            </span>
+            <ChevronDown
+              className={`shrink-0 text-ink-soft transition-transform motion-reduce:transition-none ${advancedOptionsExpanded ? 'rotate-180' : ''}`}
+              size={17}
+              aria-hidden="true"
+            />
+          </button>
+
+          <div
+            id="gravel-advanced-options"
+            className="border-t border-line px-2 pb-2 pt-3"
+            hidden={!advancedOptionsExpanded}
+          >
+            <div className="max-w-64">
+              <SelectField
+                label="Extra allowance"
+                name="allowance"
+                value={String(input.allowancePercent)}
+                onChange={(value) =>
+                  setInput((current) => ({ ...current, allowancePercent: Number(value) }))
+                }
+                invalid={Boolean(errorFor('allowancePercent'))}
               >
-                {currencies.map(([code, symbol]) => (
-                  <option key={code} value={code}>
-                    {code} ({symbol})
+                {[0, 5, 10, 15, 20].map((value) => (
+                  <option key={value} value={value}>
+                    {value}%
                   </option>
                 ))}
-              </select>
-              <OptionalNumberField
-                id="price"
-                label="Price per cubic yard"
-                hideLabel
-                value={input.pricePerCubicYard}
-                unit="per yd³"
-                error={errorFor('pricePerCubicYard')}
-                onChange={(event) =>
-                  setInput((current) => ({
-                    ...current,
-                    pricePerCubicYard: optionalNumberFromEvent(event),
-                  }))
-                }
-              />
+              </SelectField>
             </div>
-            <OptionalNumberField
-              id="delivery-fee"
-              label="Delivery fee"
-              value={input.deliveryFee}
-              unit={input.currency}
-              error={errorFor('deliveryFee')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, deliveryFee: optionalNumberFromEvent(event) }))
-              }
-            />
-          </OptionalGroup>
-          <OptionalGroup title="Bag size (optional)">
-            <OptionalNumberField
-              id="bag-size"
-              label="Bag volume"
-              value={input.bagSizeCubicFeet}
-              unit="ft³ / bag"
-              error={errorFor('bagSizeCubicFeet')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  bagSizeCubicFeet: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-            <OptionalNumberField
-              id="bag-price"
-              label="Price per bag"
-              value={input.bagPrice}
-              unit={input.currency}
-              error={errorFor('bagPrice')}
-              onChange={(event) =>
-                setInput((current) => ({ ...current, bagPrice: optionalNumberFromEvent(event) }))
-              }
-            />
-          </OptionalGroup>
-          <OptionalGroup title="Truck capacity (optional)">
-            <OptionalNumberField
-              id="truck-capacity"
-              label="Capacity"
-              value={input.truckCapacityCubicYards}
-              unit="yd³ / truck"
-              error={errorFor('truckCapacityCubicYards')}
-              onChange={(event) =>
-                setInput((current) => ({
-                  ...current,
-                  truckCapacityCubicYards: optionalNumberFromEvent(event),
-                }))
-              }
-            />
-          </OptionalGroup>
+
+            <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
+              <OptionalGroup
+                title="Price (optional)"
+                reveal={Boolean(errorFor('pricePerCubicYard') || errorFor('deliveryFee'))}
+              >
+                <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
+                  <select
+                    aria-label="Currency"
+                    className={controlClass()}
+                    value={input.currency}
+                    onChange={(event) => {
+                      const currency = event.target.value as CurrencyCode;
+                      setInput((current) => ({ ...current, currency }));
+                      localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+                    }}
+                  >
+                    {currencies.map(([code, symbol]) => (
+                      <option key={code} value={code}>
+                        {code} ({symbol})
+                      </option>
+                    ))}
+                  </select>
+                  <OptionalNumberField
+                    id="price"
+                    label="Price per cubic yard"
+                    hideLabel
+                    value={input.pricePerCubicYard}
+                    unit="per yd³"
+                    error={errorFor('pricePerCubicYard')}
+                    onChange={(event) =>
+                      setInput((current) => ({
+                        ...current,
+                        pricePerCubicYard: optionalNumberFromEvent(event),
+                      }))
+                    }
+                  />
+                </div>
+                <OptionalNumberField
+                  id="delivery-fee"
+                  label="Delivery fee"
+                  value={input.deliveryFee}
+                  unit={input.currency}
+                  error={errorFor('deliveryFee')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      deliveryFee: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+              <OptionalGroup
+                title="Bag size (optional)"
+                reveal={Boolean(errorFor('bagSizeCubicFeet') || errorFor('bagPrice'))}
+              >
+                <OptionalNumberField
+                  id="bag-size"
+                  label="Bag volume"
+                  value={input.bagSizeCubicFeet}
+                  unit="ft³ / bag"
+                  error={errorFor('bagSizeCubicFeet')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagSizeCubicFeet: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+                <OptionalNumberField
+                  id="bag-price"
+                  label="Price per bag"
+                  value={input.bagPrice}
+                  unit={input.currency}
+                  error={errorFor('bagPrice')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      bagPrice: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+              <OptionalGroup
+                title="Truck capacity (optional)"
+                reveal={Boolean(errorFor('truckCapacityCubicYards'))}
+              >
+                <OptionalNumberField
+                  id="truck-capacity"
+                  label="Capacity"
+                  value={input.truckCapacityCubicYards}
+                  unit="yd³ / truck"
+                  error={errorFor('truckCapacityCubicYards')}
+                  onChange={(event) =>
+                    setInput((current) => ({
+                      ...current,
+                      truckCapacityCubicYards: optionalNumberFromEvent(event),
+                    }))
+                  }
+                />
+              </OptionalGroup>
+            </div>
+          </div>
         </div>
 
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.42fr)] gap-2">
@@ -658,9 +710,20 @@ function SelectField({
   );
 }
 
-function OptionalGroup({ title, children }: { title: string; children: ReactNode }) {
+function OptionalGroup({
+  title,
+  children,
+  reveal = false,
+}: {
+  title: string;
+  children: ReactNode;
+  reveal?: boolean;
+}) {
   return (
-    <details className="group self-start rounded-control border border-line bg-surface">
+    <details
+      className="group self-start rounded-control border border-line bg-surface"
+      open={reveal || undefined}
+    >
       <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
         {title}
         <ChevronDown
@@ -897,37 +960,17 @@ function ResultPanel({
         {formatOrder(calculation.recommendedOrderCubicYards)} <span className="text-xl">yd³</span>
       </h2>
       <p className="text-xs text-ink-soft">Suggested order quantity</p>
-      <div
-        className={`mt-3 grid divide-y divide-line overflow-hidden rounded-control border border-line bg-panel ${areaApplicable ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-2 sm:divide-x sm:divide-y-0'}`}
-      >
-        <ResultColumn
-          title="Volume"
-          values={[
-            `${formatNumber(adjustedVolume.cubicYards)} yd³`,
-            `${formatNumber(adjustedVolume.cubicFeet)} ft³`,
-            `${formatNumber(adjustedVolume.cubicMeters)} m³`,
-            `${formatNumber(adjustedVolume.liters, 0)} L`,
-          ]}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <ResultMetric
+          icon={<PackageOpen size={17} aria-hidden="true" />}
+          label="Calculated need"
+          value={`${formatNumber(calculation.volumeCubicYards)} yd³`}
         />
-        <ResultColumn
-          title="Estimated weight"
-          values={[
-            `${formatNumber(calculation.estimatedWeightTons)} short tons`,
-            `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
-            `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
-            `${formatNumber(calculation.estimatedWeightKilograms / 1000)} metric tons`,
-          ]}
+        <ResultMetric
+          icon={<Weight size={17} aria-hidden="true" />}
+          label="Approximate weight"
+          value={`${formatNumber(calculation.estimatedWeightTons)} short tons`}
         />
-        {areaApplicable && (
-          <ResultColumn
-            title="Area"
-            values={[
-              `${formatNumber(calculation.surfaceAreaSquareFeet)} ft²`,
-              `${formatNumber(calculation.surfaceAreaSquareFeet / 9)} yd²`,
-              `${formatNumber(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`,
-            ]}
-          />
-        )}
       </div>
       <p className="mt-2 text-[0.68rem] leading-4 text-ink-soft tabular-nums">
         Measured: {formatNumber(calculation.volumeCubicYards)} yd³ · Extra: +
@@ -960,6 +1003,51 @@ function ResultPanel({
           {warning}
         </div>
       ))}
+      <div className="mt-2 rounded-control border border-brand/20 bg-panel/70 p-2.5">
+        <div className="flex items-center gap-1.5 text-[0.62rem] font-extrabold uppercase tracking-[0.06em] text-brand">
+          <Info size={14} aria-hidden="true" /> Planning guidance
+        </div>
+        <p className="mt-1.5 text-[0.68rem] leading-4 text-ink-soft">
+          {recommendation.materialGuidance}
+        </p>
+        {input.inputMode !== 'volume' && (
+          <p className="mt-1 text-[0.68rem] leading-4 text-ink-soft">
+            {recommendation.depthGuidance}
+          </p>
+        )}
+      </div>
+      <div
+        className={`mt-2 grid divide-y divide-line overflow-hidden rounded-control border border-line bg-panel ${areaApplicable ? 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' : 'sm:grid-cols-2 sm:divide-x sm:divide-y-0'}`}
+      >
+        <ResultColumn
+          title="Volume"
+          values={[
+            `${formatNumber(adjustedVolume.cubicYards)} yd³`,
+            `${formatNumber(adjustedVolume.cubicFeet)} ft³`,
+            `${formatNumber(adjustedVolume.cubicMeters)} m³`,
+            `${formatNumber(adjustedVolume.liters, 0)} L`,
+          ]}
+        />
+        <ResultColumn
+          title="Estimated weight"
+          values={[
+            `${formatNumber(calculation.estimatedWeightTons)} short tons`,
+            `${formatNumber(calculation.estimatedWeightTons * 2000, 0)} lb`,
+            `${formatNumber(calculation.estimatedWeightKilograms, 0)} kg`,
+            `${formatNumber(calculation.estimatedWeightKilograms / 1000)} metric tons`,
+          ]}
+        />
+        {areaApplicable && (
+          <ResultColumn
+            title="Area"
+            values={[
+              `${formatNumber(calculation.surfaceAreaSquareFeet)} ft²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet / 9)} yd²`,
+              `${formatNumber(calculation.surfaceAreaSquareFeet * 0.09290304)} m²`,
+            ]}
+          />
+        )}
+      </div>
       <div className="mt-3 grid grid-cols-4 gap-1.5">
         <ActionButton label="Copy" icon={<Copy size={13} aria-hidden="true" />} onClick={onCopy} />
         <ActionButton
@@ -980,6 +1068,22 @@ function ResultPanel({
         />
       </div>
     </section>
+  );
+}
+
+function ResultMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-control border border-line bg-panel p-2.5">
+      <div className="flex items-center gap-1.5 text-brand">
+        {icon}
+        <p className="text-[0.6rem] font-extrabold uppercase tracking-[0.06em] text-ink-soft">
+          {label}
+        </p>
+      </div>
+      <p className="mt-1 break-words text-base font-extrabold tracking-tight text-ink tabular-nums sm:text-lg">
+        {value}
+      </p>
+    </div>
   );
 }
 

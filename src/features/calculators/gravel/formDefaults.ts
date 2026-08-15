@@ -10,7 +10,7 @@ export function createDefaultGravelInput(currency: CurrencyCode = 'USD'): Gravel
     length: { value: 20, unit: 'ft' },
     width: { value: 15, unit: 'ft' },
     diameter: { value: 20, unit: 'ft' },
-    depth: { value: 3, unit: 'in' },
+    depth: { value: 4, unit: 'in' },
     knownArea: { value: 300, unit: 'ft²' },
     knownVolume: { value: 3, unit: 'yd³' },
     currency,
