@@ -1,4 +1,4 @@
-import { toFeet } from '../../../lib/units/measurements';
+import { convertGravelLength } from './unitSystem';
 import type {
   GravelCalculation,
   GravelInput,
@@ -39,7 +39,9 @@ export function recommendGravel(
   calculation: GravelCalculation,
 ): GravelRecommendation {
   const depthInches =
-    input.inputMode === 'volume' ? undefined : toFeet(input.depth.value, input.depth.unit) * 12;
+    input.inputMode === 'volume'
+      ? undefined
+      : convertGravelLength(input.depth.value, input.depth.unit, 'in');
   const warnings: string[] = [];
   if (input.projectType === 'driveway' && depthInches !== undefined && depthInches < 4) {
     warnings.push(

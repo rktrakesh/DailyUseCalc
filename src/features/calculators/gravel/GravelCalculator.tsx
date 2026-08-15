@@ -16,7 +16,6 @@ import {
 import ShapeIcon from '../../../components/calculators/ShapeIcon';
 import { invalidateSubmittedResultOnValidationFailure } from '../../../lib/forms/calculationSubmission';
 import { preserveNumberInputOnWheel } from '../../../lib/forms/numberInputWheel';
-import { convertLength } from '../../../lib/units/measurements';
 import type { AreaUnit, VolumeUnit } from '../../../lib/units/measurements';
 import { downloadReportAsPdf, printReport } from '../../../lib/reports/reportService';
 import {
@@ -33,6 +32,10 @@ import {
 import { DEFAULT_ADVANCED_OPTIONS_EXPANDED, hasAdvancedOptionIssue } from './advancedOptions';
 import { createGravelEstimateReport } from './gravelReport';
 import { gravelTypeGuidance } from './formGuidance';
+import { gravelAnalyticsParameters, gravelSubmittedAnalyticsParameters } from './analytics';
+import { copyTextToClipboard, restartCopyFeedbackTimer } from './copyFeedback';
+import { convertGravelMeasurementSystem } from './unitSystem';
+import { gravelResultAnnouncement } from './resultAnnouncement';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
 import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
 import type {
@@ -110,13 +113,11 @@ export default function GravelCalculator() {
   const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copyFeedbackTimeout = useRef<number | undefined>(undefined);
   const started = useRef(createCalculatorStartedTracker());
-  const analyticsParameters = () => ({
-    calculator_id: 'gravel',
-    calculator_name: 'Gravel Calculator',
-    project_type: input.projectType,
-    unit_system: measurementSystem,
-  });
+  const analyticsParameters = () => gravelAnalyticsParameters(input, measurementSystem);
+  const submittedAnalyticsParameters = () =>
+    submitted ? gravelSubmittedAnalyticsParameters(submitted) : analyticsParameters();
 
   useEffect(() => {
     const savedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
@@ -124,6 +125,14 @@ export default function GravelCalculator() {
       setInput((current) => ({ ...current, currency: savedCurrency }));
     }
   }, []);
+
+  useEffect(
+    () => () => {
+      if (copyFeedbackTimeout.current !== undefined)
+        window.clearTimeout(copyFeedbackTimeout.current);
+    },
+    [],
+  );
 
   const calculation = useMemo(
     () => (submitted ? calculateGravel(submitted.input) : undefined),
@@ -139,35 +148,25 @@ export default function GravelCalculator() {
   function updateSystem(nextSystem: MeasurementSystem) {
     if (nextSystem === measurementSystem) return;
     setInput((current) => {
-      const metric = nextSystem === 'metric';
       return {
         ...current,
-        length: converted(current.length.value, current.length.unit, metric ? 'm' : 'ft', 3),
-        width: converted(current.width.value, current.width.unit, metric ? 'm' : 'ft', 3),
-        diameter: converted(current.diameter.value, current.diameter.unit, metric ? 'm' : 'ft', 3),
-        depth: converted(current.depth.value, current.depth.unit, metric ? 'cm' : 'in', 2),
+        ...convertGravelMeasurementSystem(current, nextSystem),
       };
     });
     setMeasurementSystem(nextSystem);
     setValidationIssues([]);
   }
 
-  function converted(
-    value: number,
-    from: GravelInput['length']['unit'],
-    to: 'm' | 'ft' | 'cm' | 'in',
-    digits: number,
-  ) {
-    return {
-      value: Number.isFinite(value)
-        ? Number(convertLength(value, from, to).toFixed(digits))
-        : value,
-      unit: to,
-    };
+  function resetCopiedFeedback() {
+    if (copyFeedbackTimeout.current !== undefined) {
+      window.clearTimeout(copyFeedbackTimeout.current);
+      copyFeedbackTimeout.current = undefined;
+    }
+    setCopied(false);
   }
 
   function calculateEstimate() {
-    setCopied(false);
+    resetCopiedFeedback();
     const issues = validateGravelInput(input);
     setValidationIssues(issues);
     if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
@@ -184,7 +183,7 @@ export default function GravelCalculator() {
   }
 
   function clearInputs() {
-    setCopied(false);
+    resetCopiedFeedback();
     setInput(createClearedGravelInput(input.currency));
     setSubmitted(undefined);
     setValidationIssues([]);
@@ -207,17 +206,21 @@ export default function GravelCalculator() {
   }
 
   async function copyEstimate() {
-    try {
-      await navigator.clipboard.writeText(estimateText());
-      setCopied(true);
-      setStatus('Estimate copied.');
-      window.setTimeout(() => {
-        setCopied(false);
-      }, 1750);
-      trackCalculatorEvent('calculator_copy', analyticsParameters());
-    } catch {
+    const success = await copyTextToClipboard(
+      (text) => navigator.clipboard.writeText(text),
+      estimateText(),
+    );
+    if (!success) {
       setStatus('Copy is unavailable in this browser.');
+      return;
     }
+    setCopied(true);
+    setStatus('Estimate copied.');
+    copyFeedbackTimeout.current = restartCopyFeedbackTimer(copyFeedbackTimeout.current, () => {
+      copyFeedbackTimeout.current = undefined;
+      setCopied(false);
+    });
+    trackCalculatorEvent('calculator_copy', submittedAnalyticsParameters());
   }
 
   async function shareEstimate() {
@@ -226,7 +229,7 @@ export default function GravelCalculator() {
         await navigator.share({ title: 'Gravel estimate', text: estimateText() });
         setStatus('Estimate shared.');
         trackCalculatorEvent('calculator_share', {
-          ...analyticsParameters(),
+          ...submittedAnalyticsParameters(),
           share_method: 'native',
         });
         return;
@@ -238,7 +241,7 @@ export default function GravelCalculator() {
       await navigator.clipboard.writeText(estimateText());
       setStatus('Estimate copied.');
       trackCalculatorEvent('calculator_share', {
-        ...analyticsParameters(),
+        ...submittedAnalyticsParameters(),
         share_method: 'clipboard_fallback',
       });
     } catch {
@@ -259,7 +262,7 @@ export default function GravelCalculator() {
   function printEstimate() {
     const report = reportData();
     if (!report) return;
-    trackCalculatorEvent('calculator_print', analyticsParameters());
+    trackCalculatorEvent('calculator_print', submittedAnalyticsParameters());
     setStatus(
       printReport(report)
         ? 'Choose a printer or another destination in the print dialog.'
@@ -274,7 +277,7 @@ export default function GravelCalculator() {
     try {
       await downloadReportAsPdf(report);
       setStatus('PDF download started.');
-      trackCalculatorEvent('calculator_pdf', analyticsParameters());
+      trackCalculatorEvent('calculator_pdf', submittedAnalyticsParameters());
     } catch (error) {
       console.error('PDF download failed:', error);
       setStatus('Could not prepare the PDF. Please try again.');
@@ -982,8 +985,10 @@ function ResultPanel({
     <section
       className="rounded-card border border-brand/25 bg-brand-soft/55 p-3 shadow-card sm:p-4"
       aria-labelledby="gravel-results-heading"
-      aria-live="polite"
     >
+      <p className="sr-only" aria-live="polite">
+        {gravelResultAnnouncement(calculation.recommendedOrderCubicYards)}
+      </p>
       <div className="flex items-center gap-1.5 text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-brand">
         <CheckCircle2 size={14} aria-hidden="true" /> Your gravel estimate
       </div>
