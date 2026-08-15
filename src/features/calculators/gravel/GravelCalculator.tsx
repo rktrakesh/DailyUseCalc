@@ -109,6 +109,7 @@ export default function GravelCalculator() {
   );
   const [status, setStatus] = useState('');
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
+  const [copied, setCopied] = useState(false);
   const started = useRef(createCalculatorStartedTracker());
   const analyticsParameters = () => ({
     calculator_id: 'gravel',
@@ -166,6 +167,7 @@ export default function GravelCalculator() {
   }
 
   function calculateEstimate() {
+    setCopied(false);
     const issues = validateGravelInput(input);
     setValidationIssues(issues);
     if (invalidateSubmittedResultOnValidationFailure(issues, () => setSubmitted(undefined))) {
@@ -182,6 +184,7 @@ export default function GravelCalculator() {
   }
 
   function clearInputs() {
+    setCopied(false);
     setInput(createClearedGravelInput(input.currency));
     setSubmitted(undefined);
     setValidationIssues([]);
@@ -206,7 +209,11 @@ export default function GravelCalculator() {
   async function copyEstimate() {
     try {
       await navigator.clipboard.writeText(estimateText());
+      setCopied(true);
       setStatus('Estimate copied.');
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 1750);
       trackCalculatorEvent('calculator_copy', analyticsParameters());
     } catch {
       setStatus('Copy is unavailable in this browser.');
@@ -662,6 +669,7 @@ export default function GravelCalculator() {
           onDownload={downloadEstimate}
           onShare={shareEstimate}
           isPreparingPdf={isPreparingPdf}
+          copied={copied}
         />
       )}
     </div>
@@ -928,6 +936,7 @@ function ResultPanel({
   onDownload,
   onShare,
   isPreparingPdf,
+  copied,
 }: {
   calculation: ReturnType<typeof calculateGravel>;
   recommendation: ReturnType<typeof recommendGravel>;
@@ -938,6 +947,7 @@ function ResultPanel({
   onDownload: () => void;
   onShare: () => void;
   isPreparingPdf: boolean;
+  copied: boolean;
 }) {
   const areaApplicable = input.inputMode !== 'volume';
   const gravelLabel = selectLabel(gravelOptions, input.gravelType);
@@ -1073,7 +1083,17 @@ function ResultPanel({
         )}
       </div>
       <div className="mt-3 grid grid-cols-4 gap-1.5">
-        <ActionButton label="Copy" icon={<Copy size={13} aria-hidden="true" />} onClick={onCopy} />
+        <ActionButton
+          label={copied ? 'Copied' : 'Copy'}
+          icon={
+            copied ? (
+              <CheckCircle2 size={13} aria-hidden="true" />
+            ) : (
+              <Copy size={13} aria-hidden="true" />
+            )
+          }
+          onClick={onCopy}
+        />
         <ActionButton
           label="Print"
           icon={<Printer size={13} aria-hidden="true" />}
