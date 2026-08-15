@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
-  Calculator,
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
   Copy,
@@ -32,6 +32,7 @@ import {
 } from './index';
 import { DEFAULT_ADVANCED_OPTIONS_EXPANDED, hasAdvancedOptionIssue } from './advancedOptions';
 import { createGravelEstimateReport } from './gravelReport';
+import { gravelTypeGuidance } from './formGuidance';
 import { currencies, formatMoney, isCurrencyCode, type CurrencyCode } from './currencies';
 import { createClearedGravelInput, createDefaultGravelInput } from './formDefaults';
 import type {
@@ -334,7 +335,6 @@ export default function GravelCalculator() {
             <option value="metric">Metric</option>
           </SelectField>
         </div>
-
         <fieldset className="mt-3">
           <legend className="sr-only">Measurements</legend>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -450,6 +450,7 @@ export default function GravelCalculator() {
             label="Gravel type"
             name="gravel-type"
             value={input.gravelType}
+            helperText={gravelTypeGuidance(input.projectType, input.gravelType)}
             onChange={(value) =>
               setInput((current) => ({ ...current, gravelType: value as GravelType }))
             }
@@ -476,8 +477,7 @@ export default function GravelCalculator() {
             />
           )}
         </div>
-
-        <div className="mt-3 rounded-control border border-line bg-surface p-1 shadow-sm">
+        <div className="mt-3 rounded-control border border-line bg-surface p-1">
           <button
             type="button"
             className="flex min-h-12 w-full items-center justify-between gap-3 rounded-control px-3 text-left text-ink transition-colors hover:bg-panel-muted focus-visible:outline-2 focus-visible:outline-brand/70 focus-visible:outline-offset-2"
@@ -508,6 +508,7 @@ export default function GravelCalculator() {
                 label="Extra allowance"
                 name="allowance"
                 value={String(input.allowancePercent)}
+                helperText="Adds extra material for uneven ground, compaction, and waste."
                 onChange={(value) =>
                   setInput((current) => ({ ...current, allowancePercent: Number(value) }))
                 }
@@ -523,7 +524,7 @@ export default function GravelCalculator() {
 
             <div className="mt-3 grid items-start gap-2 @xl/calculator:grid-cols-3">
               <OptionalGroup
-                title="Price (optional)"
+                title="Material pricing"
                 reveal={Boolean(errorFor('pricePerCubicYard') || errorFor('deliveryFee'))}
               >
                 <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
@@ -548,6 +549,7 @@ export default function GravelCalculator() {
                     label="Price per cubic yard"
                     hideLabel
                     value={input.pricePerCubicYard}
+                    placeholder="e.g. 45"
                     unit="per yd³"
                     error={errorFor('pricePerCubicYard')}
                     onChange={(event) =>
@@ -562,6 +564,7 @@ export default function GravelCalculator() {
                   id="delivery-fee"
                   label="Delivery fee"
                   value={input.deliveryFee}
+                  placeholder="e.g. 75"
                   unit={input.currency}
                   error={errorFor('deliveryFee')}
                   onChange={(event) =>
@@ -573,13 +576,14 @@ export default function GravelCalculator() {
                 />
               </OptionalGroup>
               <OptionalGroup
-                title="Bag size (optional)"
+                title="Buying gravel in bags?"
                 reveal={Boolean(errorFor('bagSizeCubicFeet') || errorFor('bagPrice'))}
               >
                 <OptionalNumberField
                   id="bag-size"
                   label="Bag volume"
                   value={input.bagSizeCubicFeet}
+                  placeholder="e.g. 0.5"
                   unit="ft³ / bag"
                   error={errorFor('bagSizeCubicFeet')}
                   onChange={(event) =>
@@ -593,6 +597,7 @@ export default function GravelCalculator() {
                   id="bag-price"
                   label="Price per bag"
                   value={input.bagPrice}
+                  placeholder="e.g. 6.50"
                   unit={input.currency}
                   error={errorFor('bagPrice')}
                   onChange={(event) =>
@@ -604,13 +609,14 @@ export default function GravelCalculator() {
                 />
               </OptionalGroup>
               <OptionalGroup
-                title="Truck capacity (optional)"
+                title="Bulk delivery"
                 reveal={Boolean(errorFor('truckCapacityCubicYards'))}
               >
                 <OptionalNumberField
                   id="truck-capacity"
                   label="Capacity"
                   value={input.truckCapacityCubicYards}
+                  placeholder="e.g. 10"
                   unit="yd³ / truck"
                   error={errorFor('truckCapacityCubicYards')}
                   onChange={(event) =>
@@ -624,14 +630,13 @@ export default function GravelCalculator() {
             </div>
           </div>
         </div>
-
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.42fr)] gap-2">
           <button
             type="button"
             onClick={calculateEstimate}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-4 text-sm font-bold text-white transition-colors hover:bg-brand-strong sm:min-h-10"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-brand px-2 text-xs font-bold text-white transition-colors hover:bg-brand-strong sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
           >
-            Calculate <Calculator size={16} aria-hidden="true" />
+            Calculate Gravel Needed <ArrowRight size={16} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -670,6 +675,7 @@ function SelectField({
   onChange,
   children,
   leadingIcon,
+  helperText,
   disabled = false,
   invalid = false,
 }: {
@@ -679,6 +685,7 @@ function SelectField({
   onChange: (value: string) => void;
   children: ReactNode;
   leadingIcon?: ReactNode;
+  helperText?: string;
   disabled?: boolean;
   invalid?: boolean;
 }) {
@@ -696,6 +703,8 @@ function SelectField({
           className={`${controlClass(invalid)} appearance-none pr-7 ${leadingIcon ? 'pl-8' : ''} disabled:cursor-not-allowed disabled:opacity-55`}
           value={value}
           disabled={disabled}
+          aria-describedby={helperText ? `${name}-help` : undefined}
+          aria-invalid={invalid}
           onChange={(event) => onChange(event.target.value)}
         >
           {children}
@@ -706,6 +715,11 @@ function SelectField({
           aria-hidden="true"
         />
       </span>
+      {helperText && (
+        <span id={`${name}-help`} className="text-[0.66rem] font-medium leading-4 text-ink-soft">
+          {helperText}
+        </span>
+      )}
     </label>
   );
 }
@@ -720,19 +734,16 @@ function OptionalGroup({
   reveal?: boolean;
 }) {
   return (
-    <details
-      className="group self-start rounded-control border border-line bg-surface"
-      open={reveal || undefined}
-    >
-      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 px-3 text-xs font-bold text-ink marker:content-none">
+    <details className="group self-start rounded-control bg-panel" open={reveal || undefined}>
+      <summary className="flex min-h-10 cursor-pointer items-center justify-between gap-2 rounded-control px-3 text-xs font-bold text-ink marker:content-none hover:bg-panel-muted focus-visible:outline-2 focus-visible:outline-brand/70 focus-visible:outline-offset-1">
         {title}
         <ChevronDown
-          className="transition-transform group-open:rotate-180"
+          className="transition-transform group-open:rotate-180 motion-reduce:transition-none"
           size={15}
           aria-hidden="true"
         />
       </summary>
-      <div className="grid gap-2 border-t border-line p-2.5">{children}</div>
+      <div className="grid gap-2 border-t border-line/70 p-2.5">{children}</div>
     </details>
   );
 }
@@ -743,6 +754,7 @@ function NumberField({
   value,
   unit,
   error,
+  helperText,
   onChange,
 }: {
   id: string;
@@ -750,6 +762,7 @@ function NumberField({
   value: number;
   unit: string;
   error?: string;
+  helperText?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
@@ -769,12 +782,21 @@ function NumberField({
           onChange={onChange}
           onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={
+            [helperText ? `${id}-help` : undefined, error ? `${id}-error` : undefined]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
         />
         <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[0.68rem] font-semibold text-ink-soft">
           {unit}
         </span>
       </span>
+      {helperText && (
+        <span id={`${id}-help`} className="text-[0.66rem] font-medium leading-4 text-ink-soft">
+          {helperText}
+        </span>
+      )}
       {error && (
         <span id={`${id}-error`} className="text-[0.68rem] font-medium text-danger">
           {error}
@@ -791,6 +813,7 @@ function OptionalNumberField({
   unit,
   error,
   onChange,
+  placeholder = 'Optional',
   hideLabel = false,
 }: {
   id: string;
@@ -799,6 +822,7 @@ function OptionalNumberField({
   unit: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
   hideLabel?: boolean;
 }) {
   return (
@@ -815,7 +839,7 @@ function OptionalNumberField({
           min="0"
           step="any"
           value={value ?? ''}
-          placeholder="Optional"
+          placeholder={placeholder}
           onChange={onChange}
           onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
