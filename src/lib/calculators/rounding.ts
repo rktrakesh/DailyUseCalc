@@ -11,3 +11,14 @@ export function requiredWholeUnits(requiredAmount: number, unitYield: number): n
   const tolerance = Number.EPSILON * Math.max(1, Math.abs(exactCount)) * 10;
   return Math.ceil(exactCount - tolerance);
 }
+
+export function numericalTolerance(...values: number[]): number {
+  return Number.EPSILON * Math.max(1, ...values.map(Math.abs)) * 10;
+}
+
+export function normalizeNumericalLeftover(purchased: number, required: number): number {
+  const leftover = purchased - required;
+  return leftover < 0 && Math.abs(leftover) <= numericalTolerance(purchased, required)
+    ? 0
+    : leftover;
+}

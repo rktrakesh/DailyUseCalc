@@ -1,4 +1,9 @@
 import { toFeet } from '../../../lib/units/measurements';
+import {
+  normalizeNumericalLeftover,
+  numericalTolerance,
+  requiredWholeUnits,
+} from '../../../lib/calculators/rounding';
 import { PAINT_CONTAINERS, SQUARE_FEET_PER_SQUARE_METER, US_GALLON_LITERS } from './constants';
 import type {
   PaintCalculation,
@@ -17,12 +22,15 @@ export function recommendPaintPurchase(requiredGallons: number): PurchaseRecomme
       for (let quart = 0; quart <= 4; quart++) {
         const counts = [five, one, quart];
         const volume = five * 5 + one + quart * 0.25;
-        if (volume + 1e-10 < requiredGallons) continue;
+        if (volume + numericalTolerance(volume, requiredGallons) < requiredGallons) continue;
         const count = five + one + quart;
+        const comparisonTolerance = best
+          ? numericalTolerance(volume, best.volume)
+          : Number.EPSILON * 10;
         if (
           !best ||
-          volume < best.volume - 1e-10 ||
-          (Math.abs(volume - best.volume) < 1e-10 && count < best.count)
+          volume < best.volume - comparisonTolerance ||
+          (Math.abs(volume - best.volume) <= comparisonTolerance && count < best.count)
         )
           best = { counts, volume, count };
       }
@@ -33,7 +41,7 @@ export function recommendPaintPurchase(requiredGallons: number): PurchaseRecomme
   return {
     containers,
     purchasedGallons: best!.volume,
-    leftoverGallons: best!.volume - requiredGallons,
+    leftoverGallons: normalizeNumericalLeftover(best!.volume, requiredGallons),
     display: containers.map((x) => `${x.count} x ${x.label}`).join(' + '),
   };
 }
@@ -139,7 +147,7 @@ export function calculatePaint(input: PaintInput): PaintCalculation {
     : undefined;
   const estimatedPrimerCost =
     primer && input.primerPricePerGallon !== undefined
-      ? Math.ceil(primer.requiredGallons) * input.primerPricePerGallon
+      ? requiredWholeUnits(primer.requiredGallons, 1) * input.primerPricePerGallon
       : undefined;
   return {
     grossWallAreaSquareFeet,

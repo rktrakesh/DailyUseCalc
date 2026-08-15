@@ -41,6 +41,15 @@ describe('tile calculator', () => {
     i.knownArea = 100.2;
     expect(calculateTile(i).requiredTiles).toBe(111);
   });
+  it('distinguishes whole-tile floating noise from genuine excess', () => {
+    const i = base();
+    i.measureMode = 'area';
+    i.wastePercent = 0;
+    i.knownArea = 100.00000000000001;
+    expect(calculateTile(i).requiredTiles).toBe(100);
+    i.knownArea = 100.0001;
+    expect(calculateTile(i).requiredTiles).toBe(101);
+  });
   it('subtracts excluded area before waste', () => {
     const i = base();
     i.length.value = 10;
@@ -83,6 +92,16 @@ describe('tile calculator', () => {
     expect(r.boxesRequired).toBe(9);
     expect(r.purchasedCoverageSquareFeet).toBe(139.5);
     expect(r.extraPurchasedCoverageSquareFeet).toBeCloseTo(7.5);
+  });
+  it('distinguishes manufacturer-coverage box noise from genuine excess', () => {
+    const i = base();
+    i.measureMode = 'area';
+    i.knownArea = 120.00000000000001;
+    i.boxMode = 'coverage';
+    i.manufacturerCoverage = 13.2;
+    expect(calculateTile(i).boxesRequired).toBe(10);
+    i.knownArea = 120.0001;
+    expect(calculateTile(i).boxesRequired).toBe(11);
   });
   it('uses grout gap in the installed module', () => {
     const i = base();

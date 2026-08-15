@@ -195,6 +195,11 @@ describe('paint calculation', () => {
     expect(recommendPaintPurchase(7).display).toBe('1 x 5 gal + 2 x 1 gal');
     expect(recommendPaintPurchase(0.1).display).toBe('1 x 1 qt');
   });
+  it('treats machine noise at a container boundary differently from genuine excess', () => {
+    expect(recommendPaintPurchase(1.0000000000000002).purchasedGallons).toBe(1);
+    expect(recommendPaintPurchase(1.0000000000000002).leftoverGallons).toBe(0);
+    expect(recommendPaintPurchase(1.0001).purchasedGallons).toBe(1.25);
+  });
   it.each([
     [0.25, 0.25, 1],
     [1, 1, 1],

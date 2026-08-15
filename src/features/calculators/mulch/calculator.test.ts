@@ -125,6 +125,23 @@ describe('mulch calculation', () => {
     expect(calculateMulch(input).bulkOrderCubicYards).toBe(0.5);
   });
 
+  it('distinguishes bag and bulk floating noise from genuine excess', () => {
+    const input = createDefaultMulchInput();
+    input.measureMode = 'area';
+    input.knownArea = 1;
+    input.depth.value = 12;
+    input.allowancePercent = 0;
+    input.bagVolume = 1;
+    input.bulkIncrementCubicYards = 0.1;
+    expect(calculateMulch(input).bagsRequired).toBe(1);
+    input.knownArea = 1.0001;
+    expect(calculateMulch(input).bagsRequired).toBe(2);
+    input.knownArea = 27 * (0.3 + Number.EPSILON);
+    expect(calculateMulch(input).bulkOrderCubicYards).toBe(0.3);
+    input.knownArea = 27 * 0.3001;
+    expect(calculateMulch(input).bulkOrderCubicYards).toBe(0.4);
+  });
+
   it('supports custom bag sizes and all pricing-presence combinations including zero', () => {
     const input = createDefaultMulchInput();
     input.bagVolume = 1.5;

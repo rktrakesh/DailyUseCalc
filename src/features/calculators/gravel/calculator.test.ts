@@ -234,6 +234,16 @@ describe('gravel calculation', () => {
     expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 3.3 }).truckLoads).toBe(1);
   });
 
+  it('distinguishes truck-capacity floating noise from genuine excess', () => {
+    expect(
+      calculateGravel({
+        ...baseInput,
+        truckCapacityCubicYards: 3.3 / (1 + Number.EPSILON),
+      }).truckLoads,
+    ).toBe(1);
+    expect(calculateGravel({ ...baseInput, truckCapacityCubicYards: 3.299 }).truckLoads).toBe(2);
+  });
+
   it('supports fractional and very small valid dimensions', () => {
     const result = calculateGravel({
       ...baseInput,

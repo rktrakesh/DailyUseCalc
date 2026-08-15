@@ -123,6 +123,23 @@ describe('topsoil calculation', () => {
     expect(exact.bulkOrderCubicYards).toBeCloseTo(exact.requiredCubicYards);
   });
 
+  it('distinguishes purchasing noise from genuine excess', () => {
+    const input = createDefaultTopsoilInput();
+    input.measureMode = 'area';
+    input.knownArea = 1;
+    input.depth.value = 12;
+    input.allowancePercent = 0;
+    input.bagVolume = 1;
+    input.bulkIncrement = 0.1;
+    expect(calculateTopsoil(input).bagsRequired).toBe(1);
+    input.knownArea = 1.0001;
+    expect(calculateTopsoil(input).bagsRequired).toBe(2);
+    input.knownArea = 27 * (0.3 + Number.EPSILON);
+    expect(calculateTopsoil(input).bulkOrderCubicYards).toBe(0.3);
+    input.knownArea = 27 * 0.3001;
+    expect(calculateTopsoil(input).bulkOrderCubicYards).toBe(0.4);
+  });
+
   it('supports absent, individual, both, and zero prices', () => {
     const input = createDefaultTopsoilInput();
     let result = calculateTopsoil(input);
