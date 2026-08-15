@@ -1,4 +1,6 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import { calculateMulch } from './calculator';
 import type { MulchInput, ValidationIssue } from './types';
 
 const valid = (n: number) => Number.isFinite(n) && n > 0;
@@ -51,5 +53,31 @@ export function validateMulchInput(input: MulchInput): ValidationIssue[] {
   for (const field of ['pricePerBag', 'bulkPricePerCubicYard'] as const)
     if (input[field] !== undefined && (!Number.isFinite(input[field]) || input[field]! < 0))
       issues.push({ field, message: 'Price cannot be negative.' });
+  if (!issues.length) {
+    const result = calculateMulch({
+      ...input,
+      bagVolume: undefined,
+      bulkIncrementCubicYards: undefined,
+    });
+    const bagVolumeCubicFeet =
+      input.bagVolume === undefined
+        ? undefined
+        : input.bagVolumeUnit === 'liter'
+          ? input.bagVolume / 28.316846592
+          : input.bagVolume;
+    if (
+      bagVolumeCubicFeet !== undefined &&
+      !isSupportedPurchaseQuotient(result.requiredCubicFeet, bagVolumeCubicFeet)
+    )
+      issues.push({ field: 'bagVolume', message: 'Use a larger bag size for this project.' });
+    if (
+      input.bulkIncrementCubicYards !== undefined &&
+      !isSupportedPurchaseQuotient(result.requiredCubicYards, input.bulkIncrementCubicYards)
+    )
+      issues.push({
+        field: 'bulkIncrementCubicYards',
+        message: 'Use a larger purchasing increment for this project.',
+      });
+  }
   return issues;
 }

@@ -3,6 +3,18 @@ import { calculateTile } from './calculator';
 import { createClearedTileInput, createDefaultTileInput } from './formDefaults';
 import { validateTileInput } from './validation';
 
+it('rejects tile purchasing counts above the supported quotient', () => {
+  const input = createDefaultTileInput();
+  input.tileLength = 0.001;
+  input.tileWidth = 0.001;
+  expect(validateTileInput(input)).toContainEqual(expect.objectContaining({ field: 'tileLength' }));
+  const valid = createDefaultTileInput();
+  valid.tileLength = 12;
+  valid.tileWidth = 12;
+  expect(validateTileInput(valid)).toEqual([]);
+  expect(() => calculateTile(valid)).not.toThrow();
+});
+
 const base = () => {
   const i = createDefaultTileInput();
   i.tileLength = 12;

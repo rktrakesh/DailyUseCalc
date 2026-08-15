@@ -1,4 +1,11 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import {
+  calculateSand,
+  requiredInBulkUnit,
+  volumeUnitCubicFeet,
+  weightUnitPounds,
+} from './calculator';
 import type { SandInput, ValidationIssue } from './types';
 
 const positive = (value: number) => Number.isFinite(value) && value > 0;
@@ -56,5 +63,27 @@ export function validateSandInput(input: SandInput): ValidationIssue[] {
   for (const field of ['pricePerBag', 'bulkUnitPrice'] as const)
     if (input[field] !== undefined && (!Number.isFinite(input[field]) || input[field]! < 0))
       issues.push({ field, message: 'Price cannot be negative.' });
+  if (!issues.length) {
+    const result = calculateSand({ ...input, bagSize: undefined, bulkIncrement: undefined });
+    const bagRequired =
+      input.bagBasis === 'weight'
+        ? result.requiredWeight.pounds / weightUnitPounds(input.bagUnit)
+        : result.requiredCubicFeet / volumeUnitCubicFeet(input.bagUnit);
+    if (input.bagSize !== undefined && !isSupportedPurchaseQuotient(bagRequired, input.bagSize))
+      issues.push({ field: 'bagSize', message: 'Use a larger bag size for this project.' });
+    const bulkRequired = requiredInBulkUnit(
+      input,
+      result.requiredCubicFeet,
+      result.requiredWeight.pounds,
+    );
+    if (
+      input.bulkIncrement !== undefined &&
+      !isSupportedPurchaseQuotient(bulkRequired, input.bulkIncrement)
+    )
+      issues.push({
+        field: 'bulkIncrement',
+        message: 'Use a larger purchasing increment for this project.',
+      });
+  }
   return issues;
 }

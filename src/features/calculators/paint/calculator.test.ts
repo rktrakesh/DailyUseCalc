@@ -4,6 +4,19 @@ import { createDefaultPaintInput } from './formDefaults';
 import { convertPaintMeasurementSystem } from './formUnits';
 import { validatePaintInput } from './validation';
 
+it('rejects paint purchasing counts above the supported quotient', () => {
+  const input = createDefaultPaintInput();
+  input.coverageSquareFeetPerGallon = 0.00001;
+  expect(validatePaintInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'coverageSquareFeetPerGallon' }),
+  );
+  expect(() => recommendPaintPurchase(2_500_000.25)).toThrow(RangeError);
+  expect(recommendPaintPurchase(2_500_000).purchasedGallons).toBe(2_500_000);
+  const valid = createDefaultPaintInput();
+  expect(validatePaintInput(valid)).toEqual([]);
+  expect(() => calculatePaint(valid)).not.toThrow();
+});
+
 describe('paint calculation', () => {
   it('calculates a simple four-wall room with two coats and allowance', () => {
     const result = calculatePaint(createDefaultPaintInput());

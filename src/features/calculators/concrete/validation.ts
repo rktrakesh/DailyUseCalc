@@ -1,4 +1,7 @@
 import { toFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient } from '../../../lib/calculators/rounding';
+import { concreteBagPreset } from './bagPresets';
+import { concreteGeometry } from './calculator';
 import type { ConcreteInput, ConcreteValidationIssue, DimensionInput } from './types';
 
 export const MAX_SURFACE_DIMENSION_FEET = 100_000;
@@ -117,6 +120,24 @@ export function validateConcreteInput(input: ConcreteInput): ConcreteValidationI
       issues.push({
         field: 'customBagYieldCubicFeet',
         message: `Yield per bag must be greater than zero and no more than ${MAX_BAG_YIELD_CUBIC_FEET} ft³.`,
+      });
+  }
+  if (!issues.length) {
+    const adjustedCubicFeet =
+      concreteGeometry(input).volumeCubicFeet * (1 + input.allowancePercent / 100);
+    const bagYield =
+      input.bagPreset === 'custom'
+        ? input.customBagYieldCubicFeet!
+        : concreteBagPreset(input.bagPreset).yieldCubicFeet!;
+    if (!isSupportedPurchaseQuotient(adjustedCubicFeet, bagYield))
+      issues.push({
+        field: input.bagPreset === 'custom' ? 'customBagYieldCubicFeet' : 'quantity',
+        message: 'This project produces too many purchasing units for a reliable estimate.',
+      });
+    if (!isSupportedPurchaseQuotient(adjustedCubicFeet / 27, 0.1))
+      issues.push({
+        field: 'quantity',
+        message: 'This project produces too many purchasing units for a reliable estimate.',
       });
   }
   return issues;

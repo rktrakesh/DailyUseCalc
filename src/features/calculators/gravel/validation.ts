@@ -1,4 +1,6 @@
 import { areaToSquareFeet, toFeet, volumeToCubicFeet } from '../../../lib/units/measurements';
+import { isSupportedPurchaseQuotient, roundUpToIncrement } from '../../../lib/calculators/rounding';
+import { calculateSurfaceAreaSquareFeet } from './calculator';
 import type { DimensionInput, GravelInput, ValidationIssue } from './types';
 
 const MAX_SURFACE_DIMENSION_FEET = 100_000;
@@ -119,6 +121,42 @@ export function validateGravelInput(input: GravelInput): ValidationIssue[] {
       field: 'truckCapacityCubicYards',
       message: `Truck capacity must be greater than zero and no more than ${MAX_TRUCK_CAPACITY_CUBIC_YARDS} yd³.`,
     });
+  }
+  if (!issues.length) {
+    const volumeCubicFeet =
+      input.inputMode === 'volume'
+        ? volumeToCubicFeet(input.knownVolume.value, input.knownVolume.unit)
+        : calculateSurfaceAreaSquareFeet(input) * toFeet(input.depth.value, input.depth.unit);
+    const adjustedCubicFeet = volumeCubicFeet * (1 + input.allowancePercent / 100);
+    const adjustedCubicYards = adjustedCubicFeet / 27;
+    const bulkOrderSupported = isSupportedPurchaseQuotient(adjustedCubicYards, 0.1);
+    if (!bulkOrderSupported)
+      issues.push({
+        field: input.inputMode === 'volume' ? 'knownVolume' : 'depth',
+        message: 'This project produces too many purchasing units for a reliable estimate.',
+      });
+    if (
+      input.bagSizeCubicFeet !== undefined &&
+      isPositiveNumber(input.bagSizeCubicFeet) &&
+      !isSupportedPurchaseQuotient(adjustedCubicFeet, input.bagSizeCubicFeet)
+    )
+      issues.push({
+        field: 'bagSizeCubicFeet',
+        message: 'Use a larger bag size for this project.',
+      });
+    if (
+      bulkOrderSupported &&
+      input.truckCapacityCubicYards !== undefined &&
+      isPositiveNumber(input.truckCapacityCubicYards) &&
+      !isSupportedPurchaseQuotient(
+        roundUpToIncrement(adjustedCubicYards, 0.1),
+        input.truckCapacityCubicYards,
+      )
+    )
+      issues.push({
+        field: 'truckCapacityCubicYards',
+        message: 'Use a larger truck capacity for this project.',
+      });
   }
   return issues;
 }

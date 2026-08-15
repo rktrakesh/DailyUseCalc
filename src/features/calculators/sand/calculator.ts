@@ -60,19 +60,19 @@ export function densityToPoundsPerCubicYard(value: number, unit: DensityUnit) {
   return value;
 }
 
-function weightUnitPounds(unit: BagUnit | BulkUnit) {
+export function weightUnitPounds(unit: BagUnit | BulkUnit) {
   if (unit === 'kg') return POUNDS_PER_KILOGRAM;
   if (unit === 'us-ton') return 2000;
   if (unit === 'metric-tonne') return 1000 * POUNDS_PER_KILOGRAM;
   return 1;
 }
-function volumeUnitCubicFeet(unit: BagUnit | BulkUnit) {
+export function volumeUnitCubicFeet(unit: BagUnit | BulkUnit) {
   if (unit === 'cu-yd') return 27;
   if (unit === 'cu-m') return CUBIC_FEET_PER_CUBIC_METER;
   if (unit === 'liter') return 1 / LITERS_PER_CUBIC_FOOT;
   return 1;
 }
-function requiredInBulkUnit(input: SandInput, cubicFeet: number, pounds: number) {
+export function requiredInBulkUnit(input: SandInput, cubicFeet: number, pounds: number) {
   return input.bulkBasis === 'weight'
     ? pounds / weightUnitPounds(input.bulkUnit)
     : cubicFeet / volumeUnitCubicFeet(input.bulkUnit);
@@ -136,14 +136,18 @@ export function calculateSand(input: SandInput): SandCalculation {
     bagLeftoverAmount:
       bagPurchasedAmount === undefined
         ? undefined
-        : normalizeNumericalLeftover(bagPurchasedAmount, bagRequiredSelected),
+        : normalizeNumericalLeftover(bagPurchasedAmount, bagRequiredSelected, input.bagSize!),
     bagCost:
       bagsRequired !== undefined && input.pricePerBag !== undefined
         ? bagsRequired * input.pricePerBag
         : undefined,
     bulkRequiredAmount,
     bulkOrderAmount,
-    bulkLeftoverAmount: normalizeNumericalLeftover(bulkOrderAmount, bulkRequiredAmount),
+    bulkLeftoverAmount: normalizeNumericalLeftover(
+      bulkOrderAmount,
+      bulkRequiredAmount,
+      input.bulkIncrement ?? 1,
+    ),
     bulkCost: input.bulkUnitPrice === undefined ? undefined : bulkOrderAmount * input.bulkUnitPrice,
     orderedWeight: weightsFromPounds(orderedPounds),
   };

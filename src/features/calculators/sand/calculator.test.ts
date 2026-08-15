@@ -4,6 +4,27 @@ import { createClearedSandInput, createDefaultSandInput } from './formDefaults';
 import { convertSandMeasurementSystem } from './formUnits';
 import { validateSandInput } from './validation';
 
+it('rejects sand purchasing counts above the supported quotient', () => {
+  const input = createDefaultSandInput();
+  input.bagSize = 1e-9;
+  expect(validateSandInput(input)).toContainEqual(expect.objectContaining({ field: 'bagSize' }));
+
+  const tinyIncrement = createDefaultSandInput();
+  tinyIncrement.measureMode = 'area';
+  tinyIncrement.knownArea = 1e-99;
+  tinyIncrement.depth = { value: 12, unit: 'in' };
+  tinyIncrement.allowancePercent = 0;
+  tinyIncrement.compactionPercent = 0;
+  tinyIncrement.bulkIncrement = 1e-101;
+  expect(validateSandInput(tinyIncrement)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const valid = createDefaultSandInput();
+  expect(validateSandInput(valid)).toEqual([]);
+  expect(() => calculateSand(valid)).not.toThrow();
+});
+
 describe('sand calculator', () => {
   it('matches truth case A', () => {
     const input = createDefaultSandInput();

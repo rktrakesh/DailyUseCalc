@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeNumericalLeftover, requiredWholeUnits, roundUpToIncrement } from './rounding';
+import {
+  MAX_PURCHASE_DECIMAL_PLACES,
+  MAX_PURCHASE_QUOTIENT,
+  isSupportedPurchaseUnit,
+  normalizeNumericalLeftover,
+  requiredWholeUnits,
+  roundUpToIncrement,
+} from './rounding';
 
 describe('purchasing rounding policy', () => {
   it.each([
@@ -7,8 +14,6 @@ describe('purchasing rounding policy', () => {
     [100.00000000000001, 1, 100],
     [100.0001, 1, 101],
     [99.9999, 1, 100],
-    [1_000_000_000_000, 1, 1_000_000_000_000],
-    [1_000_000_000_000.01, 1, 1_000_000_000_001],
   ])('rounds %s required with %s yield to %s units', (required, unitYield, expected) => {
     expect(requiredWholeUnits(required, unitYield)).toBe(expected);
   });
@@ -17,13 +22,9 @@ describe('purchasing rounding policy', () => {
     [100, 1, 100],
     [(0.1 + 0.2) / 0.003, 1, 100],
     [100.0001, 1, 101],
-    [1e12, 1, 1e12],
-    [1e12 + 0.0001, 1, 1e12 + 1],
-    [1e12 + 0.01, 1, 1e12 + 1],
-    [1e9 + 0.000001, 1, 1e9 + 1],
-    [250_000_000_000, 0.25, 1e12],
-    [250_000_000_000.00003, 0.25, 1e12 + 1],
-    [100_000_000_000.00002, 0.1, 1e12 + 1],
+    [9_999_999, 1, 9_999_999],
+    [10_000_000, 1, 10_000_000],
+    [2_500_000, 0.25, 10_000_000],
   ])(
     'keeps large and noisy whole-unit count %s / %s safe as %s',
     (required, unitYield, expected) => {
@@ -76,19 +77,71 @@ describe('purchasing rounding policy', () => {
     expect(roundUpToIncrement(required, increment)).toBe(expected);
   });
 
-  it.each([
-    [1e12 + 0.0001, 0.001],
-    [1e12 + 0.01, 0.001],
-    [1e9 + 0.000001, 1e-7],
-  ])('never under-orders a large-magnitude requirement %s at %s', (required, increment) => {
-    const rounded = roundUpToIncrement(required, increment);
-    expect(rounded).toBeGreaterThanOrEqual(required);
-    expect(rounded / increment).toBeCloseTo(Math.round(rounded / increment), 10);
-  });
-
   it('normalizes only numerical-noise-level negative leftovers', () => {
     expect(normalizeNumericalLeftover(1.2, 1.2000000000000002)).toBe(0);
     expect(normalizeNumericalLeftover(1.2, 1.2001)).toBeCloseTo(-0.0001);
     expect(normalizeNumericalLeftover(1.3, 1.2001)).toBeCloseTo(0.0999);
+  });
+
+  it.each([
+    [9_999_999, 1, 9_999_999],
+    [10_000_000, 1, 10_000_000],
+    [2_500_000, 0.25, 10_000_000],
+  ])('accepts supported whole-unit quotient %s / %s', (required, yieldAmount, expected) => {
+    expect(requiredWholeUnits(required, yieldAmount)).toBe(expected);
+  });
+
+  it.each([
+    [10_000_000.0001, 1],
+    [2_500_000.0001, 0.25],
+    [1e12 + 0.0001, 1],
+  ])('rejects unsupported whole-unit quotient %s / %s', (required, yieldAmount) => {
+    expect(() => requiredWholeUnits(required, yieldAmount)).toThrow(RangeError);
+  });
+
+  it.each([
+    [9_999_999, 1, 9_999_999],
+    [10_000_000, 1, 10_000_000],
+    [2_500_000, 0.25, 2_500_000],
+  ])('accepts supported increment quotient %s / %s', (required, increment, expected) => {
+    expect(roundUpToIncrement(required, increment)).toBe(expected);
+  });
+
+  it.each([
+    [10_000_000.0001, 1],
+    [2_500_000.0001, 0.25],
+    [1e-3, 1e-15],
+    [1e12 + 0.0001, 0.001],
+  ])('rejects unsupported increment quotient %s / %s', (required, increment) => {
+    expect(() => roundUpToIncrement(required, increment)).toThrow(RangeError);
+  });
+
+  it.each([
+    [Number.NaN, 1],
+    [Infinity, 1],
+    [-1, 1],
+    [1, 0],
+    [1, -1],
+    [1, Infinity],
+  ])('rejects invalid purchasing contract values %s / %s', (required, unit) => {
+    expect(() => requiredWholeUnits(required, unit)).toThrow(RangeError);
+    expect(() => roundUpToIncrement(required, unit)).toThrow(RangeError);
+  });
+
+  it('caps leftover normalization to the purchasing resolution', () => {
+    expect(normalizeNumericalLeftover(1.2, 1.2000000000000002, 0.1)).toBe(0);
+    expect(normalizeNumericalLeftover(1e15, 1e15 + 1, 1)).toBe(-1);
+    expect(MAX_PURCHASE_QUOTIENT).toBe(10_000_000);
+  });
+
+  it('enforces the shared purchasing-unit representability boundary', () => {
+    for (const increment of [1, 0.5, 0.25, 0.1, 0.01, 0.001, 1e-100]) {
+      expect(isSupportedPurchaseUnit(increment)).toBe(true);
+      expect(roundUpToIncrement(increment, increment)).toBe(increment);
+    }
+    expect(MAX_PURCHASE_DECIMAL_PLACES).toBe(100);
+    expect(isSupportedPurchaseUnit(1e-101)).toBe(false);
+    expect(() => roundUpToIncrement(1e-101, 1e-101)).toThrow('exceeds supported decimal precision');
+    expect(() => requiredWholeUnits(1e-101, 1e-101)).toThrow('exceeds supported decimal precision');
   });
 });

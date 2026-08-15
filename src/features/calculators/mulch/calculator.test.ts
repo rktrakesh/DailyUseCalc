@@ -4,6 +4,27 @@ import { createDefaultMulchInput } from './formDefaults';
 import { convertMulchMeasurementSystem } from './formUnits';
 import { validateMulchInput } from './validation';
 
+it('rejects mulch purchasing counts above the supported quotient', () => {
+  const input = createDefaultMulchInput();
+  input.bagVolume = 1e-9;
+  expect(validateMulchInput(input)).toContainEqual(expect.objectContaining({ field: 'bagVolume' }));
+
+  const tinyIncrement = createDefaultMulchInput();
+  tinyIncrement.measureMode = 'area';
+  tinyIncrement.knownArea = 1e-99;
+  tinyIncrement.depth = { value: 12, unit: 'in' };
+  tinyIncrement.allowancePercent = 0;
+  tinyIncrement.bagVolume = undefined;
+  tinyIncrement.bulkIncrementCubicYards = 1e-101;
+  expect(validateMulchInput(tinyIncrement)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrementCubicYards' }),
+  );
+
+  const valid = createDefaultMulchInput();
+  expect(validateMulchInput(valid)).toEqual([]);
+  expect(() => calculateMulch(valid)).not.toThrow();
+});
+
 describe('mulch calculation', () => {
   it('matches the reference rectangle, allowance, bags, bulk, and pricing case', () => {
     const input = { ...createDefaultMulchInput(), pricePerBag: 4.5, bulkPricePerCubicYard: 45 };
@@ -190,8 +211,8 @@ describe('mulch calculation', () => {
     small.width.value = 0.01;
     small.depth.value = 0.01;
     const large = createDefaultMulchInput();
-    large.length.value = 10_000;
-    large.width.value = 10_000;
+    large.length.value = 1_000;
+    large.width.value = 1_000;
     large.depth.value = 12;
     for (const result of [calculateMulch(small), calculateMulch(large)]) {
       expect(result.requiredCubicFeet).toBeGreaterThan(0);

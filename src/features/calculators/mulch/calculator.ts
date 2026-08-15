@@ -67,13 +67,17 @@ export function calculateMulch(input: MulchInput): MulchCalculation {
     bagLeftoverCubicFeet:
       purchasedBagCubicFeet === undefined
         ? undefined
-        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet),
+        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet, bagVolumeCubicFeet!),
     bagCost:
       bagsRequired !== undefined && input.pricePerBag !== undefined
         ? bagsRequired * input.pricePerBag
         : undefined,
     bulkOrderCubicYards,
-    bulkLeftoverCubicYards: normalizeNumericalLeftover(bulkOrderCubicYards, requiredCubicYards),
+    bulkLeftoverCubicYards: normalizeNumericalLeftover(
+      bulkOrderCubicYards,
+      requiredCubicYards,
+      input.bulkIncrementCubicYards ?? 1,
+    ),
     bulkCost:
       input.bulkPricePerCubicYard === undefined
         ? undefined

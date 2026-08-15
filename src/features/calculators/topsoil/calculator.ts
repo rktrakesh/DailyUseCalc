@@ -99,14 +99,18 @@ export function calculateTopsoil(input: TopsoilInput): TopsoilCalculation {
     bagLeftoverCubicFeet:
       purchasedBagCubicFeet === undefined
         ? undefined
-        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet),
+        : normalizeNumericalLeftover(purchasedBagCubicFeet, requiredCubicFeet, bagVolumeCubicFeet!),
     bagCost:
       bagsRequired !== undefined && input.pricePerBag !== undefined
         ? bagsRequired * input.pricePerBag
         : undefined,
     bulkOrderCubicYards,
     bulkOrderCubicMeters: bulkOrderCubicYards * CUBIC_METERS_PER_CUBIC_YARD,
-    bulkLeftoverCubicYards: normalizeNumericalLeftover(bulkOrderCubicYards, requiredCubicYards),
+    bulkLeftoverCubicYards: normalizeNumericalLeftover(
+      bulkOrderCubicYards,
+      requiredCubicYards,
+      incrementCubicYards ?? 1,
+    ),
     bulkCost:
       input.bulkUnitPrice === undefined
         ? undefined

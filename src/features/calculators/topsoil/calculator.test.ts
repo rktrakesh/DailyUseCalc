@@ -4,6 +4,28 @@ import { createClearedTopsoilInput, createDefaultTopsoilInput } from './formDefa
 import { convertTopsoilMeasurementSystem } from './formUnits';
 import { validateTopsoilInput } from './validation';
 
+it('rejects topsoil purchasing counts above the supported quotient', () => {
+  const input = createDefaultTopsoilInput();
+  input.bulkIncrement = 1e-9;
+  expect(validateTopsoilInput(input)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const tinyIncrement = createDefaultTopsoilInput();
+  tinyIncrement.measureMode = 'area';
+  tinyIncrement.knownArea = 1e-99;
+  tinyIncrement.depth = { value: 12, unit: 'in' };
+  tinyIncrement.allowancePercent = 0;
+  tinyIncrement.bulkIncrement = 1e-101;
+  expect(validateTopsoilInput(tinyIncrement)).toContainEqual(
+    expect.objectContaining({ field: 'bulkIncrement' }),
+  );
+
+  const valid = createDefaultTopsoilInput();
+  expect(validateTopsoilInput(valid)).toEqual([]);
+  expect(() => calculateTopsoil(valid)).not.toThrow();
+});
+
 describe('topsoil calculation', () => {
   it('keeps purchasing and density optional in new and cleared forms', () => {
     for (const input of [createDefaultTopsoilInput(), createClearedTopsoilInput('USD')]) {
