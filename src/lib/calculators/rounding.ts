@@ -1,14 +1,31 @@
+const MAX_INCREMENT_NOISE = Math.sqrt(Number.EPSILON);
+
+function incrementDecimalPlaces(increment: number): number {
+  const [coefficient, exponentText] = Math.abs(increment).toExponential().split('e');
+  const coefficientDecimals = coefficient.split('.')[1]?.length ?? 0;
+  return Math.max(0, coefficientDecimals - Number(exponentText));
+}
+
 export function roundUpToIncrement(value: number, increment: number): number {
   const scaledValue = value / increment;
-  const tolerance = Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 10;
+  // The scale-aware term absorbs ordinary arithmetic noise. Capping it to a
+  // tiny fraction of one purchasing unit prevents coarse floating-point
+  // spacing at extreme quotients from treating a real excess as a boundary.
+  const tolerance = Math.min(
+    Number.EPSILON * Math.max(1, Math.abs(scaledValue)) * 10,
+    MAX_INCREMENT_NOISE,
+  );
   const rounded = Math.ceil(scaledValue - tolerance) * increment;
-  const decimalPlaces = increment.toString().split('.')[1]?.length ?? 0;
+  const decimalPlaces = incrementDecimalPlaces(increment);
   return Number(rounded.toFixed(decimalPlaces));
 }
 
 export function requiredWholeUnits(requiredAmount: number, unitYield: number): number {
   const exactCount = requiredAmount / unitYield;
-  const tolerance = Number.EPSILON * Math.max(1, Math.abs(exactCount)) * 10;
+  const tolerance = Math.min(
+    Number.EPSILON * Math.max(1, Math.abs(exactCount)) * 10,
+    MAX_INCREMENT_NOISE,
+  );
   return Math.ceil(exactCount - tolerance);
 }
 
