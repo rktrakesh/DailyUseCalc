@@ -133,177 +133,193 @@ const structuredData = [
           </nav>
         </section>
       </aside>
+    </div>
 
-      <section id="how-it-works" class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
-        <div class="max-w-3xl">
-          <p class="text-sm font-bold text-brand">Simple material planning</p><h2
-            class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
-          >
-            How to use the concrete calculator
-          </h2><p class="mt-4 leading-7 text-ink-soft">
-            Choose the concrete shape and measurement system, enter only the dimensions shown for
-            that mode, select a quantity and allowance, then calculate. Optional pricing lets you
-            compare ready-mix and bagged concrete without combining their costs.
+    <section id="how-it-works" class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Simple material planning</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          How to use the concrete calculator
+        </h2><p class="mt-4 leading-7 text-ink-soft">
+          Choose the concrete shape and measurement system, enter only the dimensions shown for that
+          mode, select a quantity and allowance, then calculate. Optional pricing lets you compare
+          ready-mix and bagged concrete without combining their costs.
+        </p>
+      </div><ol class="mt-8 grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+        {
+          [
+            ['1', 'Choose a shape', 'Slab, circle, column, or hole'],
+            ['2', 'Enter dimensions', 'Use the finished concrete size'],
+            ['3', 'Set quantity', 'Calculate repeated items'],
+            ['4', 'Add allowance', 'Account for project variation'],
+            ['5', 'Compare supply', 'Ready-mix and bag estimates'],
+          ].map(([number, title, description]) => (
+            <li class="rounded-card border border-line bg-panel p-5 shadow-card">
+              <>
+                <span class="grid size-8 place-items-center rounded-full border border-brand/35 text-sm font-extrabold text-brand">
+                  {number}
+                </span>
+                <h3 class="mt-4 text-sm font-extrabold text-ink">{title}</h3>
+                <p class="mt-1 text-xs leading-5 text-ink-soft">{description}</p>
+              </>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Concrete volume basics</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          How much concrete do I need?
+        </h2><div class="mt-6 space-y-4 text-[0.98rem] leading-7 text-ink-soft">
+          <p>
+            Concrete volume starts with the finished shape. A rectangular slab uses length × width ×
+            thickness. A circular pad uses the area of a circle multiplied by thickness. Columns,
+            piers, and post holes use cylindrical volume.
+          </p><p>
+            The calculator multiplies one-item volume by quantity before applying the selected
+            allowance. It keeps measured volume separate from adjusted volume and rounds the
+            ready-mix recommendation upward to the nearest 0.1 cubic yard.
+          </p><p>
+            Estimated weight uses a typical normal-weight concrete density of 145 lb/ft³. Actual
+            concrete density and bag yield vary, so confirm product and supplier specifications
+            before ordering.
           </p>
-        </div><ol class="mt-8 grid gap-4 md:grid-cols-5">
-          {
-            [
-              ['1', 'Choose a shape', 'Slab, circle, column, or hole'],
-              ['2', 'Enter dimensions', 'Use the finished concrete size'],
-              ['3', 'Set quantity', 'Calculate repeated items'],
-              ['4', 'Add allowance', 'Account for project variation'],
-              ['5', 'Compare supply', 'Ready-mix and bag estimates'],
-            ].map(([number, title, description]) => (
-              <li class="rounded-card border border-line bg-panel p-5 shadow-card">
-                <>
-                  <span class="grid size-8 place-items-center rounded-full border border-brand/35 text-sm font-extrabold text-brand">
-                    {number}
-                  </span>
-                  <h3 class="mt-4 text-sm font-extrabold text-ink">{title}</h3>
-                  <p class="mt-1 text-xs leading-5 text-ink-soft">{description}</p>
-                </>
-              </li>
-            ))
-          }
-        </ol>
-      </section>
-
-      <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
-        <div class="max-w-3xl">
-          <p class="text-sm font-bold text-brand">Concrete volume basics</p><h2
-            class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
-          >
-            How much concrete do I need?
-          </h2><div class="mt-6 space-y-4 text-[0.98rem] leading-7 text-ink-soft">
-            <p>
-              Concrete volume starts with the finished shape. A rectangular slab uses length × width
-              × thickness. A circular pad uses the area of a circle multiplied by thickness.
-              Columns, piers, and post holes use cylindrical volume.
-            </p><p>
-              The calculator multiplies one-item volume by quantity before applying the selected
-              allowance. It keeps measured volume separate from adjusted volume and rounds the
-              ready-mix recommendation upward to the nearest 0.1 cubic yard.
-            </p><p>
-              Estimated weight uses a typical normal-weight concrete density of 145 lb/ft³. Actual
-              concrete density and bag yield vary, so confirm product and supplier specifications
-              before ordering.
-            </p>
-          </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section
-        id="guide"
-        class="mt-16 grid gap-8 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_20rem] sm:mt-20 sm:pt-16"
-      >
-        <article class="max-w-3xl">
-          <p class="text-sm font-bold text-brand">Shape and supply guide</p><h2
-            class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
-          >
-            Slabs, pads, columns, and post holes
-          </h2><div class="mt-6 space-y-5 text-[0.98rem] leading-7 text-ink-soft">
-            <h3 class="font-extrabold text-ink">Slab concrete calculation</h3><p>
+    <section
+      id="guide"
+      class="mt-16 grid gap-8 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_20rem] sm:mt-20 sm:pt-16"
+    >
+      <article class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Shape and supply guide</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Slabs, pads, columns, and post holes
+        </h2><div class="mt-6 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-card border border-line bg-panel p-5 shadow-card">
+            <h3 class="font-extrabold text-ink">Slab concrete calculation</h3><p
+              class="mt-2 text-sm leading-6 text-ink-soft"
+            >
               Measure the complete rectangular footprint and planned thickness. Quantity can
               represent repeated slabs with identical dimensions.
-            </p><h3 class="font-extrabold text-ink">Circular pad calculation</h3><p>
+            </p>
+          </div><div class="rounded-card border border-line bg-panel p-5 shadow-card">
+            <h3 class="font-extrabold text-ink">Circular pad calculation</h3><p
+              class="mt-2 text-sm leading-6 text-ink-soft"
+            >
               Measure the full diameter across the widest point. The calculator determines circular
               area before applying thickness and quantity.
-            </p><h3 class="font-extrabold text-ink">Concrete for columns and piers</h3><p>
+            </p>
+          </div><div class="rounded-card border border-line bg-panel p-5 shadow-card">
+            <h3 class="font-extrabold text-ink">Concrete for columns and piers</h3><p
+              class="mt-2 text-sm leading-6 text-ink-soft"
+            >
               Use the finished concrete diameter and height. Area is omitted from the primary result
               because volume is the meaningful purchasing measurement.
-            </p><h3 class="font-extrabold text-ink">Concrete for post holes</h3><p>
+            </p>
+          </div><div class="rounded-card border border-line bg-panel p-5 shadow-card">
+            <h3 class="font-extrabold text-ink">Concrete for post holes</h3><p
+              class="mt-2 text-sm leading-6 text-ink-soft"
+            >
               V1 treats the entire cylindrical hole as concrete and does not subtract post
               displacement.
-            </p><h3 class="font-extrabold text-ink">Concrete bags vs ready-mix</h3><p>
+            </p>
+          </div><div class="rounded-card border border-line bg-panel p-5 shadow-card sm:col-span-2">
+            <h3 class="font-extrabold text-ink">Concrete bags vs ready-mix</h3><p
+              class="mt-2 text-sm leading-6 text-ink-soft"
+            >
               Bag estimates use typical published yields; ready-mix uses the rounded recommended
               order. Enter either or both prices to keep their cost estimates independent.
             </p>
           </div>
-        </article><aside class="rounded-card border border-line bg-panel-muted p-6">
-          <Lightbulb className="text-brand" size={22} aria-hidden="true" /><h3
-            class="mt-4 text-base font-extrabold tracking-[-0.025em] text-ink"
+        </div>
+      </article><aside class="rounded-card border border-line bg-panel-muted p-6">
+        <Lightbulb className="text-brand" size={22} aria-hidden="true" /><h3
+          class="mt-4 text-base font-extrabold tracking-[-0.025em] text-ink"
+        >
+          Before ordering
+        </h3><p class="mt-2 text-sm leading-6 text-ink-soft">
+          Confirm form dimensions, product yield, supplier minimums, delivery access, ordering
+          increments, and placement requirements. This tool estimates materials, not structural
+          design.
+        </p>
+      </aside>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Allowance and cost</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Plan extra concrete and compare costs
+        </h2>
+      </div><div class="mt-6 grid gap-5 md:grid-cols-3">
+        <article class="rounded-card border border-line bg-panel p-5 shadow-card">
+          <h3 class="font-extrabold text-ink">Extra allowance</h3><p
+            class="mt-2 text-sm leading-6 text-ink-soft"
           >
-            Before ordering
-          </h3><p class="mt-2 text-sm leading-6 text-ink-soft">
-            Confirm form dimensions, product yield, supplier minimums, delivery access, ordering
-            increments, and placement requirements. This tool estimates materials, not structural
-            design.
+            Allowance is added after measured volume. No hidden waste factor is applied.
           </p>
-        </aside>
-      </section>
-
-      <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
-        <div class="max-w-3xl">
-          <p class="text-sm font-bold text-brand">Allowance and cost</p><h2
-            class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        </article><article class="rounded-card border border-line bg-panel p-5 shadow-card">
+          <h3 class="font-extrabold text-ink">How many bags?</h3><p
+            class="mt-2 text-sm leading-6 text-ink-soft"
           >
-            Plan extra concrete and compare costs
-          </h2><div class="mt-6 grid gap-5 md:grid-cols-3">
-            <article class="rounded-card border border-line bg-panel p-5 shadow-card">
-              <h3 class="font-extrabold text-ink">Extra allowance</h3><p
-                class="mt-2 text-sm leading-6 text-ink-soft"
-              >
-                Allowance is added after measured volume. No hidden waste factor is applied.
-              </p>
-            </article><article class="rounded-card border border-line bg-panel p-5 shadow-card">
-              <h3 class="font-extrabold text-ink">How many bags?</h3><p
-                class="mt-2 text-sm leading-6 text-ink-soft"
-              >
-                Adjusted cubic feet are divided by bag yield and rounded up to a whole bag.
-              </p>
-            </article><article class="rounded-card border border-line bg-panel p-5 shadow-card">
-              <h3 class="font-extrabold text-ink">Concrete cost estimate</h3><p
-                class="mt-2 text-sm leading-6 text-ink-soft"
-              >
-                Ready-mix cost can include delivery. Bag cost uses bag count × price per bag.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
-        <div class="max-w-2xl">
-          <p class="text-sm font-bold text-brand">Answers before you order</p><h2
-            class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+            Adjusted cubic feet are divided by bag yield and rounded up to a whole bag.
+          </p>
+        </article><article class="rounded-card border border-line bg-panel p-5 shadow-card">
+          <h3 class="font-extrabold text-ink">Concrete cost estimate</h3><p
+            class="mt-2 text-sm leading-6 text-ink-soft"
           >
-            Frequently asked questions
+            Ready-mix cost can include delivery. Bag cost uses bag count × price per bag.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-2xl">
+        <p class="text-sm font-bold text-brand">Answers before you order</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Frequently asked questions
+        </h2>
+      </div><div class="mt-7 grid gap-3 lg:grid-cols-2">
+        {
+          faqs.map((faq) => (
+            <details class="rounded-card border border-line bg-panel p-5 shadow-card">
+              <>
+                <summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold text-ink marker:content-none">
+                  <CircleHelp className="mt-0.5 shrink-0 text-brand" size={18} aria-hidden="true" />
+                  {faq.question}
+                </summary>
+                <p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{faq.answer}</p>
+              </>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+    <section class="mt-16 rounded-2xl border border-brand/25 bg-brand-soft p-6 sm:mt-20 sm:p-8">
+      <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-sm font-bold text-brand">Need aggregate for the base?</p><h2
+            class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink"
+          >
+            Estimate gravel for your next project.
           </h2>
-        </div><div class="mt-7 grid gap-3 lg:grid-cols-2">
-          {
-            faqs.map((faq) => (
-              <details class="rounded-card border border-line bg-panel p-5 shadow-card">
-                <>
-                  <summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold text-ink marker:content-none">
-                    <CircleHelp
-                      className="mt-0.5 shrink-0 text-brand"
-                      size={18}
-                      aria-hidden="true"
-                    />
-                    {faq.question}
-                  </summary>
-                  <p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{faq.answer}</p>
-                </>
-              </details>
-            ))
-          }
-        </div>
-      </section>
-      <section class="mt-16 rounded-2xl border border-brand/25 bg-brand-soft p-6 sm:mt-20 sm:p-8">
-        <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div>
-            <p class="text-sm font-bold text-brand">Need aggregate for the base?</p><h2
-              class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink"
-            >
-              Estimate gravel for your next project.
-            </h2>
-          </div><a
-            href="/gravel/"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-strong"
-            >Open gravel calculator <ArrowRight size={17} aria-hidden="true" /></a
-          >
-        </div>
-      </section>
-    </div>
+        </div><a
+          href="/gravel/"
+          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-strong"
+          >Open gravel calculator <ArrowRight size={17} aria-hidden="true" /></a
+        >
+      </div>
+    </section>
   </div>
 </BaseLayout>

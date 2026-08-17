@@ -97,8 +97,8 @@ const steps = [
       </a>
     </div><div class="mt-3"><PaintCalculator client:load /></div><AdSlot class="mt-5 min-h-24" />
   </div>
-  <section class="site-container grid gap-5 py-8 lg:grid-cols-[1.35fr_.65fr]">
-    <article class="rounded-card border border-line bg-panel p-5 shadow-card">
+  <section class="site-container grid gap-6 py-10 sm:py-12 lg:grid-cols-[1.35fr_.65fr]">
+    <article class="rounded-card border border-line bg-panel p-5 shadow-card sm:p-6">
       <h2 class="text-xl font-extrabold text-ink">How the paint calculator works</h2><div
         class="mt-4 grid gap-4 sm:grid-cols-2"
       >
@@ -113,9 +113,9 @@ const steps = [
           ))
         }
       </div>
-    </article><aside class="rounded-card border border-line bg-panel p-5 shadow-card">
+    </article><aside class="rounded-card border border-line bg-panel-muted p-5 shadow-card sm:p-6">
       <h2 class="flex items-center gap-2 text-lg font-extrabold">
-        <Lightbulb className="text-brand" size={19} />Important guidance
+        <Lightbulb className="text-brand" size={19} aria-hidden="true" />Important guidance
       </h2><ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-ink-soft">
         <li>Opening deductions are area-based and do not validate their physical placement.</li><li>
           Trim uses measured linear length x paintable face width.
@@ -127,24 +127,24 @@ const steps = [
   </section>
   <section
     id="user-guide"
-    class="site-container scroll-mt-24 pb-8"
+    class="site-container scroll-mt-24 border-t border-line py-12 sm:py-16"
     aria-labelledby="user-guide-title"
   >
-    <article class="max-w-4xl">
-      <h2 id="user-guide-title" class="text-xl font-extrabold text-ink sm:text-2xl">
+    <article class="max-w-5xl">
+      <h2 id="user-guide-title" class="text-3xl font-extrabold tracking-[-.045em] text-ink">
         Paint Calculator User Guide
       </h2>
-      <p class="mt-2 text-sm leading-6 text-ink-soft">
+      <p class="mt-3 max-w-3xl text-sm leading-6 text-ink-soft">
         Use this guide to choose realistic inputs, understand what the estimate includes, and see
         how each field affects your purchase recommendation. The calculator is an estimate: always
         confirm product coverage and application instructions on the selected paint label.
       </p>
-      <div class="mt-7 space-y-8 text-sm leading-6 text-ink-soft">
+      <div class="mt-8 space-y-10 text-sm leading-6 text-ink-soft">
         <section aria-labelledby="guide-project">
           <h3 id="guide-project" class="text-lg font-extrabold text-ink">
             Understanding Your Project
           </h3>
-          <div class="mt-3 grid gap-5 md:grid-cols-2">
+          <div class="mt-4 grid gap-6 md:grid-cols-2">
             <div>
               <h4 class="font-bold text-ink">Room / Walls</h4>
               <p class="mt-1">
@@ -177,11 +177,11 @@ const steps = [
             </div>
           </div>
         </section>
-        <section aria-labelledby="guide-paint">
+        <section aria-labelledby="guide-paint" class="border-t border-line pt-8">
           <h3 id="guide-paint" class="text-lg font-extrabold text-ink">
             Understanding Paint Inputs
           </h3>
-          <div class="mt-3 grid gap-5 md:grid-cols-2">
+          <div class="mt-4 grid gap-6 md:grid-cols-2">
             <div>
               <h4 class="font-bold text-ink">Coats</h4><p class="mt-1">
                 A coat is 1 complete application layer. One coat is 1 layer; 2 coats are 2 layers.
@@ -217,11 +217,11 @@ const steps = [
             </div>
           </div>
         </section>
-        <section aria-labelledby="guide-optional">
+        <section aria-labelledby="guide-optional" class="border-t border-line pt-8">
           <h3 id="guide-optional" class="text-lg font-extrabold text-ink">
             Optional Surfaces & Materials
           </h3>
-          <div class="mt-3 grid gap-5 md:grid-cols-2">
+          <div class="mt-4 grid gap-6 md:grid-cols-2">
             <div>
               <h4 class="font-bold text-ink">Painted Doors</h4><p class="mt-1">
                 Total doors subtracts door openings from wall area. Paint doors estimates paint for
@@ -246,9 +246,9 @@ const steps = [
             </div>
           </div>
         </section>
-        <section aria-labelledby="guide-buying">
+        <section aria-labelledby="guide-buying" class="border-t border-line pt-8">
           <h3 id="guide-buying" class="text-lg font-extrabold text-ink">Buying Paint</h3>
-          <div class="mt-3 grid gap-5 md:grid-cols-2">
+          <div class="mt-4 grid gap-6 md:grid-cols-2">
             <div>
               <h4 class="font-bold text-ink">Paint Pricing</h4><p class="mt-1">
                 Pricing is optional. Quart price, 1 gal price, 5 gal price, and Primer / gal affect
@@ -269,7 +269,10 @@ const steps = [
             </div>
           </div>
         </section>
-        <section aria-labelledby="guide-units">
+        <section
+          aria-labelledby="guide-units"
+          class="rounded-card border border-line bg-panel-muted p-5 sm:p-6"
+        >
           <h3 id="guide-units" class="text-lg font-extrabold text-ink">Imperial & Metric</h3><p
             class="mt-2"
           >
@@ -278,7 +281,10 @@ const steps = [
             quantities remain unitless project totals.
           </p>
         </section>
-        <section aria-labelledby="guide-formula">
+        <section
+          aria-labelledby="guide-formula"
+          class="rounded-card border border-line bg-panel-muted p-5 sm:p-6"
+        >
           <h3 id="guide-formula" class="text-lg font-extrabold text-ink">
             How the Wall Calculation Works
           </h3><p class="mt-2">
@@ -288,7 +294,10 @@ const steps = [
             selected allowance is applied.
           </p>
         </section>
-        <section aria-labelledby="guide-example">
+        <section
+          aria-labelledby="guide-example"
+          class="rounded-card border border-line bg-panel p-5 shadow-card sm:p-6"
+        >
           <h3 id="guide-example" class="text-lg font-extrabold text-ink">Worked Example</h3>
           <p class="mt-2">
             This is an example, not a universal recommendation. For 10 rooms measuring 12 ft x 10 ft
@@ -305,7 +314,10 @@ const steps = [
             </li><li>Purchased: 17.50 gal</li><li>Estimated leftover: about 0.23 gal</li>
           </ul>
         </section>
-        <section aria-labelledby="guide-limitations">
+        <section
+          aria-labelledby="guide-limitations"
+          class="rounded-card border border-line bg-panel-muted p-5 sm:p-6"
+        >
           <h3 id="guide-limitations" class="text-lg font-extrabold text-ink">
             Important Limitations
           </h3><p class="mt-2">
@@ -318,17 +330,19 @@ const steps = [
       </div>
     </article>
   </section>
-  <section class="site-container pb-10">
-    <h2 class="text-xl font-extrabold">Paint calculator questions</h2><div class="mt-3 grid gap-2">
+  <section class="site-container border-t border-line pt-12 pb-10 sm:pt-16 sm:pb-16">
+    <div class="max-w-2xl">
+      <h2 class="text-3xl font-extrabold tracking-[-.045em]">Paint calculator questions</h2>
+    </div><div class="mt-7 grid gap-3 lg:grid-cols-2">
       {
         faqs.map((item) => (
-          <details class="rounded-control border border-line bg-panel p-4">
+          <details class="rounded-card border border-line bg-panel p-5 shadow-card">
             <>
-              <summary class="flex cursor-pointer items-center gap-2 font-bold">
-                <CircleHelp className="text-brand" size={17} />
+              <summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold marker:content-none">
+                <CircleHelp className="mt-0.5 shrink-0 text-brand" size={18} aria-hidden="true" />
                 {item.question}
               </summary>
-              <p class="mt-2 text-sm leading-6 text-ink-soft">{item.answer}</p>
+              <p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{item.answer}</p>
             </>
           </details>
         ))
