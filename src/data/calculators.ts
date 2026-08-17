@@ -78,6 +78,15 @@ export const calculatorListings: CalculatorListing[] = [
     status: 'available',
   },
   {
+    id: 'paver',
+    name: 'Paver Calculator',
+    category: 'Construction',
+    href: '/paver/',
+    description: 'Pavers, waste, base & cost',
+    keywords: ['paver', 'patio', 'walkway', 'driveway', 'base', 'sand'],
+    status: 'available',
+  },
+  {
     id: 'paint',
     name: 'Paint Calculator',
     category: 'Home Improvement',
