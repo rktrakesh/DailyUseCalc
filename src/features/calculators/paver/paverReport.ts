@@ -42,7 +42,7 @@ export function createPaverEstimateReport(
     rows: [
       {
         label: 'Paver size',
-        value: `${n(input.paverLength)} × ${n(input.paverWidth)} ${input.paverUnit}`,
+        value: `${n(input.paverLength)} x ${n(input.paverWidth)} ${input.paverUnit}`,
       },
       { label: 'Joint width', value: `${n(input.jointWidth, 3)} ${input.jointUnit}` },
       {

@@ -68,6 +68,7 @@ export default function PaverCalculator() {
   const [status, setStatus] = useState('');
   const [copied, setCopied] = useState(false);
   const [preparingPdf, setPreparingPdf] = useState(false);
+  const formSection = useRef<HTMLElement>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const started = useRef(createCalculatorStartedTracker());
   const analytics = (source = input) => paverAnalyticsParameters(source);
@@ -79,6 +80,22 @@ export default function PaverCalculator() {
     return () => {
       if (copyTimer.current !== undefined) clearTimeout(copyTimer.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const form = formSection.current;
+    if (!form) return;
+    const preventNumberStepping = (event: WheelEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement && target.type === 'number')
+        preserveNumberInputOnWheel({
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+          preventDefault: () => event.preventDefault(),
+        });
+    };
+    form.addEventListener('wheel', preventNumberStepping, { passive: false });
+    return () => form.removeEventListener('wheel', preventNumberStepping);
   }, []);
 
   const update = (changes: Partial<PaverInput>) => {
@@ -206,6 +223,7 @@ export default function PaverCalculator() {
   return (
     <div className="space-y-3">
       <section
+        ref={formSection}
         className="rounded-card border border-line bg-panel p-3 shadow-card sm:p-4"
         aria-labelledby="paver-form-heading"
       >
@@ -608,7 +626,6 @@ function SimpleNumber({
           onChange={(event) =>
             onChange(optional ? optionalNumberFromEvent(event) : numberFromEvent(event))
           }
-          onWheel={preserveNumberInputOnWheel}
           className={`${controlClass(Boolean(error))} pr-16 tabular-nums`}
           aria-invalid={Boolean(error)}
           aria-describedby={
@@ -673,7 +690,6 @@ function NumberWithUnit({
           placeholder={placeholder}
           value={Number.isFinite(value) ? value : ''}
           onChange={(event) => onValue(numberFromEvent(event))}
-          onWheel={preserveNumberInputOnWheel}
           aria-invalid={Boolean(error)}
           aria-describedby={
             [helper ? `${id}-help` : undefined, error ? `${id}-error` : undefined]

@@ -2,7 +2,8 @@ import { convertLength, type LengthUnit } from '../../../lib/units/measurements'
 import { areaToSquareFeet, squareFeetToArea } from './calculator';
 import type { AreaUnit, Dimension, PaverInput, PaverUnit } from './types';
 
-const rounded = (value: number) => (Number.isFinite(value) ? Number(value.toFixed(12)) : value);
+// Keep form values precise without exposing conversion noise in number inputs.
+const rounded = (value: number) => (Number.isFinite(value) ? Number(value.toFixed(8)) : value);
 const convertDimension = (dimension: Dimension, unit: LengthUnit): Dimension => ({
   value: rounded(convertLength(dimension.value, dimension.unit, unit)),
   unit,

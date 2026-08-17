@@ -130,6 +130,10 @@ describe('paver submitted-result and optional-feature regressions', () => {
       'BEDDING SAND',
       'PAVER MATERIAL COST',
     ]);
+    expect(
+      report.sections.flatMap((section) => section.rows).find((row) => row.label === 'Paver size')
+        ?.value,
+    ).toBe('6 x 9 in');
     expect(report.guidanceHeadingOnly).toBe(true);
     expect(html).toContain('<h2>GUIDANCE</h2>');
     expect(html).not.toContain('GUIDANCE - PLANNING GUIDANCE');

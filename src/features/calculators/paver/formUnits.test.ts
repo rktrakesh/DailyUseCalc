@@ -44,4 +44,33 @@ describe('paver measurement-system conversion', () => {
     expect(metric.knownArea).toBeCloseTo(9.290304, 6);
     expect(calculatePaver(metric).requiredPavers).toBe(calculatePaver(input).requiredPavers);
   });
+
+  it('normalizes converted form values without exposing floating-point noise', () => {
+    const input = createDefaultPaverInput();
+    input.length = { value: 20, unit: 'ft' };
+    input.width = { value: 10, unit: 'ft' };
+    input.jointWidth = 0.5;
+    input.paverPreset = 'custom';
+    input.paverLength = 10.5;
+    input.paverWidth = 7.25;
+    input.baseDepth = { value: 4, unit: 'in' };
+    input.sandDepth = { value: 1, unit: 'in' };
+
+    const metric = convertPaverMeasurementSystem(input, 'metric');
+    expect(metric.length.value).toBe(6.096);
+    expect(metric.width.value).toBe(3.048);
+    expect(metric.jointWidth).toBe(12.7);
+    expect(metric.paverLength).toBe(266.7);
+    expect(metric.paverWidth).toBe(184.15);
+    expect(metric.baseDepth.value).toBe(10.16);
+    expect(metric.sandDepth.value).toBe(2.54);
+
+    const restored = convertPaverMeasurementSystem(metric, 'imperial');
+    expect(restored.length.value).toBe(20);
+    expect(restored.width.value).toBe(10);
+    expect(restored.jointWidth).toBe(0.5);
+    expect(restored.paverLength).toBe(10.5);
+    expect(restored.paverWidth).toBe(7.25);
+    expect(calculatePaver(restored).requiredPavers).toBe(calculatePaver(input).requiredPavers);
+  });
 });
