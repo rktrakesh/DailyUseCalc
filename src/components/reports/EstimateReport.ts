@@ -24,6 +24,7 @@ export interface EstimateReportData {
   customSections?: Array<{ title: string; content?: string; contentHtml?: string }>;
   additionalDetails?: ReportMetric[];
   guidance?: ReportMetric[];
+  guidanceHeadingOnly?: boolean;
   warnings?: string[];
   notice: { title: string; content: string };
   footerUrl: string;

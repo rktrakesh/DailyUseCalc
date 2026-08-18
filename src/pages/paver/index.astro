@@ -1,0 +1,303 @@
+---
+import { ArrowRight, ChevronRight, CircleHelp, Lightbulb } from 'lucide-react';
+import AdSlot from '../../components/common/AdSlot.astro';
+import { calculatorCategories } from '../../data/calculators';
+import PaverCalculator from '../../features/calculators/paver/PaverCalculator';
+import { paverPresets } from '../../features/calculators/paver/presets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  breadcrumbSchema,
+  faqPageSchema,
+  organizationSchema,
+  webApplicationSchema,
+} from '../../lib/seo/schema';
+
+const description =
+  'Calculate how many pavers you need for a patio, walkway, driveway, or pool deck, with waste, joint spacing, base, sand, and material cost options.';
+const faqs = [
+  {
+    question: 'How do I calculate how many pavers I need?',
+    answer:
+      'Measure the project area, divide it by the effective coverage of one paver, apply your selected waste allowance, and round up to whole pavers. This calculator performs those steps without rounding intermediate values.',
+  },
+  {
+    question: 'How much extra should I allow for cuts and breakage?',
+    answer:
+      'The right allowance depends on the project layout, cuts, pattern, and product. Choose the percentage that fits your plan; the calculator does not assume one percentage is correct for every project.',
+  },
+  {
+    question: 'Does joint width change the paver count?',
+    answer:
+      'It can. When you enter a positive joint width, the calculator uses the paver plus the joint as an effective layout module. A zero joint width uses only the paver face dimensions.',
+  },
+  {
+    question: 'Can the calculator estimate paver base and bedding sand?',
+    answer:
+      'Yes. Open Advanced options and enter a base depth or bedding sand depth when you want that material-volume estimate. Leave an optional depth blank when you do not need its estimate. No material density or weight is assumed.',
+  },
+];
+const breadcrumbItems = [
+  { name: 'Home', path: '/' },
+  { name: 'Construction', path: '/calculators/#construction' },
+  { name: 'Paver Calculator', path: '/paver/' },
+];
+const structuredData = [
+  organizationSchema(),
+  breadcrumbSchema(breadcrumbItems),
+  webApplicationSchema({ name: 'Paver Calculator', description, path: '/paver/' }),
+  faqPageSchema(faqs),
+];
+const sizeRows = paverPresets.map((preset) => {
+  const area = (preset.lengthInches * preset.widthInches) / 144;
+  return {
+    label: preset.label,
+    area: area.toFixed(3).replace(/0+$/, '').replace(/\.$/, ''),
+    rate: (1 / area).toFixed(2),
+  };
+});
+---
+
+<BaseLayout
+  title="Paver Calculator – Pavers, Base, Sand & Cost | DailyUseCalc"
+  description={description}
+  canonicalPath="/paver/"
+  structuredData={structuredData}
+>
+  <div class="site-container py-3 sm:py-4">
+    <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+      {
+        breadcrumbItems.map((item, index) => (
+          <>
+            <a class="rounded hover:text-brand" href={item.path}>
+              {item.name}
+            </a>
+            {index < breadcrumbItems.length - 1 && <ChevronRight size={13} aria-hidden="true" />}
+          </>
+        ))
+      }
+    </nav>
+    <div class="mt-3 max-w-2xl">
+      <h1 class="text-balance text-3xl font-extrabold tracking-[-0.05em] text-ink sm:text-4xl">
+        Paver calculator
+      </h1>
+      <p class="mt-1.5 text-sm leading-5 text-ink-soft">
+        Calculate how many pavers you need for patios, walkways, driveways, and pool decks. Add
+        optional joint spacing, base, bedding sand, and paver material cost.
+      </p>
+      <a
+        id="paver-guide-link"
+        class="mt-2 inline-flex min-h-8 items-center text-xs font-bold text-brand hover:text-brand-strong"
+        href="#user-guide">User Guide <span class="ml-1" aria-hidden="true">↓</span></a
+      >
+    </div>
+    <div
+      class="mt-3 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_18rem]"
+    >
+      <div><PaverCalculator client:load /><AdSlot class="mt-5 min-h-24 lg:hidden" /></div>
+      <aside
+        class="hidden space-y-3 lg:-mt-[5.75rem] lg:block"
+        aria-label="Paver calculator resources"
+      >
+        <AdSlot class="min-h-44 xl:min-h-60" />
+        <section class="rounded-card border border-line bg-panel p-5 shadow-card">
+          <h2 class="text-base font-extrabold text-ink">Related calculators</h2>
+          <ul class="mt-4 space-y-3">
+            {
+              [
+                ['/gravel/', 'Gravel Calculator'],
+                ['/sand/', 'Sand Calculator'],
+                ['/concrete/', 'Concrete Calculator'],
+                ['/tile/', 'Tile Calculator'],
+              ].map(([href, label]) => (
+                <li>
+                  <a class="text-sm font-semibold text-brand hover:text-brand-strong" href={href}>
+                    {label} <span aria-hidden="true">→</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+        <section class="rounded-card border border-line bg-panel p-4 shadow-card">
+          <h2 class="text-sm font-extrabold text-ink">Browse by category</h2><nav
+            class="mt-2 grid"
+            aria-label="Calculator categories"
+          >
+            {
+              calculatorCategories.map((category) => (
+                <a
+                  class="min-h-9 content-center text-xs font-semibold text-brand hover:text-brand-strong"
+                  href={`/calculators/#${category.id}`}
+                >
+                  {category.name}
+                </a>
+              ))
+            }
+          </nav>
+        </section>
+      </aside>
+    </div>
+
+    <section id="user-guide" class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-2xl">
+        <p class="text-sm font-bold text-brand">Paver planning guide</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          How the paver calculator works
+        </h2><p class="mt-4 leading-7 text-ink-soft">
+          The estimate starts with the paved surface area. It divides that area by one paver's
+          effective coverage, adds the waste allowance you select, and rounds up once to a
+          whole-paver purchasing quantity.
+        </p>
+      </div>
+      <ol class="mt-8 grid gap-4 md:grid-cols-4">
+        {
+          [
+            ['1', 'Measure the area', 'Use dimensions or enter a known area.'],
+            ['2', 'Choose a paver', 'Select a convenience preset or custom size.'],
+            ['3', 'Apply waste', 'Add material for cuts, breakage, and spares.'],
+            ['4', 'Round for purchase', 'The final result is rounded up to whole pavers.'],
+          ].map(([number, title, text]) => (
+            <li class="rounded-card border border-line bg-panel p-5 shadow-card">
+              <>
+                <span class="grid size-8 place-items-center rounded-full border border-brand/35 text-sm font-extrabold text-brand">
+                  {number}
+                </span>
+                <h3 class="mt-4 text-sm font-extrabold text-ink">{title}</h3>
+                <p class="mt-1 text-xs leading-5 text-ink-soft">{text}</p>
+              </>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section
+      class="mt-16 grid gap-8 border-t border-line pt-12 lg:grid-cols-[minmax(0,1fr)_20rem] sm:mt-20 sm:pt-16"
+    >
+      <article class="max-w-3xl">
+        <p class="text-sm font-bold text-brand">Transparent assumptions</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Coverage, joints, and optional materials
+        </h2><div class="mt-6 space-y-4 text-[0.98rem] leading-7 text-ink-soft">
+          <p>
+            Paver face area comes from length multiplied by width. If joint width is greater than
+            zero, the calculator uses the paver dimensions plus that joint width as the effective
+            module. Confirm product dimensions and layout guidance before ordering.
+          </p><p>
+            Base and bedding sand are separate opt-in estimates. Each volume equals project area
+            multiplied by the depth you enter. These estimates do not assume material density,
+            compaction, or supplier packaging.
+          </p><p>
+            Optional cost is paver material only: the final whole-paver quantity multiplied by your
+            price per paver. Labor, delivery, taxes, restraints, base, sand, and other project costs
+            are not included.
+          </p>
+        </div>
+      </article>
+      <aside class="rounded-card border border-line bg-panel-muted p-6">
+        <Lightbulb className="text-brand" size={22} aria-hidden="true" /><h3
+          class="mt-4 text-base font-extrabold text-ink"
+        >
+          Before ordering
+        </h3><p class="mt-2 text-sm leading-6 text-ink-soft">
+          Check the manufacturer's actual dimensions, pack quantities, layout recommendations, and
+          whether your supplier sells individual pavers or complete packs.
+        </p>
+      </aside>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-2xl">
+        <p class="text-sm font-bold text-brand">Preset reference</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Common paver sizes and pavers per square foot
+        </h2><p class="mt-4 leading-7 text-ink-soft">
+          These presets are calculation conveniences, not universal product standards. Values below
+          exclude joint spacing and waste.
+        </p>
+      </div>
+      <div class="mt-6 overflow-x-auto rounded-card border border-line bg-panel shadow-card">
+        <table class="w-full min-w-[30rem] text-left text-sm">
+          <caption class="sr-only">Paver preset coverage without joints or waste</caption><thead
+            class="bg-panel-muted text-xs uppercase tracking-wide text-ink-soft"
+            ><tr
+              ><th class="px-4 py-3">Paver size</th><th class="px-4 py-3">Face area (sq ft)</th><th
+                class="px-4 py-3">Pavers per sq ft</th
+              ></tr
+            ></thead
+          ><tbody
+            >{
+              sizeRows.map((row) => (
+                <tr class="border-t border-line">
+                  <>
+                    <th scope="row" class="px-4 py-3 font-bold text-ink">
+                      {row.label}
+                    </th>
+                    <td class="px-4 py-3 text-ink-soft">{row.area}</td>
+                    <td class="px-4 py-3 text-ink-soft">{row.rate}</td>
+                  </>
+                </tr>
+              ))
+            }</tbody
+          >
+        </table>
+      </div>
+    </section>
+
+    <section class="mt-16 border-t border-line pt-12 sm:mt-20 sm:pt-16">
+      <div class="max-w-2xl">
+        <p class="text-sm font-bold text-brand">Common questions</p><h2
+          class="mt-1 text-3xl font-extrabold tracking-[-0.045em] text-ink"
+        >
+          Paver calculator FAQ
+        </h2>
+      </div>
+      <div class="mt-7 grid gap-3 lg:grid-cols-2">
+        {
+          faqs.map((faq) => (
+            <details class="rounded-card border border-line bg-panel p-5 shadow-card">
+              <>
+                <summary class="flex cursor-pointer items-start gap-3 text-sm font-extrabold text-ink marker:content-none">
+                  <CircleHelp className="mt-0.5 shrink-0 text-brand" size={18} aria-hidden="true" />
+                  {faq.question}
+                </summary>
+                <p class="ml-[1.9rem] mt-3 text-sm leading-6 text-ink-soft">{faq.answer}</p>
+              </>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+    <section class="mt-16 rounded-2xl border border-brand/25 bg-brand-soft p-6 sm:mt-20 sm:p-8">
+      <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-sm font-bold text-brand">Planning another project?</p><h2
+            class="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-ink"
+          >
+            Find the next calculator you need.
+          </h2>
+        </div><a
+          href="/calculators/"
+          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-brand px-5 text-sm font-bold text-white hover:bg-brand-strong"
+          >Browse calculators <ArrowRight size={17} aria-hidden="true" /></a
+        >
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { trackCalculatorEvent } from '../../lib/analytics/calculatorAnalytics';
+  document.querySelector('#paver-guide-link')?.addEventListener(
+    'click',
+    () =>
+      trackCalculatorEvent('calculator_guide', {
+        calculator_id: 'paver',
+        calculator_name: 'Paver Calculator',
+      }),
+    { once: true },
+  );
+</script>

@@ -353,8 +353,17 @@ export async function createEstimatePdfBytes(report: EstimateReportData) {
       true,
     );
   } else {
-    for (const item of report.guidance ?? [])
-      paragraph(left, `GUIDANCE - ${item.label.toUpperCase()}`, item.value, regular, bold);
+    if (report.guidanceHeadingOnly && report.guidance?.length)
+      paragraph(
+        left,
+        'GUIDANCE',
+        report.guidance.map((item) => `${item.label}: ${item.value}`).join(' '),
+        regular,
+        bold,
+      );
+    else
+      for (const item of report.guidance ?? [])
+        paragraph(left, `GUIDANCE - ${item.label.toUpperCase()}`, item.value, regular, bold);
     if (report.warnings?.length)
       paragraph(left, 'WARNINGS', report.warnings.join(' '), regular, bold);
     paragraph(left, report.notice.title, report.notice.content, regular, bold);
